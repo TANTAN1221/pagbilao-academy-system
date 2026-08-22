@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagbilao Academy Inc. | Student Payment & Clearance System</title>
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Material Symbols & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .material-symbols-rounded {
+      font-family: 'Material Symbols Rounded';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            academy: {
+              navy: "#1E3A8A",
+              blue: "#2563EB",
+              soft: "#F5F8FF",
+              border: "#DDE8F8",
+              text: "#0F2A5F",
+              muted: "#6B7A90",
+              light: "#EEF5FF"
+            }
+          },
+          boxShadow: {
+            soft: "0 20px 50px rgba(30, 58, 138, 0.10)",
+            card: "0 10px 30px rgba(30, 58, 138, 0.08)",
+            glow: "0 0 40px rgba(37, 99, 235, 0.25)"
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Supabase client + project configuration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app-config.js"></script>
+</head>
+
+<body class="min-h-screen bg-[#F7FAFF] text-academy-text overflow-x-hidden">
+
+  <!-- Background Ambient Glows -->
+  <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -left-32 w-[500px] h-[500px] rounded-full bg-blue-200/30 blur-3xl"></div>
+    <div class="absolute top-[40%] right-[-150px] w-[550px] h-[550px] rounded-full bg-sky-200/30 blur-3xl"></div>
+    <div class="absolute bottom-[-100px] left-[20%] w-[450px] h-[450px] rounded-full bg-indigo-100/40 blur-3xl"></div>
+  </div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-academy-border/80 transition-all duration-300 shadow-xs">
+    <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+
+      <!-- Brand Identity -->
+      <a href="#home" class="flex items-center gap-3 group">
+        <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+          class="w-11 h-11 rounded-full object-cover border-2 border-academy-border bg-white shadow-xs group-hover:scale-105 transition-transform" />
+
+        <div class="text-left">
+          <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-academy-navy group-hover:text-academy-blue transition-colors">
+            Pagbilao Academy Inc.
+          </h1>
+          <p class="text-xs text-academy-muted font-medium">
+            Payment & Clearance System
+          </p>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-academy-text">
+        <a href="#home" class="hover:text-academy-blue transition-colors py-1">Home</a>
+        <a href="#campus" class="hover:text-academy-blue transition-colors py-1">Campus</a>
+        <a href="#features" class="hover:text-academy-blue transition-colors py-1">Objectives</a>
+        <a href="#workflow" class="hover:text-academy-blue transition-colors py-1">Workflow</a>
+        <a href="#portal" class="hover:text-academy-blue transition-colors py-1">Portal</a>
+      </nav>
+
+      <!-- Action Buttons in Nav Header -->
+      <div class="hidden lg:flex items-center gap-3">
+        <button type="button" onclick="openLoginModal()" class="px-5 py-2 rounded-xl border border-academy-border text-academy-navy font-bold text-xs hover:bg-blue-50 transition">
+          Sign In
+        </button>
+        <button type="button" onclick="openRegisterModal()" class="px-5 py-2 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900 transition shadow-sm">
+          Register
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button id="menuBtn"
+        class="md:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-academy-soft border border-academy-border text-academy-navy active:scale-95 transition"
+        aria-label="Open Menu">
+        <span class="material-symbols-rounded">menu</span>
+      </button>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white/95 backdrop-blur-lg border-t border-academy-border px-6 pb-6 pt-2">
+      <div class="flex flex-col gap-3 text-sm font-semibold pt-2 text-center">
+        <a href="#home" class="py-2 border-b border-slate-100 text-academy-text">Home</a>
+        <a href="#campus" class="py-2 border-b border-slate-100 text-academy-text">Campus</a>
+        <a href="#features" class="py-2 border-b border-slate-100 text-academy-text">Objectives</a>
+        <a href="#workflow" class="py-2 border-b border-slate-100 text-academy-text">Workflow</a>
+        <a href="#portal" class="py-2 border-b border-slate-100 text-academy-text">Portal</a>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="openLoginModal()" class="flex-1 py-2.5 rounded-xl border border-academy-border text-academy-navy font-bold text-xs">Sign In</button>
+          <button type="button" onclick="openRegisterModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs">Register</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section with pa.jpg Background Wallpaper & Centered Text -->
+  <section id="home" class="relative flex items-center justify-center text-center px-6 py-12 md:py-16 overflow-hidden">
+    
+    <!-- Background Wallpaper (pa.jpg) with Rich Navy Overlay -->
+    <div class="absolute inset-0 -z-10">
+      <img src="pa.jpg" alt="Pagbilao Academy Inc. Campus Background" class="w-full h-full object-cover object-center filter brightness-[0.4] contrast-[1.1] scale-105" />
+      <div class="absolute inset-0 bg-gradient-to-b from-[#0F2A5F]/85 via-[#1E3A8A]/75 to-[#0F2A5F]/95"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto space-y-6 reveal text-white">
+      
+      <!-- Top Centered Badge -->
+      <div class="flex justify-center">
+        <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-extrabold tracking-wider uppercase shadow-glow">
+          <span class="material-symbols-rounded text-[18px] text-sky-300">verified</span>
+          Official Portal · Pagbilao Academy Inc.
+        </span>
+      </div>
+
+      <!-- Main Centered Heading -->
+      <div class="space-y-3">
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.15] tracking-tight drop-shadow-md">
+          Student Payment & Clearance System
+        </h2>
+
+        <p class="text-sm sm:text-base lg:text-lg leading-relaxed text-blue-100 max-w-3xl mx-auto font-normal drop-shadow-xs">
+          Welcome to Pagbilao Academy Inc.'s official digital portal for tuition fee monitoring, ESC/SHS voucher calculations, installment tracking, multi-tier clearance approvals, and automated clearance certificates.
+        </p>
+      </div>
+
+      <!-- Primary Call to Action Buttons - Centered -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+        <button type="button" onclick="openLoginModal()"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl bg-white text-academy-navy font-extrabold shadow-xl hover:bg-blue-50 hover:shadow-glow active:scale-[0.98] transition text-sm sm:text-base">
+          <span>Sign In to Portal</span>
+          <span class="material-symbols-rounded text-[20px]">arrow_forward</span>
+        </button>
+
+        <button type="button" onclick="openRegisterModal()"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl bg-blue-600/90 backdrop-blur-md text-white font-extrabold border border-blue-400/40 hover:bg-blue-500 hover:border-white active:scale-[0.98] transition shadow-lg text-sm sm:text-base">
+          <span class="material-symbols-rounded text-[20px]">person_add</span>
+          <span>Create Student Account</span>
+        </button>
+      </div>
+
+      <!-- Key Metrics Highlights Bar - Centered Glassmorphism -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-6 max-w-3xl mx-auto">
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-center">
+          <p class="text-xl sm:text-2xl font-black text-white">JHS & SHS</p>
+          <p class="text-[11px] sm:text-xs text-blue-200 mt-0.5 font-medium">Curriculum Support</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-center">
+          <p class="text-xl sm:text-2xl font-black text-emerald-300">ESC & SHS</p>
+          <p class="text-[11px] sm:text-xs text-blue-200 mt-0.5 font-medium">Voucher Discounts</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-center">
+          <p class="text-xl sm:text-2xl font-black text-sky-300">PayMongo</p>
+          <p class="text-[11px] sm:text-xs text-blue-200 mt-0.5 font-medium">Online Payment Ready</p>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-center">
+          <p class="text-xl sm:text-2xl font-black text-amber-300">100%</p>
+          <p class="text-[11px] sm:text-xs text-blue-200 mt-0.5 font-medium">Digital Clearance</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Content Body -->
+  <main class="max-w-7xl mx-auto px-6 py-12 space-y-16">
+
+    <!-- Campus & Heritage Spotlight Section -->
+    <section id="campus" class="reveal">
+      <div class="bg-gradient-to-br from-white via-academy-soft to-blue-50/50 border border-academy-border rounded-[2.5rem] p-6 md:p-10 shadow-soft">
+        
+        <!-- Section Header Centered -->
+        <div class="text-center max-w-3xl mx-auto space-y-2.5 mb-8">
+          <span class="px-3.5 py-1 rounded-full bg-blue-100 text-academy-navy text-xs font-extrabold uppercase tracking-wider inline-block">
+            About The Institution
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-academy-navy tracking-tight">
+            Fostering Excellence at Pagbilao Academy Inc.
+          </h2>
+          <p class="text-xs sm:text-sm leading-relaxed text-academy-muted">
+            Pagbilao Academy Inc. bridges tradition and technology, ensuring quality education alongside streamlined administrative services.
+          </p>
+        </div>
+
+        <div class="grid lg:grid-cols-12 gap-10 items-center">
+          
+          <div class="lg:col-span-6 relative">
+            <div class="rounded-3xl overflow-hidden border-4 border-white shadow-soft aspect-[4/3] bg-slate-100 group">
+              <img src="pa.jpg" alt="Pagbilao Academy Building Facade" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+              <div class="absolute bottom-4 left-4 right-4 text-white">
+                <p class="text-xs font-bold uppercase tracking-widest text-sky-300">Pagbilao Academy Inc.</p>
+                <p class="text-xs text-slate-200 flex items-center gap-1 mt-0.5 font-medium">
+                  <span class="material-symbols-rounded text-[16px]">location_on</span>
+                  Brgy. Sta. Catalina, Pagbilao, Quezon
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6 space-y-6 text-center lg:text-left">
+            <p class="text-base sm:text-lg leading-relaxed text-academy-text font-medium">
+              The Student Payment & Clearance System connects students, parents, teachers, and school administrators on a unified platform for fee assessments, voucher discount computations, installment schedules, and multi-department clearance approvals.
+            </p>
+
+            <div class="grid sm:grid-cols-2 gap-4 pt-2 text-left">
+              <div class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
+                <span class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">1</span>
+                <div>
+                  <h4 class="text-sm font-extrabold text-academy-navy">Junior High School (JHS)</h4>
+                  <p class="text-xs text-academy-muted mt-1">Grades 7–10 with ESC Voucher support and section management.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
+                <span class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">2</span>
+                <div>
+                  <h4 class="text-sm font-extrabold text-academy-navy">Senior High School (SHS)</h4>
+                  <p class="text-xs text-academy-muted mt-1">Grades 11–12 with HUMSS strand and SHS Voucher application.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 flex justify-center lg:justify-start">
+              <a href="#workflow" class="inline-flex items-center gap-2 font-bold text-academy-blue hover:text-academy-navy transition text-sm">
+                <span>Explore the System Workflow</span>
+                <span class="material-symbols-rounded text-[18px]">arrow_downward</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Features / Objectives Section - Centered -->
+    <section id="features" class="reveal">
+      <div class="text-center max-w-3xl mx-auto space-y-3">
+        <p class="text-xs font-extrabold text-academy-blue uppercase tracking-widest">
+          System Objectives
+        </p>
+
+        <h2 class="text-3xl md:text-4xl font-extrabold text-academy-navy tracking-tight">
+          Designed for secure payment tracking and transparent clearance monitoring
+        </h2>
+
+        <p class="text-sm md:text-base text-academy-muted leading-relaxed">
+          The system improves the management of student payments, clearance requests,
+          department approvals, and real-time communication between students, parents, and school personnel.
+        </p>
+      </div>
+
+      <!-- Feature Grid Cards - Centered Text -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">payments</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Centralized Payment Records
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Records and manages student payment transactions in a centralized database
+            to ensure financial accuracy and eliminate manual errors.
+          </p>
+        </div>
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">lock</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Secure Online Portal
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Provides students and parents with 24/7 secure access to updated balances,
+            installment due schedules, and payment histories.
+          </p>
+        </div>
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">notifications_active</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Online Payments & PayMongo
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Supports seamless digital payments via QR Ph, GCash, Maya, and cards through PayMongo gateway integration.
+          </p>
+        </div>
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">assignment</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Digital Clearance Requests
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Allows digital submission and verification of subject teacher clearance requests with multi-assignment matching.
+          </p>
+        </div>
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">verified</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Sequential Department Approvals
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Enforces strict approval order: Subject Teachers &rarr; Guidance, Prefect & Librarian &rarr; Principal &rarr; Accounting & Registrar.
+          </p>
+        </div>
+
+        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+            <span class="material-symbols-rounded text-2xl">monitoring</span>
+          </div>
+          <h3 class="font-extrabold text-lg text-academy-navy">
+            Real-time Status & Analytics
+          </h3>
+          <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
+            Provides real-time clearance progress monitoring and financial collection summaries for school administrators.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Workflow Section - Centered -->
+    <section id="workflow" class="reveal">
+      <div class="bg-white border border-academy-border rounded-[2.5rem] shadow-soft p-6 md:p-10 text-center">
+        
+        <div class="max-w-3xl mx-auto space-y-3 mb-8">
+          <p class="text-xs font-extrabold text-academy-blue uppercase tracking-widest">
+            Simple Step-by-Step Process
+          </p>
+
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-academy-navy tracking-tight">
+            A smoother process for students, parents, and school personnel
+          </h2>
+
+          <p class="text-xs sm:text-sm text-academy-muted leading-relaxed">
+            From payment recording to clearance approval, the platform organizes each
+            step into a clear digital workflow that is easier to monitor, verify, and update.
+          </p>
+        </div>
+
+        <!-- 4 Step Process Cards - Centered Layout -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+          
+          <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
+            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+              1
+            </span>
+            <h3 class="font-extrabold text-academy-navy text-base mb-2">
+              Student Sign In
+            </h3>
+            <p class="text-xs text-academy-muted leading-relaxed">
+              Access balance details, net assessments, payment due dates, and subject clearance status.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
+            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+              2
+            </span>
+            <h3 class="font-extrabold text-academy-navy text-base mb-2">
+              Payment Allocation
+            </h3>
+            <p class="text-xs text-academy-muted leading-relaxed">
+              Partial payments are automatically allocated to the student's oldest unpaid installment due schedule.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
+            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+              3
+            </span>
+            <h3 class="font-extrabold text-academy-navy text-base mb-2">
+              Clearance Approvals
+            </h3>
+            <p class="text-xs text-academy-muted leading-relaxed">
+              Assigned subject teachers and department heads review and approve digital clearance requests.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-3xl bg-emerald-50 border border-emerald-200 flex flex-col items-center">
+            <span class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+              4
+            </span>
+            <h3 class="font-extrabold text-academy-navy text-base mb-2">
+              Certificate Download
+            </h3>
+            <p class="text-xs text-academy-muted leading-relaxed">
+              After all approvals are cleared, students download their official Certificate of Clearance.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Portal Call to Action Banner - Centered -->
+    <section id="portal" class="reveal">
+      <div class="relative overflow-hidden bg-gradient-to-br from-academy-navy via-blue-900 to-blue-800 rounded-[2.5rem] p-6 md:p-10 text-white shadow-soft text-center">
+        
+        <!-- Ambient Decorative Background -->
+        <div class="absolute inset-0 opacity-20 pointer-events-none">
+          <img src="pa.jpg" alt="Background Texture" class="w-full h-full object-cover filter blur-xs mix-blend-overlay">
+        </div>
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute -left-24 -bottom-24 w-96 h-96 bg-sky-400/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-3xl mx-auto space-y-6">
+          <span class="px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-blue-200 border border-white/20 text-xs font-extrabold uppercase tracking-wider inline-block">
+            24/7 Student Portal Access
+          </span>
+
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
+            Access payment and clearance information anytime.
+          </h2>
+
+          <p class="text-base sm:text-lg text-blue-100 leading-relaxed font-normal">
+            Students and parents can securely monitor account balances, due dates, payment updates, clearance requests, and department approval progress in real-time.
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <button type="button" onclick="openLoginModal()"
+              class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-white text-academy-navy font-extrabold hover:bg-blue-50 transition shadow-xl text-base">
+              <span class="material-symbols-rounded text-[22px]">login</span>
+              Sign In to Portal
+            </button>
+
+            <button type="button" onclick="openRegisterModal()"
+              class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-blue-600 text-white font-extrabold border border-blue-400/40 hover:bg-blue-500 transition shadow-xl text-base">
+              <span class="material-symbols-rounded text-[22px]">person_add</span>
+              Create Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Login Modal -->
+  <div id="loginModal"
+    class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/65 backdrop-blur-sm px-4">
+    <div id="loginModalPanel"
+      class="relative w-full max-w-[440px] bg-white rounded-[2.5rem] shadow-2xl border border-academy-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <button type="button" onclick="closeLoginModal()"
+        class="absolute top-5 right-5 z-20 w-10 h-10 rounded-xl bg-slate-100 border border-academy-border text-academy-muted hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+        aria-label="Close login modal">
+        <span class="material-symbols-rounded text-[20px]">close</span>
+      </button>
+
+      <div class="p-7 sm:p-9 text-center">
+        <!-- Modal Header Logo Centered -->
+        <div class="flex flex-col items-center mb-6">
+          <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+            class="w-16 h-16 rounded-full object-cover border-2 border-academy-border bg-white shadow-xs mb-3" />
+
+          <h2 class="text-lg font-extrabold text-academy-navy">
+            Pagbilao Academy Inc.
+          </h2>
+          <p class="text-xs text-academy-muted font-medium">
+            Payment & Clearance Portal
+          </p>
+        </div>
+
+        <div class="mb-6">
+          <span class="text-xs font-extrabold text-academy-blue uppercase tracking-widest inline-block mb-1">
+            Secure Login
+          </span>
+
+          <h3 class="text-2xl font-extrabold text-academy-navy">
+            Sign in to your account
+          </h3>
+
+          <p class="mt-1 text-xs text-academy-muted leading-relaxed">
+            Your role and dashboard routing will be verified automatically.
+          </p>
+        </div>
+
+        <form id="loginForm" class="space-y-4 text-left">
+          <div>
+            <label for="loginEmail" class="block text-xs font-bold text-academy-text mb-1.5">
+              Email Address
+            </label>
+
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[20px]">mail</span>
+              </span>
+
+              <input id="loginEmail" type="email" required placeholder="you@email.com"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="loginPassword" class="block text-xs font-bold text-academy-text">
+                Password
+              </label>
+
+              <a href="forgot-password.html" class="text-xs font-bold text-academy-blue hover:underline">
+                Forgot password?
+              </a>
+            </div>
+
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[20px]">lock</span>
+              </span>
+
+              <input id="loginPassword" type="password" required minlength="6" placeholder="Enter your password"
+                class="w-full pl-11 pr-12 py-3 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+
+              <button type="button" id="togglePassword"
+                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-academy-muted hover:text-academy-navy flex items-center"
+                aria-label="Show password">
+                <span class="material-symbols-rounded text-[21px]">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <label class="inline-flex items-center gap-2 text-xs font-semibold text-academy-muted cursor-pointer">
+              <input type="checkbox" id="rememberMe"
+                class="w-4 h-4 rounded border-academy-border text-academy-navy focus:ring-academy-blue cursor-pointer" />
+              Remember me
+            </label>
+
+            <span
+              class="inline-flex items-center gap-1.5 text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-blue-50 text-academy-navy">
+              <span class="material-symbols-rounded text-[14px]">verified_user</span>
+              Secure
+            </span>
+          </div>
+
+          <p id="loginError"
+            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center"></p>
+
+          <button type="submit"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition">
+            <span class="material-symbols-rounded text-[20px]">login</span>
+            Sign In
+          </button>
+
+          <p class="text-center text-xs text-academy-muted pt-1">
+            Don’t have an account?
+            <button type="button" onclick="switchToRegisterModal()"
+              class="font-extrabold text-academy-blue hover:underline">
+              Create account
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Modal -->
+  <div id="registerModal"
+    class="fixed inset-0 z-[110] hidden items-center justify-center bg-slate-950/65 backdrop-blur-sm px-4">
+    <div id="registerModalPanel"
+      class="relative w-full max-w-[620px] bg-white rounded-[2.5rem] shadow-2xl border border-academy-border overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <button type="button" onclick="closeRegisterModal()"
+        class="absolute top-5 right-5 z-20 w-10 h-10 rounded-xl bg-slate-100 border border-academy-border text-academy-muted hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+        aria-label="Close registration modal">
+        <span class="material-symbols-rounded text-[20px]">close</span>
+      </button>
+
+      <div class="p-6 sm:p-8 overflow-y-auto">
+        <div class="flex flex-col items-center text-center mb-5">
+          <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+            class="w-14 h-14 rounded-full object-cover border-2 border-academy-border bg-white shadow-xs mb-2" />
+
+          <h2 class="text-lg font-extrabold text-academy-navy">
+            Pagbilao Academy Inc.
+          </h2>
+          <p class="text-xs text-academy-muted font-medium">
+            Student Payment & Clearance Portal
+          </p>
+        </div>
+
+        <div class="mb-5 text-center">
+          <span class="text-xs font-extrabold text-academy-blue uppercase tracking-widest inline-block mb-1">
+            Student Registration
+          </span>
+
+          <h3 class="text-2xl font-extrabold text-academy-navy">
+            Create your portal account
+          </h3>
+
+          <p class="mt-1 text-xs text-academy-muted leading-relaxed">
+            Register using your official student information for automatic role assignment.
+          </p>
+        </div>
+
+        <form id="registerForm" class="space-y-3.5">
+          <div class="grid sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="registerFirstName" class="block text-xs font-bold text-academy-text mb-1">
+                First Name
+              </label>
+
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                  <span class="material-symbols-rounded text-[18px]">person</span>
+                </span>
+
+                <input id="registerFirstName" type="text" required placeholder="First name"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+              </div>
+            </div>
+
+            <div>
+              <label for="registerLastName" class="block text-xs font-bold text-academy-text mb-1">
+                Last Name
+              </label>
+
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                  <span class="material-symbols-rounded text-[18px]">badge</span>
+                </span>
+
+                <input id="registerLastName" type="text" required placeholder="Last name"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="registerStudentId" class="block text-xs font-bold text-academy-text mb-1">
+                Student ID
+              </label>
+
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                  <span class="material-symbols-rounded text-[18px]">confirmation_number</span>
+                </span>
+
+                <input id="registerStudentId" type="text" required placeholder="STU-2024-0001"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+              </div>
+            </div>
+
+            <div>
+              <label for="registerLevel" class="block text-xs font-bold text-academy-text mb-1">
+                Level / Grade
+              </label>
+
+              <div class="grid grid-cols-2 gap-2">
+                <select id="registerLevel" required
+                  class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition text-xs font-bold">
+                  <option value="">Level</option>
+                  <option value="JHS">JHS</option>
+                  <option value="SHS">SHS</option>
+                </select>
+
+                <select id="registerGrade" required
+                  class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition text-xs font-bold">
+                  <option value="">Grade</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="registerSection" class="block text-xs font-bold text-academy-text mb-1">
+                Section
+              </label>
+
+              <select id="registerSection" required
+                class="w-full px-3.5 py-2.5 rounded-xl border border-academy-border bg-white outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition text-xs font-bold">
+                <option value="">Select level and grade first</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="registerStrand" class="block text-xs font-bold text-academy-text mb-1">
+                Strand
+              </label>
+
+              <select id="registerStrand" required
+                class="w-full px-3.5 py-2.5 rounded-xl border border-academy-border bg-white outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition text-xs font-bold">
+                <option value="">Select level first</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="registerEmail" class="block text-xs font-bold text-academy-text mb-1">
+              Email Address
+            </label>
+
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[18px]">mail</span>
+              </span>
+
+              <input id="registerEmail" type="email" required placeholder="you@email.com"
+                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="registerPassword" class="block text-xs font-bold text-academy-text mb-1">
+                Password
+              </label>
+
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                  <span class="material-symbols-rounded text-[18px]">lock</span>
+                </span>
+
+                <input id="registerPassword" type="password" required minlength="6" placeholder="Min. 6 chars"
+                  class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+
+                <button type="button" id="toggleRegisterPassword"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-academy-muted hover:text-academy-navy flex items-center"
+                  aria-label="Show password">
+                  <span class="material-symbols-rounded text-[19px]">visibility</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label for="registerConfirmPassword" class="block text-xs font-bold text-academy-text mb-1">
+                Confirm Password
+              </label>
+
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                  <span class="material-symbols-rounded text-[18px]">lock_reset</span>
+                </span>
+
+                <input id="registerConfirmPassword" type="password" required minlength="6"
+                  placeholder="Re-enter password"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+              </div>
+            </div>
+          </div>
+
+          <p id="registerError"
+            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center"></p>
+
+          <button type="submit"
+            class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition mt-2">
+            <span class="material-symbols-rounded text-[19px]">person_add</span>
+            Create Student Account
+          </button>
+
+          <p class="text-center text-xs text-academy-muted pt-1">
+            Already have an account?
+            <button type="button" onclick="switchToLoginModal()"
+              class="font-extrabold text-academy-blue hover:underline">
+              Sign in
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-academy-border bg-white/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+      <div class="flex items-center gap-3">
+        <img src="assets/logo.png" alt="Logo" class="w-8 h-8 rounded-full border bg-white object-cover">
+        <p class="text-xs sm:text-sm text-academy-muted font-medium">
+          © <span id="year"></span> Pagbilao Academy Inc. All rights reserved.
+        </p>
+      </div>
+
+      <p class="text-xs sm:text-sm text-academy-muted font-medium">
+        Student Payment & Clearance Monitoring System
+      </p>
+    </div>
+  </footer>
+
+  <!-- Embedded JavaScript Functions & Logic -->
+  <script>
+    const menuBtn = document.getElementById("menuBtn");
+    const mobileMenu = document.getElementById("mobileMenu");
+    const year = document.getElementById("year");
+
+    const loginModal = document.getElementById("loginModal");
+    const loginModalPanel = document.getElementById("loginModalPanel");
+    const loginForm = document.getElementById("loginForm");
+    const loginError = document.getElementById("loginError");
+    const loginPassword = document.getElementById("loginPassword");
+    const togglePassword = document.getElementById("togglePassword");
+
+    const registerModal = document.getElementById("registerModal");
+    const registerModalPanel = document.getElementById("registerModalPanel");
+    const registerForm = document.getElementById("registerForm");
+    const registerError = document.getElementById("registerError");
+    const registerPassword = document.getElementById("registerPassword");
+    const registerConfirmPassword = document.getElementById("registerConfirmPassword");
+    const toggleRegisterPassword = document.getElementById("toggleRegisterPassword");
+    const registerLevel = document.getElementById("registerLevel");
+    const registerGrade = document.getElementById("registerGrade");
+    const registerSection = document.getElementById("registerSection");
+    const registerStrand = document.getElementById("registerStrand");
+
+    const gradeOptions = {
+      JHS: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"],
+      SHS: ["Grade 11", "Grade 12"]
+    };
+
+    const sectionsByGrade = {
+      "Grade 7": ["Cattleya", "Orchids", "Rose"],
+      "Grade 8": ["Vermillion", "Burgundy", "Magenta"],
+      "Grade 9": ["Aristotle", "Einstein", "Newton"],
+      "Grade 10": ["Diamond", "Emerald"],
+      "Grade 11": ["Humility", "Integrity"],
+      "Grade 12": ["Honesty"]
+    };
+
+    const shsStrands = ["GAS", "HUMSS", "ABM"];
+
+    function setSelectOptions(selectElement, options, placeholder) {
+      selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+      options.forEach((option) => {
+        const item = document.createElement("option");
+        item.value = option;
+        item.textContent = option;
+        selectElement.appendChild(item);
+      });
+    }
+
+    function updateRegistrationDropdowns() {
+      const level = registerLevel.value;
+      const selectedGrade = registerGrade.value;
+      const selectedSection = registerSection.value;
+
+      setSelectOptions(registerGrade, gradeOptions[level] || [], "Grade");
+      if ((gradeOptions[level] || []).includes(selectedGrade)) registerGrade.value = selectedGrade;
+
+      const currentGrade = registerGrade.value;
+      const sectionsForGrade = sectionsByGrade[currentGrade] || [];
+
+      if (sectionsForGrade.length > 0) {
+        setSelectOptions(registerSection, sectionsForGrade, "Select section");
+        if (sectionsForGrade.includes(selectedSection)) registerSection.value = selectedSection;
+        registerSection.disabled = false;
+      } else {
+        setSelectOptions(registerSection, [], currentGrade ? "Select section" : "Select grade first");
+        registerSection.disabled = !currentGrade;
+      }
+
+      if (level === "SHS") {
+        setSelectOptions(registerStrand, shsStrands, "Select strand");
+        registerStrand.disabled = false;
+      } else if (level === "JHS") {
+        setSelectOptions(registerStrand, ["N/A"], "N/A");
+        registerStrand.value = "N/A";
+        registerStrand.disabled = true;
+      } else {
+        setSelectOptions(registerStrand, [], "Select level first");
+        registerStrand.disabled = true;
+      }
+    }
+
+    year.textContent = new Date().getFullYear();
+
+    menuBtn.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+
+    document.querySelectorAll("#mobileMenu a").forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.add("hidden");
+      });
+    });
+
+    registerLevel.addEventListener("change", updateRegistrationDropdowns);
+    registerGrade.addEventListener("change", updateRegistrationDropdowns);
+    updateRegistrationDropdowns();
+
+    function resetLoginMessageToErrorStyle() {
+      loginError.classList.add("text-red-600", "bg-red-50", "border-red-100");
+      loginError.classList.remove("text-green-700", "bg-green-50", "border-green-100");
+    }
+
+    function openLoginModal() {
+      closeRegisterModal(false);
+
+      loginModal.classList.remove("hidden");
+      loginModal.classList.add("flex");
+      document.body.classList.add("overflow-hidden");
+      mobileMenu.classList.add("hidden");
+
+      setTimeout(() => {
+        document.getElementById("loginEmail").focus();
+      }, 150);
+    }
+
+    function closeLoginModal(allowBodyUnlock = true) {
+      loginModal.classList.add("hidden");
+      loginModal.classList.remove("flex");
+
+      if (allowBodyUnlock) {
+        document.body.classList.remove("overflow-hidden");
+      }
+
+      loginError.classList.add("hidden");
+      resetLoginMessageToErrorStyle();
+    }
+
+    function openRegisterModal() {
+      closeLoginModal(false);
+      updateRegistrationDropdowns();
+
+      registerModal.classList.remove("hidden");
+      registerModal.classList.add("flex");
+      document.body.classList.add("overflow-hidden");
+      mobileMenu.classList.add("hidden");
+
+      setTimeout(() => {
+        document.getElementById("registerFirstName").focus();
+      }, 150);
+    }
+
+    function closeRegisterModal(allowBodyUnlock = true) {
+      registerModal.classList.add("hidden");
+      registerModal.classList.remove("flex");
+
+      if (allowBodyUnlock) {
+        document.body.classList.remove("overflow-hidden");
+      }
+
+      registerError.classList.add("hidden");
+    }
+
+    function switchToRegisterModal() {
+      openRegisterModal();
+    }
+
+    function switchToLoginModal() {
+      openLoginModal();
+    }
+
+    loginModal.addEventListener("click", (event) => {
+      if (!loginModalPanel.contains(event.target)) {
+        closeLoginModal();
+      }
+    });
+
+    registerModal.addEventListener("click", (event) => {
+      if (!registerModalPanel.contains(event.target)) {
+        closeRegisterModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        if (!loginModal.classList.contains("hidden")) closeLoginModal();
+        if (!registerModal.classList.contains("hidden")) closeRegisterModal();
+      }
+    });
+
+    togglePassword.addEventListener("click", () => {
+      const isPassword = loginPassword.type === "password";
+
+      loginPassword.type = isPassword ? "text" : "password";
+      togglePassword.innerHTML = `
+        <span class="material-symbols-rounded text-[21px]">
+          ${isPassword ? "visibility_off" : "visibility"}
+        </span>
+      `;
+
+      togglePassword.setAttribute(
+        "aria-label",
+        isPassword ? "Hide password" : "Show password"
+      );
+    });
+
+    toggleRegisterPassword.addEventListener("click", () => {
+      const isPassword = registerPassword.type === "password";
+
+      registerPassword.type = isPassword ? "text" : "password";
+      registerConfirmPassword.type = isPassword ? "text" : "password";
+
+      toggleRegisterPassword.innerHTML = `
+        <span class="material-symbols-rounded text-[19px]">
+          ${isPassword ? "visibility_off" : "visibility"}
+        </span>
+      `;
+
+      toggleRegisterPassword.setAttribute(
+        "aria-label",
+        isPassword ? "Hide password" : "Show password"
+      );
+    });
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      resetLoginMessageToErrorStyle();
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      if (!email || !password) {
+        loginError.textContent = "Please enter your email and password.";
+        loginError.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const loginButton = loginForm.querySelector('button[type="submit"]');
+        const originalButtonText = loginButton ? loginButton.innerHTML : "";
+        if (loginButton) {
+          loginButton.disabled = true;
+          loginButton.innerHTML = `Signing in... <span class="material-symbols-rounded text-[20px]">hourglass_top</span>`;
+        }
+
+        const session = window.paApi && window.paApi.login
+          ? await window.paApi.login(email, password)
+          : { role: "student", dashboard: "student-dashboard.html", email };
+
+        window.location.href = session.dashboard || "student-dashboard.html";
+
+        if (loginButton) {
+          loginButton.disabled = false;
+          loginButton.innerHTML = originalButtonText;
+        }
+      } catch (error) {
+        loginError.textContent = error.message || "Login failed. Please check your email and password.";
+        loginError.classList.remove("hidden");
+
+        const loginButton = loginForm.querySelector('button[type="submit"]');
+        if (loginButton) {
+          loginButton.disabled = false;
+          loginButton.innerHTML = `Sign In <span class="material-symbols-rounded text-[20px]">login</span>`;
+        }
+      }
+    });
+
+    registerForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const firstName = document.getElementById("registerFirstName").value.trim();
+      const lastName = document.getElementById("registerLastName").value.trim();
+      const studentId = document.getElementById("registerStudentId").value.trim();
+      const educationLevel = registerLevel.value.trim();
+      const gradeLevel = registerGrade.value.trim();
+      const section = registerSection.value.trim();
+      const strand = registerStrand.value.trim();
+      const email = document.getElementById("registerEmail").value.trim();
+      const password = registerPassword.value.trim();
+      const confirmPassword = registerConfirmPassword.value.trim();
+
+      registerError.classList.add("hidden");
+
+      if (!firstName || !lastName || !studentId || !educationLevel || !gradeLevel || !section || !strand || !email || !password || !confirmPassword) {
+        registerError.textContent = "Please complete all required registration fields.";
+        registerError.classList.remove("hidden");
+        return;
+      }
+
+      if (password.length < 6) {
+        registerError.textContent = "Password must be at least 6 characters.";
+        registerError.classList.remove("hidden");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        registerError.textContent = "Passwords do not match.";
+        registerError.classList.remove("hidden");
+        return;
+      }
+
+      if (!window.paApi || !window.paApi.isSupabaseReady || !window.paApi.isSupabaseReady()) {
+        registerError.textContent = "Supabase is not connected yet. Add your Project URL and anon key in js/app-config.js first.";
+        registerError.classList.remove("hidden");
+        return;
+      }
+
+      const registerButton = registerForm.querySelector('button[type="submit"]');
+      const originalButtonText = registerButton ? registerButton.innerHTML : "";
+      if (registerButton) {
+        registerButton.disabled = true;
+        registerButton.innerHTML = `Creating account... <span class="material-symbols-rounded text-[20px]">hourglass_top</span>`;
+      }
+
+      window.paApi.registerStudent({
+        firstName,
+        lastName,
+        studentId,
+        educationLevel,
+        gradeLevel,
+        section,
+        strand,
+        email,
+        password
+      }).then(() => {
+        registerForm.reset();
+        closeRegisterModal(false);
+        openLoginModal();
+        loginError.textContent = "Registration successful. Please sign in using your student account.";
+        loginError.classList.remove("hidden");
+        loginError.classList.remove("text-red-600", "bg-red-50", "border-red-100");
+        loginError.classList.add("text-green-700", "bg-green-50", "border-green-100");
+      }).catch((error) => {
+        registerError.textContent = error.message || "Supabase registration failed.";
+        registerError.classList.remove("hidden");
+      }).finally(() => {
+        if (registerButton) {
+          registerButton.disabled = false;
+          registerButton.innerHTML = originalButtonText;
+        }
+      });
+    });
+
+    // Intersection Observer for Reveal Animation
+    const revealElements = document.querySelectorAll(".reveal");
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("opacity-100", "translate-y-0");
+          entry.target.classList.remove("opacity-0", "translate-y-8");
+        }
+      });
+    }, {
+      threshold: 0.1
+    });
+
+    revealElements.forEach((element) => {
+      element.classList.add(
+        "opacity-0",
+        "translate-y-8",
+        "transition-all",
+        "duration-700",
+        "ease-out"
+      );
+
+      revealObserver.observe(element);
+    });
+
+    // Intersection Observer for Animated Counter Numbers
+    const counters = document.querySelectorAll(".counter");
+
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        const counter = entry.target;
+        const target = Number(counter.dataset.target);
+        let current = 0;
+        const increment = Math.ceil(target / 40);
+
+        const updateCounter = () => {
+          current += increment;
+
+          if (current >= target) {
+            if (target === 100) {
+              counter.textContent = "100%";
+            } else if (target === 24) {
+              counter.textContent = "24/7";
+            } else {
+              counter.textContent = target + "+";
+            }
+
+            return;
+          }
+
+          counter.textContent = current;
+          requestAnimationFrame(updateCounter);
+        };
+
+        updateCounter();
+        counterObserver.unobserve(counter);
+      });
+    }, {
+      threshold: 0.5
+    });
+
+    counters.forEach((counter) => {
+      counterObserver.observe(counter);
+    });
+  </script>
+
+</body>
+
+</html>

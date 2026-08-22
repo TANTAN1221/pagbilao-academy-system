@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Pagbilao Academy Inc.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/app-config.js"></script>
+  <script>
+    window.logoutToIndex = window.logoutToIndex || async function () {
+      try {
+        if (window.paApi && window.paApi.logout) {
+          return await window.paApi.logout("index.html");
+        }
+      } catch (error) {
+        console.warn("Logout fallback used:", error);
+      }
+      ["pa_current_user", "pa_logged_in_user", "pa_user_role", "pa_user_session", "pa_demo_session", "pa_auth_role"].forEach((key) => localStorage.removeItem(key));
+      window.location.href = "index.html";
+    };
+  </script>
+  <style>
+    .material-symbols-rounded {
+      font-family: 'Material Symbols Rounded';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1;
+      display: inline-block;
+      white-space: nowrap;
+      -webkit-font-smoothing: antialiased
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent
+    }
+  </style>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { academy: { navy: '#1E3A8A', blue: '#2563EB', soft: '#F5F8FF', border: '#DDE8F8', text: '#0F2A5F', muted: '#6B7A90', light: '#EEF5FF' } }, boxShadow: { soft: '0 20px 50px rgba(30,58,138,.10)', card: '0 10px 30px rgba(30,58,138,.08)' } } } };
+  </script>
+</head>
+
+<body class="min-h-screen bg-[#F7FAFF] text-academy-text">
+  <div id="toast"
+    class="fixed top-5 right-5 z-[200] hidden max-w-sm rounded-2xl border border-academy-border bg-white shadow-2xl p-4">
+    <div class="flex gap-3">
+      <div id="toastIcon"
+        class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0"><span
+          class="material-symbols-rounded">check_circle</span></div>
+      <div>
+        <p id="toastTitle" class="text-sm font-extrabold text-academy-navy">Success</p>
+        <p id="toastMessage" class="mt-1 text-xs text-academy-muted leading-5">Action completed.</p>
+      </div>
+    </div>
+  </div>
+
+  <aside class="fixed inset-y-0 left-0 z-40 w-[250px] bg-academy-navy text-white hidden lg:flex flex-col border-r border-white/10 shadow-xl">
+    <div class="px-5 py-5 flex items-center gap-3 border-b border-white/10">
+      <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+        class="w-12 h-12 rounded-full bg-white object-contain border border-white/30 p-0.5 shadow-sm">
+      <div>
+        <h1 class="text-sm font-extrabold leading-tight">Pagbilao Academy</h1>
+        <p class="text-xs text-blue-200">Admin Portal</p>
+      </div>
+    </div>
+    <nav id="sideNav" class="flex-1 px-3 py-5 space-y-2 text-sm overflow-y-auto"></nav>
+    <div class="px-5 py-4 border-t border-white/10 bg-black/10">
+      <div class="flex items-center justify-between text-xs text-blue-200">
+        <span>School Year</span>
+        <span class="font-bold text-white">2026–2027</span>
+      </div>
+      <button onclick="logoutToIndex()"
+        class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-bold transition">
+        <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Sidebar Overlay Drawer -->
+  <div id="mobileDrawer" class="fixed inset-0 z-50 hidden lg:hidden">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleMobileDrawer()"></div>
+    <div class="fixed inset-y-0 left-0 w-[270px] bg-academy-navy text-white flex flex-col shadow-2xl p-4">
+      <div class="flex items-center justify-between pb-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <img src="assets/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white object-contain p-0.5">
+          <div>
+            <h2 class="text-sm font-extrabold">Pagbilao Academy</h2>
+            <p class="text-xs text-blue-200">Admin Portal</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileDrawer()" class="p-1 rounded-lg hover:bg-white/10 text-white">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <nav id="mobileSideNav" class="flex-1 py-4 space-y-1 text-sm overflow-y-auto"></nav>
+      <div class="pt-3 border-t border-white/10">
+        <button onclick="logoutToIndex()"
+          class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/20 text-red-200 text-xs font-bold">
+          <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg:pl-[250px] min-h-screen">
+    <header
+      class="h-16 bg-white border-b border-academy-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light">
+          <span class="material-symbols-rounded">menu</span>
+        </button>
+        <div>
+          <h2 id="pageTitle" class="text-lg sm:text-xl font-extrabold text-academy-navy">Payment Dashboard</h2>
+          <p id="pageSubtitle" class="hidden sm:block text-xs text-academy-muted">Monitor billing, collections, and clearance workflow</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="downloadBackup()"
+          class="hidden sm:inline-flex px-4 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold">
+          Backup JSON
+        </button>
+        <div class="w-10 h-10 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
+          AD
+        </div>
+      </div>
+    </header>
+
+    <main class="p-4 sm:p-6 space-y-6">
+      <section id="dashboardPage" class="page-section space-y-5">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="rounded-2xl bg-academy-navy text-white p-5 shadow-card">
+            <p class="text-sm text-blue-100">Total Students</p>
+            <h3 id="totalStudents" class="mt-4 text-3xl font-extrabold">0</h3>
+          </div>
+          <div class="rounded-2xl bg-green-50 p-5 border border-green-100">
+            <p class="text-sm text-green-700">Total Collected</p>
+            <h3 id="totalCollected" class="mt-4 text-3xl font-extrabold text-green-700">₱0</h3>
+          </div>
+          <div class="rounded-2xl bg-red-50 p-5 border border-red-100">
+            <p class="text-sm text-red-700">Outstanding Balance</p>
+            <h3 id="totalOutstanding" class="mt-4 text-3xl font-extrabold text-red-700">₱0</h3>
+          </div>
+          <div class="rounded-2xl bg-sky-50 p-5 border border-sky-100">
+            <p class="text-sm text-academy-navy">Voucher Discounts</p>
+            <h3 id="voucherTotal" class="mt-4 text-3xl font-extrabold text-academy-navy">₱0</h3>
+          </div>
+        </div>
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
+          <div class="p-5 flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
+            <div>
+              <h3 class="font-extrabold text-academy-navy">Student Accounts</h3>
+              <p class="text-sm text-academy-muted">JHS and SHS balances with vouchers and partial payments.</p>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-2"><input id="studentSearch" oninput="renderStudents()"
+                placeholder="Search student..." class="px-4 py-3 rounded-xl border border-academy-border"><select
+                id="levelFilter" onchange="renderStudents()"
+                class="px-4 py-3 rounded-xl border border-academy-border bg-white">
+                <option value="all">All levels</option>
+                <option>JHS</option>
+                <option>SHS</option>
+              </select><select id="balanceFilter" onchange="renderStudents()"
+                class="px-4 py-3 rounded-xl border border-academy-border bg-white">
+                <option value="all">All balances</option>
+                <option value="with_balance">With balance</option>
+                <option value="fully_paid">Fully paid</option>
+              </select></div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[1080px] text-sm">
+              <thead class="bg-academy-navy text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Student</th>
+                  <th class="text-left px-4 py-3">Level</th>
+                  <th class="text-left px-4 py-3">Class</th>
+                  <th class="text-left px-4 py-3">Voucher</th>
+                  <th class="text-left px-4 py-3">Total Fees</th>
+                  <th class="text-left px-4 py-3">Paid</th>
+                  <th class="text-left px-4 py-3">Balance</th>
+                  <th class="text-left px-4 py-3">Due Status</th>
+                  <th class="text-left px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="feesPage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Tuition, Fees, and Vouchers</h3>
+              <p class="text-sm text-academy-muted mt-1">Separate fee setups for JHS and SHS, with ESC Voucher and SHS
+                Voucher discounts.</p>
+            </div><button onclick="applyFeeSetup()" class="px-5 py-3 rounded-xl bg-green-600 text-white font-bold">Apply
+              Fee Setup to Students</button>
+          </div>
+        </div>
+        <div class="grid xl:grid-cols-2 gap-5">
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-extrabold text-academy-navy">Fee Structures</h4><button onclick="openFeeItemModal()"
+                class="px-4 py-2 rounded-xl bg-academy-navy text-white text-xs font-bold">Add Fee</button>
+            </div>
+            <div id="feeStructureList" class="space-y-4"></div>
+          </section>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-extrabold text-academy-navy">Voucher Discounts</h4><button onclick="openVoucherModal()"
+                class="px-4 py-2 rounded-xl bg-academy-navy text-white text-xs font-bold">Add Voucher</button>
+            </div>
+            <div id="voucherList" class="space-y-3"></div>
+            <div
+              class="mt-5 p-4 bg-academy-soft border border-academy-border rounded-2xl text-sm leading-7 text-academy-muted">
+              <strong class="text-academy-navy">Recommended rule:</strong> voucher discount should reduce total
+              assessment first, then partial payments are applied against the remaining balance using oldest-due-first
+              allocation.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="dueDatesPage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Due Dates and Payment Schedule</h3>
+              <p class="text-sm text-academy-muted mt-1">Configure custom due dates and descriptions for student payment tracking.</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid xl:grid-cols-[420px_1fr] gap-5">
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy">Due Date Schedules</h4>
+                <p class="text-xs text-academy-muted">Set payment due dates & descriptions</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="clearAllDueDates()" class="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100 transition">Clear All</button>
+                <button onclick="openInstallmentModal()" class="px-3 py-1.5 rounded-xl bg-academy-navy text-white text-xs font-bold hover:bg-blue-900 transition">+ Add Due Date</button>
+              </div>
+            </div>
+            <div id="installmentTemplateList" class="space-y-3"></div>
+          </section>
+          <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-5">
+              <h4 class="font-extrabold text-academy-navy">Student Due Status</h4>
+              <p class="text-sm text-academy-muted mt-1">Shows whether each student is paid, partial, overdue, or
+                upcoming based on installment schedule.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[920px] text-sm">
+                <thead class="bg-academy-navy text-white">
+                  <tr>
+                    <th class="text-left px-4 py-3">Student</th>
+                    <th class="text-left px-4 py-3">Installment</th>
+                    <th class="text-left px-4 py-3">Due Date</th>
+                    <th class="text-left px-4 py-3">Due Amount</th>
+                    <th class="text-left px-4 py-3">Paid to Date</th>
+                    <th class="text-left px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="dueStatusBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="clearancePage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Clearance Monitoring</h3>
+              <p class="text-sm text-academy-muted mt-1">Teachers can have many grade/section/subject assignments.
+                Principal approves after teachers and offices. Accounting/Registrar approve last.</p>
+            </div><button onclick="refreshClearanceApprovals()"
+              class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold">Refresh Approval Requirements</button>
+          </div>
+        </div>
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[1150px] text-sm">
+              <thead class="bg-academy-navy text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Student</th>
+                  <th class="text-left px-4 py-3">Class</th>
+                  <th class="text-left px-4 py-3">Teachers Needed</th>
+                  <th class="text-left px-4 py-3">Office Clearance</th>
+                  <th class="text-left px-4 py-3">Principal</th>
+                  <th class="text-left px-4 py-3">Accounting/Registrar</th>
+                  <th class="text-left px-4 py-3">Certificate</th>
+                  <th class="text-left px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clearanceBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="accountsPage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Accounts & Access</h3>
+              <p class="text-sm text-academy-muted mt-1">Create Clearance Head accounts and assign teachers to multiple
+                grades, sections, and subjects.</p>
+            </div><button onclick="openAccountModal()"
+              class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold">Create Account</button>
+          </div>
+        </div>
+        <section class="grid md:grid-cols-3 gap-4">
+          <div class="rounded-2xl bg-white border border-academy-border p-5">
+            <p class="text-sm text-academy-muted">Active Accounts</p>
+            <h3 id="activeAccounts" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3>
+          </div>
+          <div class="rounded-2xl bg-green-50 border border-green-100 p-5">
+            <p class="text-sm text-green-700">Teacher Assignments</p>
+            <h3 id="teacherAssignments" class="text-3xl font-extrabold text-green-700 mt-2">0</h3>
+          </div>
+          <div class="rounded-2xl bg-sky-50 border border-sky-100 p-5">
+            <p class="text-sm text-academy-navy">All-Student Heads</p>
+            <h3 id="allStudentHeads" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3>
+          </div>
+        </section>
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[1120px] text-sm">
+              <thead class="bg-academy-navy text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Name</th>
+                  <th class="text-left px-4 py-3">Email</th>
+                  <th class="text-left px-4 py-3">Role</th>
+                  <th class="text-left px-4 py-3">Assignments / Scope</th>
+                  <th class="text-left px-4 py-3">Status</th>
+                  <th class="text-left px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accountsBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="analyticsPage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Accounting Analytics & Reports</h3>
+              <p class="text-sm text-academy-muted mt-1">Reports that help the institution track collections, balances,
+                voucher impact, overdue accounts, and clearance blocks.</p>
+            </div>
+            <div class="flex gap-2"><button onclick="exportCollectionReport()"
+                class="px-4 py-3 rounded-xl bg-academy-navy text-white font-bold text-sm">Export Collections
+                CSV</button><button onclick="exportOutstandingReport()"
+                class="px-4 py-3 rounded-xl bg-white border border-academy-border text-academy-navy font-bold text-sm">Export
+                Outstanding CSV</button></div>
+          </div>
+        </div>
+
+        <!-- GEMINI AI FINANCIAL ANALYSIS & DATA INTERPRETATION -->
+        <section class="bg-gradient-to-br from-slate-900 via-academy-navy to-blue-950 text-white rounded-2xl p-6 shadow-xl border border-blue-800/40 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-300 border border-blue-400/30 flex items-center justify-center shrink-0">
+                <span class="material-symbols-rounded text-2xl">auto_awesome</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-base font-extrabold tracking-tight">Gemini AI Executive Financial Analysis</h4>
+                  <span class="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30 text-[10px] font-extrabold uppercase">AI Insights</span>
+                </div>
+                <p class="text-xs text-blue-200 mt-0.5">Automated financial health rating, collection trend insights, and risk recommendations</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="password" id="geminiApiKeyInput" placeholder="Enter Gemini API Key..."
+                class="px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-mono placeholder:text-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-400 w-52 sm:w-60" />
+              <button onclick="generateGeminiAiAnalyticsInterpretation()" id="btnGenerateAiReport"
+                class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 shrink-0">
+                <span class="material-symbols-rounded text-base">psychology</span>
+                Analyze Data
+              </button>
+            </div>
+          </div>
+
+          <!-- AI Output Box -->
+          <div id="geminiAiReportBox" class="bg-white/5 border border-white/10 rounded-xl p-4.5 text-xs space-y-2 leading-relaxed">
+            <div class="flex items-center justify-between text-blue-200 text-xs">
+              <span class="font-bold flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-amber-400">info</span>
+                Ready for AI Financial Interpretation
+              </span>
+              <span>Gemini 1.5 / 2.0 Flash Integration</span>
+            </div>
+            <p class="text-slate-300 text-xs leading-5">
+              Enter your Gemini API key above and click <strong>Analyze Data</strong> to generate an instant executive financial summary, uncollected risk assessment, and recommended accounting action plan based on live school metrics.
+            </p>
+          </div>
+        </section>
+
+        <!-- VISUAL CHARTS GRID -->
+        <div class="grid xl:grid-cols-2 gap-5 mt-5">
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-base">Collection Distribution Chart</h4>
+                <p class="text-xs text-academy-muted">Collected Payments vs Outstanding Balance vs Voucher Discounts</p>
+              </div>
+              <span class="material-symbols-rounded text-academy-blue">pie_chart</span>
+            </div>
+            <div class="h-64 relative flex items-center justify-center">
+              <canvas id="collectionDoughnutChart"></canvas>
+            </div>
+          </section>
+
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-base">JHS vs SHS Fee Assessment & Collection</h4>
+                <p class="text-xs text-academy-muted">Comparing total assessed tuition fees against actual collected payments per level</p>
+              </div>
+              <span class="material-symbols-rounded text-academy-blue">bar_chart</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="levelComparisonBarChart"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <section class="grid md:grid-cols-4 gap-4 mt-5" id="analyticsCards"></section>
+        <div class="grid xl:grid-cols-2 gap-5">
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <h4 class="font-extrabold text-academy-navy mb-4">Collection Progress by Level</h4>
+            <div id="collectionByLevel" class="space-y-4"></div>
+          </section>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <h4 class="font-extrabold text-academy-navy mb-4">Overdue / At-Risk Accounts</h4>
+            <div id="overdueList" class="space-y-3"></div>
+          </section>
+        </div>
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden mt-5">
+          <div class="p-5 border-b border-academy-border flex justify-between items-center">
+            <div>
+              <h4 class="font-extrabold text-academy-navy">Recent Payment Transactions & Receipts</h4>
+              <p class="text-xs text-academy-muted">Real-time ledger of online (QR Ph, PayMongo) and in-person payments</p>
+            </div>
+            <span id="adminTxCountBadge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold text-xs">0 Transactions</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[900px] text-sm">
+              <thead class="bg-slate-900 text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Ref / OR No.</th>
+                  <th class="text-left px-4 py-3">Student</th>
+                  <th class="text-left px-4 py-3">Payment Channel</th>
+                  <th class="text-left px-4 py-3">Date</th>
+                  <th class="text-left px-4 py-3">Fee Breakdown</th>
+                  <th class="text-right px-4 py-3">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="adminPaymentsBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="certificatesPage" class="page-section hidden space-y-5">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold text-academy-navy">Clearance Certificates</h3>
+              <p class="text-sm text-academy-muted mt-1">After full clearance, students can request a certificate and
+                save it as PDF.</p>
+            </div>
+          </div>
+        </div>
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[900px] text-sm">
+              <thead class="bg-academy-navy text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Student</th>
+                  <th class="text-left px-4 py-3">Class</th>
+                  <th class="text-left px-4 py-3">Clearance Status</th>
+                  <th class="text-left px-4 py-3">Certificate Request</th>
+                  <th class="text-left px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody id="certificateBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="settingsPage" class="page-section hidden">
+        <div class="grid lg:grid-cols-2 gap-5">
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <h3 class="text-xl font-extrabold text-academy-navy">System Settings</h3>
+            <p class="text-sm text-academy-muted mt-1">Update labels used in prototype mode.</p>
+            <form id="settingsForm" class="mt-6 space-y-4">
+              <div><label class="block text-sm font-bold mb-2">School Name</label><input id="schoolNameInput"
+                  value="Pagbilao Academy Inc." class="w-full px-4 py-3 rounded-xl border border-academy-border"></div>
+              <div><label class="block text-sm font-bold mb-2">School Year</label><input id="schoolYearInput"
+                  value="2026-2027" class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><button
+                class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold">Save Settings</button>
+            </form>
+          </section>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <h3 class="text-xl font-extrabold text-academy-navy">Supabase Connection</h3>
+            <p class="text-sm text-academy-muted leading-7 mt-2">For live mode, paste your Supabase URL and anon key in
+              <strong>js/app-config.js</strong>, then run <strong>supabase/schema.sql</strong>. Keep PayMongo keys only
+              in Supabase secrets.</p>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="formModal"
+    class="fixed inset-0 z-[150] hidden items-center justify-center bg-slate-950/50 backdrop-blur-sm px-4">
+    <div
+      class="w-full max-w-2xl bg-white rounded-[2rem] border border-academy-border shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between gap-4 mb-5">
+        <div>
+          <p id="formModalLabel" class="text-sm font-extrabold text-academy-blue uppercase tracking-widest">Record</p>
+          <h2 id="formModalTitle" class="mt-1 text-2xl font-extrabold text-academy-navy">Add Record</h2>
+        </div><button onclick="closeFormModal()"
+          class="w-10 h-10 rounded-xl bg-slate-50 border border-academy-border text-academy-muted hover:text-red-600">×</button>
+      </div>
+      <div id="formModalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'pa_full_admin_v2';
+    const currency = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+    const navItems = [
+      ['dashboardPage', 'dashboard', 'Payment Dashboard', 'Monitor student balances'], ['feesPage', 'payments', 'Tuition & Vouchers', 'JHS/SHS fees and discounts'], ['dueDatesPage', 'calendar_month', 'Due Dates', 'Installments and partial payments'], ['clearancePage', 'fact_check', 'Clearance Monitoring', 'Approval workflow'], ['accountsPage', 'manage_accounts', 'Accounts & Access', 'Clearance head assignments'], ['analyticsPage', 'monitoring', 'Analytics & Reports', 'Accounting reports'], ['certificatesPage', 'workspace_premium', 'Certificates', 'Clearance certificate requests'], ['settingsPage', 'settings', 'Settings', 'System configuration']
+    ];
+    const gradeSections = {
+      JHS: {
+        'Grade 7': ['Cattleya', 'Orchids', 'Rose'],
+        'Grade 8': ['Vermillion', 'Burgundy', 'Magenta'],
+        'Grade 9': ['Aristotle', 'Einstein', 'Newton'],
+        'Grade 10': ['Diamond', 'Emerald']
+      },
+      SHS: {
+        'Grade 11': ['Humility', 'Integrity'],
+        'Grade 12': ['Honesty']
+      }
+    };
+    const SECTIONS_BY_GRADE = {
+      'Grade 7': ['Cattleya', 'Orchids', 'Rose'],
+      'Grade 8': ['Vermillion', 'Burgundy', 'Magenta'],
+      'Grade 9': ['Aristotle', 'Einstein', 'Newton'],
+      'Grade 10': ['Diamond', 'Emerald'],
+      'Grade 11': ['Humility', 'Integrity'],
+      'Grade 12': ['Honesty']
+    };
+    const SHS_STRANDS = ['GAS', 'HUMSS', 'ABM'];
+    const JHS_SUBJECTS = [
+      'Filipino',
+      'English',
+      'Mathematics',
+      'Science',
+      'Araling Panlipunan',
+      'Values Education',
+      'Technology and Livelihood Education',
+      'MAPEH',
+      'Computer Education'
+    ];
+    const SHS_SUBJECTS = [
+      'Oral Communication',
+      'Reading and Writing',
+      'Komunikasyon at Pananaliksik',
+      '21st Century Literature',
+      'Media and Information Literacy',
+      'General Mathematics',
+      'Statistics and Probability',
+      'Earth and Life Science',
+      'Physical Science',
+      'Personal Development',
+      'Understanding Culture, Society and Politics',
+      'Physical Education and Health',
+      'Empowerment Technologies',
+      'Entrepreneurship',
+      'Practical Research 1',
+      'Practical Research 2',
+      'Inquiries, Investigations and Immersion',
+      'Business Math',
+      'Fundamentals of ABM',
+      'Organization and Management',
+      'Principles of Marketing',
+      'Business Finance',
+      'General Biology',
+      'General Chemistry',
+      'General Physics',
+      'Pre-Calculus',
+      'Basic Calculus',
+      'Philippine Politics and Governance',
+      'Disciplines and Ideas in the Social Sciences'
+    ];
+    const defaultData = { settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' }, feeStructures: { JHS: [], SHS: [] }, vouchers: [], installmentTemplate: [], students: [], accounts: [], payments: [], certificateRequests: [], teacherClearanceRequests: [] };
+    function loadData() { try { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return structuredClone(defaultData); const parsed = JSON.parse(raw); return { ...structuredClone(defaultData), ...parsed }; } catch { return structuredClone(defaultData) } }
+    let appData = loadData();
+    function ensurePrototypeData() {
+      appData.teacherClearanceRequests = appData.teacherClearanceRequests || [];
+      appData.students = appData.students || [];
+      appData.accounts = appData.accounts || [];
+      appData.payments = appData.payments || [];
+      appData.certificateRequests = appData.certificateRequests || [];
+    }
+    ensurePrototypeData();
+    function saveData() { ensurePrototypeData(); localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
+    function showToast(title, message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast || !toastTitle || !toastMessage) return;
+
+      toastTitle.textContent = title;
+      toastMessage.textContent = message;
+
+      if (type === 'error') {
+        toastIcon.className = 'w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<span class="material-symbols-rounded">error</span>';
+      } else {
+        toastIcon.className = 'w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<span class="material-symbols-rounded">check_circle</span>';
+      }
+
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+    function money(n) { return currency.format(Math.round(Number(n) || 0)) }
+    function pill(text, type = 'blue') { const map = { green: 'bg-green-50 text-green-700', red: 'bg-red-50 text-red-700', amber: 'bg-amber-50 text-amber-700', blue: 'bg-blue-50 text-blue-700', gray: 'bg-slate-100 text-slate-600' }; return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${map[type] || map.blue}">${text}</span>` }
+    function feeTotal(level) { return (appData.feeStructures[level] || []).reduce((s, f) => s + Number(f.amount || 0), 0) }
+    function voucherAmount(student) { const v = (appData.vouchers || []).find(x => x.name === student.voucher && x.active); return v ? Number(v.amount || 0) : 0 }
+    function assessedTotal(s) {
+      if (s.assessedOverride !== undefined && s.assessedOverride !== null && s.assessedOverride !== '') {
+        return Math.max(0, Number(s.assessedOverride));
+      }
+      let baseFee = 0;
+      if (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0) {
+        baseFee = s.customFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+      } else {
+        baseFee = feeTotal(s.level);
+      }
+      const discount = Number(s.feeDiscount || 0);
+      return Math.max(0, baseFee - voucherAmount(s) - discount);
+    }
+    function balance(student) { return Math.max(0, assessedTotal(student) - Number(student.paid || 0)) }
+    function classLabel(s) {
+      if (s.level === 'SHS') {
+        const strandStr = s.strand && s.strand !== 'N/A' ? ` (${s.strand})` : '';
+        return `${s.grade} - ${s.section || 'N/A'}${strandStr}`;
+      }
+      return `${s.grade} - ${s.section || 'N/A'}`;
+    }
+    function assignmentMatchesStudent(a, s) {
+      const grade = a.grade || a.grade_level;
+      const section = a.section || a.section_name || 'N/A';
+      const strand = a.strand || 'N/A';
+      if (grade && s.grade && grade !== s.grade) return false;
+      if (section !== 'N/A' && s.section && section !== s.section) return false;
+      if (strand !== 'N/A' && s.strand) {
+        const normA = strand.replace('HUMMS', 'HUMSS');
+        const normS = (s.strand || '').replace('HUMMS', 'HUMSS');
+        if (normA !== normS && s.strand !== 'N/A') return false;
+      }
+      return true;
+    }
+    function teacherRowsForStudent(s) { return appData.accounts.filter(a => a.role === 'teacher_clearance_head' && a.active).flatMap(t => (t.assignments || []).filter(x => assignmentMatchesStudent(x, s)).map(x => ({ teacher: t, assignment: x, key: `${s.id}|${t.id}|${x.subject || 'Subject'}|${x.grade}|${x.section || 'N/A'}` }))) }
+    function teacherRequestFor(row) { return (appData.teacherClearanceRequests || []).find(r => r.key === row.key) }
+    function allTeacherApprovalsApproved(s) { const rows = teacherRowsForStudent(s); if (s.clearance.Teacher === 'approved' && rows.length > 0) return true; return rows.length > 0 && rows.every(r => teacherRequestFor(r)?.status === 'approved') }
+    function teacherApprovedCount(s) { const rows = teacherRowsForStudent(s); if (s.clearance.Teacher === 'approved' && rows.length > 0) return rows.length; return rows.filter(r => teacherRequestFor(r)?.status === 'approved').length }
+    function teacherOverallStatus(s) { const rows = teacherRowsForStudent(s); if (!rows.length) return 'no teacher assigned'; if (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') return 'approved'; if (rows.some(r => teacherRequestFor(r)?.status === 'requested')) return 'requested'; return 'not requested' }
+    function clearanceComplete(s) { return (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') && ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].every(k => s.clearance[k] === 'approved') }
+    function officeApproved(s) { return ['Guidance', 'Prefect', 'Library'].every(k => s.clearance[k] === 'approved') }
+    function principalUnlocked(s) { return (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') && officeApproved(s) }
+    function finalUnlocked(s) { return s.clearance.Principal === 'approved' && balance(s) === 0 }
+    function dueStatus(student) { const due = studentInstallments(student); const today = new Date('2026-02-01'); let status = 'Paid'; for (const row of due) { if (row.paid < row.amount) { status = new Date(row.dueDate) < today ? 'Overdue' : 'Upcoming'; break } } return status }
+    function studentInstallments(student) {
+      let paid = Number(student.paid || 0);
+      const templates = appData.installmentTemplate || [];
+      const count = templates.length || 1;
+      const equalPercent = 100 / count;
+
+      return templates.map(t => {
+        const pct = (t.percent !== undefined && t.percent !== null && t.percent !== '') ? Number(t.percent) : equalPercent;
+        const amount = Math.round(assessedTotal(student) * (pct / 100));
+        const applied = Math.min(paid, amount);
+        paid -= applied;
+        return { ...t, amount, paid: applied, status: applied >= amount ? 'Paid' : applied > 0 ? 'Partial' : 'Unpaid' };
+      });
+    }
+    function toggleMobileDrawer() {
+      document.getElementById('mobileDrawer').classList.toggle('hidden');
+    }
+    function renderNav() {
+      const navHtml = navItems.map(([page, icon, label]) => `<button data-page="${page}" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-blue-50 hover:bg-white/10 transition font-semibold text-left"><span class="material-symbols-rounded text-[20px]">${icon}</span>${label}</button>`).join('');
+      if (sideNav) sideNav.innerHTML = navHtml;
+      const mobNav = document.getElementById('mobileSideNav');
+      if (mobNav) mobNav.innerHTML = navHtml;
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => showPage(btn.dataset.page));
+      showPage('dashboardPage');
+    }
+    function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } renderAll() }
+    function renderDashboard() { totalStudents.textContent = appData.students.length; const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0); const outstanding = appData.students.reduce((s, x) => s + balance(s), 0); const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0); totalCollected.textContent = money(collected); totalOutstanding.textContent = money(outstanding); voucherTotal.textContent = money(vouchers) }
+    function renderStudents() {
+      const q = (studentSearch?.value || '').toLowerCase();
+      const level = levelFilter?.value || 'all';
+      const bf = balanceFilter?.value || 'all';
+      let rows = appData.students.filter(s => (level === 'all' || s.level === level) && (bf === 'all' || (bf === 'with_balance' ? balance(s) > 0 : balance(s) === 0)) && (s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)));
+      studentTableBody.innerHTML = rows.map(s => `<tr class="hover:bg-academy-soft">
+        <td class="px-4 py-3"><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${s.id}</p></td>
+        <td class="px-4 py-3">${s.level}</td>
+        <td class="px-4 py-3">${classLabel(s)}</td>
+        <td class="px-4 py-3">${s.voucher === 'None' ? pill('None', 'gray') : pill(`${s.voucher} - ${money(voucherAmount(s))}`, 'blue')}</td>
+        <td class="px-4 py-3 font-bold">${money(assessedTotal(s))}</td>
+        <td class="px-4 py-3 font-bold text-green-700">${money(s.paid)}</td>
+        <td class="px-4 py-3 font-bold ${balance(s) > 0 ? 'text-red-600' : 'text-green-600'}">${money(balance(s))}</td>
+        <td class="px-4 py-3">${pill(dueStatus(s), dueStatus(s) === 'Overdue' ? 'red' : dueStatus(s) === 'Paid' ? 'green' : 'amber')}</td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-1.5">
+            <button onclick="openInPersonPaymentModal('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 font-extrabold text-xs hover:bg-green-100 transition flex items-center gap-1">
+              <span class="material-symbols-rounded text-[16px]">payments</span>Pay OTC
+            </button>
+            <button onclick="openEditStudentFeesModal('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-academy-blue font-extrabold text-xs hover:bg-blue-100 transition flex items-center gap-1">
+              <span class="material-symbols-rounded text-[16px]">edit_note</span>Edit Fees
+            </button>
+          </div>
+        </td>
+      </tr>`).join('')
+    }
+    function renderFees() {
+      feeStructureList.innerHTML = ['JHS', 'SHS'].map(level => `<div class="border border-academy-border rounded-2xl overflow-hidden shadow-card"><div class="bg-academy-soft px-4 py-3 flex justify-between items-center border-b border-academy-border"><div><strong class="text-academy-navy font-extrabold">${level} Fee Setup</strong></div><strong class="text-base font-black text-academy-navy">${money(feeTotal(level))}</strong></div>${appData.feeStructures[level].map(f => `<div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border"><span>${f.name}</span><span class="font-bold">${money(f.amount)}</span></div>`).join('')}</div>`).join('');
+      voucherList.innerHTML = appData.vouchers.map(v => `
+        <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-sm flex items-center justify-between gap-3">
+          <div>
+            <p class="font-extrabold text-academy-navy text-sm">${v.name}</p>
+            <p class="text-xs text-academy-muted">Applies to: ${v.appliesTo}</p>
+            <div class="mt-1 flex items-center gap-2">
+              <span class="text-sm font-extrabold text-emerald-700">${money(v.amount)}</span>
+              ${pill(v.active ? 'Active' : 'Inactive', v.active ? 'green' : 'gray')}
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openVoucherModal('${v.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy font-extrabold text-xs hover:bg-sky-100 transition">
+              Edit
+            </button>
+            <button onclick="toggleVoucherStatus('${v.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 font-extrabold text-xs hover:bg-amber-100 transition">
+              ${v.active ? 'Disable' : 'Enable'}
+            </button>
+            <button onclick="deleteVoucher('${v.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-extrabold text-xs hover:bg-red-100 transition">
+              Delete
+            </button>
+          </div>
+        </div>
+      `).join('') || '<p class="text-xs text-academy-muted">No vouchers set.</p>';
+    }
+    function renderDueDates() {
+      const container = document.getElementById('installmentTemplateList');
+      if (container) {
+        if (!appData.installmentTemplate || appData.installmentTemplate.length === 0) {
+          container.innerHTML = `
+            <div class="p-6 text-center rounded-2xl border border-dashed border-academy-border bg-academy-soft text-academy-muted space-y-2">
+              <span class="material-symbols-rounded text-3xl text-amber-500">calendar_today</span>
+              <p class="font-extrabold text-sm text-academy-navy">No Due Date Schedules Set</p>
+              <p class="text-xs">Click "+ Add Due Date" to set up installment due dates and descriptions.</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = appData.installmentTemplate.map(t => `
+            <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-sm flex items-start justify-between gap-3">
+              <div class="space-y-1">
+                <h4 class="font-extrabold text-academy-navy text-sm">${t.title}</h4>
+                <p class="text-xs text-academy-muted leading-relaxed">${t.description || 'No description provided.'}</p>
+                <p class="text-xs font-bold text-amber-700 flex items-center gap-1">
+                  <span class="material-symbols-rounded text-sm">event</span>Due: ${t.dueDate}
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="openInstallmentModal('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy font-extrabold text-xs hover:bg-sky-100 transition">
+                  Edit
+                </button>
+                <button onclick="deleteInstallment('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-extrabold text-xs hover:bg-red-100 transition">
+                  Delete
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      const rows = [];
+      appData.students.forEach(s => studentInstallments(s).forEach(i => rows.push({ s, i })));
+      
+      const dueBody = document.getElementById('dueStatusBody');
+      if (dueBody) {
+        if (!rows.length) {
+          dueBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No due date schedule active. Add due date schedules above.</td></tr>`;
+        } else {
+          dueBody.innerHTML = rows.map(({ s, i }) => `
+            <tr class="hover:bg-academy-soft">
+              <td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td>
+              <td class="px-4 py-3 font-bold text-slate-800">${i.title}<br><span class="text-[11px] font-normal text-academy-muted">${i.description || ''}</span></td>
+              <td class="px-4 py-3 font-semibold text-academy-muted">${i.dueDate}</td>
+              <td class="px-4 py-3 font-bold">${money(i.amount)}</td>
+              <td class="px-4 py-3 font-bold text-green-700">${money(i.paid)}</td>
+              <td class="px-4 py-3">${pill(i.status, i.status === 'Paid' ? 'green' : i.status === 'Partial' ? 'amber' : 'gray')}</td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+    function renderClearance() { clearanceBody.innerHTML = appData.students.map(s => `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${teacherApprovedCount(s)} / ${teacherCountForStudent(s)} teacher approval(s)<br>${pill(teacherOverallStatus(s), teacherOverallStatus(s) === 'approved' ? 'green' : teacherOverallStatus(s) === 'no teacher assigned' ? 'gray' : 'amber')}</td><td class="px-4 py-3">Guidance ${s.clearance.Guidance}, Prefect ${s.clearance.Prefect}, Library ${s.clearance.Library}</td><td class="px-4 py-3">${principalUnlocked(s) ? pill(s.clearance.Principal, s.clearance.Principal === 'approved' ? 'green' : 'amber') : pill('Locked', 'gray')}</td><td class="px-4 py-3">${finalUnlocked(s) || s.clearance.Accounting === 'approved' ? `Accounting ${s.clearance.Accounting}<br>Registrar ${s.clearance.Registrar}` : pill('Locked until principal + zero balance', 'gray')}</td><td class="px-4 py-3">${clearanceComplete(s) ? pill('Eligible', 'green') : pill('Not yet', 'amber')}</td><td class="px-4 py-3"><div class="flex flex-wrap gap-2"><button onclick="approveNextClearance('${s.id}')" class="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 font-bold text-xs">Approve Next</button><button onclick="requestCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold text-xs">Request Certificate</button></div></td></tr>`).join('') }
+    function teacherCountForStudent(s) { return teacherRowsForStudent(s).length }
+    function renderAccounts() { activeAccounts.textContent = appData.accounts.filter(a => a.active).length; teacherAssignments.textContent = appData.accounts.reduce((n, a) => n + (a.assignments || []).length, 0); allStudentHeads.textContent = appData.accounts.filter(a => ['guidance_head', 'prefect_head', 'librarian_head', 'principal', 'accounting_admin', 'registrar'].includes(a.role)).length; accountsBody.innerHTML = appData.accounts.map(a => `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${a.name}</td><td class="px-4 py-3">${a.email}</td><td class="px-4 py-3">${roleLabel(a.role)}</td><td class="px-4 py-3">${assignmentSummary(a)}</td><td class="px-4 py-3">${pill(a.active ? 'Active' : 'Inactive', a.active ? 'green' : 'gray')}</td><td class="px-4 py-3"><div class="flex gap-2"><button onclick="openAccountModal('${a.id}')" class="px-3 py-1.5 rounded-lg bg-sky-50 text-academy-navy font-bold text-xs">Edit</button><button onclick="toggleAccount('${a.id}')" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 font-bold text-xs">${a.active ? 'Deactivate' : 'Activate'}</button><button onclick="deleteAccount('${a.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100 transition">Delete</button></div></td></tr>`).join('') }
+    function roleLabel(role) { return { teacher_clearance_head: 'Teacher Clearance Head', guidance_head: 'Guidance Head', prefect_head: 'Prefect of Discipline', librarian_head: 'Librarian', principal: 'Principal', accounting_admin: 'Accounting/Admin', registrar: 'Registrar', super_admin: 'Super Admin' }[role] || role }
+    function assignmentSummary(a) {
+      if (a.role !== 'teacher_clearance_head') return a.role === 'principal' ? 'Second-to-last approval' : (['accounting_admin', 'registrar'].includes(a.role) ? 'Final clearance approval' : 'All students');
+      return (a.assignments || []).map(x => {
+        const strandPart = x.strand && x.strand !== 'N/A' ? ` / ${x.strand}` : '';
+        return `${x.grade} (${x.section || 'N/A'}${strandPart}) - ${x.subject || 'Subject'}`;
+      }).join('<br>') || 'No assignment yet';
+    }
+    let collectionChartInstance = null;
+    let levelChartInstance = null;
+
+    function renderAnalyticsCharts() {
+      if (typeof Chart === 'undefined') return;
+
+      const billed = appData.students.reduce((s, x) => s + assessedTotal(x), 0);
+      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
+      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
+      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+
+      // 1. Collection Doughnut Chart
+      const doughnutCtx = document.getElementById('collectionDoughnutChart')?.getContext('2d');
+      if (doughnutCtx) {
+        if (collectionChartInstance) collectionChartInstance.destroy();
+        collectionChartInstance = new Chart(doughnutCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Total Collected Payments', 'Outstanding Balance Due', 'Voucher Discount Impact'],
+            datasets: [{
+              data: [collected, outstanding, vouchers],
+              backgroundColor: ['#059669', '#DC2626', '#2563EB'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
+            }
+          }
+        });
+      }
+
+      // 2. JHS vs SHS Bar Chart
+      const barCtx = document.getElementById('levelComparisonBarChart')?.getContext('2d');
+      if (barCtx) {
+        const jhsStudents = appData.students.filter(s => s.level === 'JHS');
+        const shsStudents = appData.students.filter(s => s.level === 'SHS');
+
+        const jhsAssessed = jhsStudents.reduce((n, s) => n + assessedTotal(s), 0);
+        const jhsCollected = jhsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
+
+        const shsAssessed = shsStudents.reduce((n, s) => n + assessedTotal(s), 0);
+        const shsCollected = shsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
+
+        if (levelChartInstance) levelChartInstance.destroy();
+        levelChartInstance = new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Junior High (JHS)', 'Senior High (SHS)'],
+            datasets: [
+              { label: 'Assessed Net Fees', data: [jhsAssessed, shsAssessed], backgroundColor: '#1E3A8A' },
+              { label: 'Collected Payments', data: [jhsCollected, shsCollected], backgroundColor: '#059669' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
+            },
+            scales: {
+              y: { beginAtZero: true, ticks: { callback: value => '₱' + Number(value).toLocaleString() } }
+            }
+          }
+        });
+      }
+    }
+
+    async function generateGeminiAiAnalyticsInterpretation() {
+      const apiKeyInput = document.getElementById('geminiApiKeyInput');
+      let apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+      if (!apiKey) {
+        apiKey = localStorage.getItem('pa_gemini_api_key') || '';
+      }
+
+      if (!apiKey) {
+        showToast('API Key Required', 'Please enter your Gemini API Key in the box to generate AI analytics insights.', 'warning');
+        if (apiKeyInput) apiKeyInput.focus();
+        return;
+      }
+
+      localStorage.setItem('pa_gemini_api_key', apiKey);
+      if (apiKeyInput) apiKeyInput.value = apiKey;
+
+      const btn = document.getElementById('btnGenerateAiReport');
+      const box = document.getElementById('geminiAiReportBox');
+      const originalText = btn ? btn.innerHTML : '';
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span class="material-symbols-rounded text-base animate-spin">sync</span> Analyzing...`;
+        }
+
+        if (box) {
+          box.innerHTML = `<div class="flex items-center gap-3 text-blue-200 py-3"><span class="material-symbols-rounded animate-spin text-2xl text-blue-400">psychology</span><span>Analyzing Pagbilao Academy Inc. financial metrics with Gemini AI...</span></div>`;
+        }
+
+        const totalStudentsCount = appData.students.length;
+        const grossBilled = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
+        const totalPaid = appData.students.reduce((sum, x) => sum + Number(x.paid || 0), 0);
+        const totalBalance = appData.students.reduce((sum, x) => sum + balance(x), 0);
+        const totalVouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
+        const collectionRatePct = grossBilled > 0 ? Math.round((totalPaid / grossBilled) * 100) : 0;
+        const overdueStudentsCount = appData.students.filter(s => balance(s) > 0).length;
+
+        const jhsStudents = appData.students.filter(s => s.level === 'JHS');
+        const shsStudents = appData.students.filter(s => s.level === 'SHS');
+        const jhsCollected = jhsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
+        const shsCollected = shsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
+
+        const prompt = `You are an expert Educational Financial Analyst and Executive Auditor for Pagbilao Academy Inc. in Quezon, Philippines. Analyze the following current financial metrics and generate a concise structured executive report.
+
+Current Metrics:
+- Total Enrolled Students: ${totalStudentsCount}
+- Total Net Assessed Fees: PHP ${grossBilled.toLocaleString()}
+- Total Collections to Date: PHP ${totalPaid.toLocaleString()} (${collectionRatePct}% Collection Rate)
+- Total Uncollected Outstanding Balance: PHP ${totalBalance.toLocaleString()}
+- Total Voucher/ESC Discount Impact: PHP ${totalVouchers.toLocaleString()}
+- Total Students with Outstanding Balances: ${overdueStudentsCount}
+- JHS Collections: PHP ${jhsCollected.toLocaleString()}
+- SHS Collections: PHP ${shsCollected.toLocaleString()}
+
+Please provide your analysis formatted cleanly in raw HTML (no markdown backticks) containing:
+1. <div class="font-extrabold text-emerald-400 text-sm mb-1">HEALTH RATING: [EXCELLENT / GOOD / MODERATE RISK / HIGH RISK]</div>
+2. <h5 class="font-bold text-white text-xs mt-2 mb-1">📊 Executive Observations:</h5>
+   <ul class="list-disc pl-4 space-y-1 text-slate-200">
+     <li>Summary of collection efficiency (${collectionRatePct}%) and revenue status.</li>
+     <li>Insight on JHS vs SHS collection distribution and voucher impact.</li>
+   </ul>
+3. <h5 class="font-bold text-white text-xs mt-3 mb-1">⚠️ Risk & Overdue Warning:</h5>
+   <p class="text-amber-200">${overdueStudentsCount} student accounts currently have uncollected balances total PHP ${totalBalance.toLocaleString()}.</p>
+4. <h5 class="font-bold text-white text-xs mt-3 mb-1">💡 Recommended Accounting Actions:</h5>
+   <ol class="list-decimal pl-4 space-y-1 text-blue-200">
+     <li>Action item 1 for accounting counter.</li>
+     <li>Action item 2 for clearance deadline enforcement.</li>
+   </ol>`;
+
+        let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        let data = await response.json();
+
+        if (data.error && data.error.code === 404) {
+          response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            })
+          });
+          data = await response.json();
+        }
+
+        if (data.error) {
+          throw new Error(data.error.message || 'Gemini API call failed.');
+        }
+
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response returned from Gemini API.';
+        const cleanHtml = aiText.replace(/```html/g, '').replace(/```/g, '');
+
+        if (box) {
+          box.innerHTML = `
+            <div class="flex items-center justify-between border-b border-blue-500/30 pb-2 mb-2 text-xs text-blue-200">
+              <span class="font-bold flex items-center gap-1.5 text-emerald-400">
+                <span class="material-symbols-rounded text-sm">verified</span>
+                Gemini AI Financial Interpretation Complete
+              </span>
+              <span>Generated ${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="text-slate-100 text-xs leading-relaxed space-y-2">
+              ${cleanHtml}
+            </div>
+          `;
+        }
+
+        showToast('AI Analysis Generated', 'Gemini AI financial interpretation completed!', 'success');
+      } catch (err) {
+        console.error('Gemini AI error:', err);
+        if (box) {
+          box.innerHTML = `
+            <div class="p-3 rounded-xl bg-red-500/20 border border-red-400/30 text-red-200 text-xs font-semibold">
+              ⚠️ Gemini AI Analysis Error: ${err.message || 'Check your API key and connection.'}
+            </div>
+          `;
+        }
+        showToast('AI Request Failed', err.message || 'Could not connect to Gemini API.', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    }
+
+    function renderAnalytics() {
+      const billed = appData.students.reduce((s, x) => s + assessedTotal(x), 0);
+      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
+      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
+      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+
+      analyticsCards.innerHTML = [['Total Assessed', billed, 'text-academy-navy'], ['Total Collected', collected, 'text-green-700'], ['Outstanding', outstanding, 'text-red-600'], ['Voucher Impact', vouchers, 'text-academy-navy']].map(c => `<div class="rounded-2xl bg-white border border-academy-border p-5"><p class="text-sm text-academy-muted">${c[0]}</p><h3 class="mt-3 text-2xl font-extrabold ${c[2]}">${money(c[1])}</h3></div>`).join('');
+      
+      const levels = ['JHS', 'SHS'];
+      collectionByLevel.innerHTML = levels.map(level => {
+        const ss = appData.students.filter(s => s.level === level);
+        const total = ss.reduce((n, s) => n + assessedTotal(s), 0);
+        const paid = ss.reduce((n, s) => n + Number(s.paid || 0), 0);
+        const pct = total ? Math.round(paid / total * 100) : 0;
+        return `<div><div class="flex justify-between text-sm mb-2"><strong>${level}</strong><span>${money(paid)} / ${money(total)} (${pct}%)</span></div><div class="h-3 bg-academy-light rounded-full overflow-hidden"><div class="h-full bg-academy-blue" style="width:${pct}%"></div></div></div>`;
+      }).join('');
+
+      overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${classLabel(s)} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
+
+      const allPayments = appData.payments || [];
+      const txBadge = document.getElementById('adminTxCountBadge');
+      if (txBadge) txBadge.textContent = `${allPayments.length} Transaction(s)`;
+
+      const txBody = document.getElementById('adminPaymentsBody');
+      if (txBody) {
+        if (!allPayments.length) {
+          txBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No payment transactions recorded yet.</td></tr>`;
+        } else {
+          txBody.innerHTML = allPayments.map(p => `
+            <tr class="hover:bg-academy-soft">
+              <td class="px-4 py-3 font-mono text-xs font-bold text-slate-800">${p.referenceNo || p.id}</td>
+              <td class="px-4 py-3 font-extrabold text-academy-navy">${p.studentName || p.studentId}</td>
+              <td class="px-4 py-3">${pill(p.method || 'Online', 'green')}</td>
+              <td class="px-4 py-3 text-xs text-academy-muted">${p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'Today')}</td>
+              <td class="px-4 py-3 text-xs text-slate-600">${p.feeBreakdown && p.feeBreakdown.length ? p.feeBreakdown.join(', ') : (p.remarks || 'Tuition / Assessment Fee')}</td>
+              <td class="px-4 py-3 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      renderAnalyticsCharts();
+    }
+    function renderCertificates() { certificateBody.innerHTML = appData.students.map(s => { const complete = clearanceComplete(s); const req = appData.certificateRequests.find(r => r.studentId === s.id); return `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${complete ? pill('Completed', 'green') : pill('Incomplete', 'amber')}</td><td class="px-4 py-3">${req ? pill(req.status, req.status === 'approved' ? 'green' : 'amber') : 'No request'}</td><td class="px-4 py-3"><button ${complete ? '' : 'disabled'} onclick="openCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg ${complete ? 'bg-academy-navy text-white' : 'bg-slate-100 text-slate-400'} font-bold text-xs">Open Certificate</button></td></tr>` }).join('') }
+    function renderAll() { renderDashboard(); renderStudents(); renderFees(); renderDueDates(); renderClearance(); renderAccounts(); renderAnalytics(); renderCertificates() }
+    function openFormModal() { formModal.classList.remove('hidden'); formModal.classList.add('flex') } function closeFormModal() { formModal.classList.add('hidden'); formModal.classList.remove('flex') }
+
+    let currentOtcMode = 'custom';
+
+    function setOtcPayMode(mode, studentId) {
+      currentOtcMode = mode;
+      const btnCustom = document.getElementById('otcModeCustom');
+      const btnItemized = document.getElementById('otcModeItemized');
+      const itemizedSec = document.getElementById('otcItemizedSection');
+
+      if (mode === 'custom') {
+        btnCustom.className = 'py-2 px-3 rounded-lg font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
+        btnItemized.className = 'py-2 px-3 rounded-lg font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
+        if (itemizedSec) itemizedSec.classList.add('hidden');
+      } else {
+        btnItemized.className = 'py-2 px-3 rounded-lg font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
+        btnCustom.className = 'py-2 px-3 rounded-lg font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
+        if (itemizedSec) itemizedSec.classList.remove('hidden');
+        renderOtcFeeChecklist(studentId);
+      }
+    }
+
+    function renderOtcFeeChecklist(studentId) {
+      const s = appData.students.find(x => x.id === studentId);
+      if (!s) return;
+      
+      let feeItems = (s.customFees && s.customFees.length > 0) ? s.customFees : (appData.feeStructures?.[s.level] || []);
+      if (!feeItems.length) {
+        if (s.level === 'JHS') {
+          feeItems = [
+            { name: 'Tuition Fee', amount: 15000 },
+            { name: 'Miscellaneous & Computer Fee', amount: 4000 },
+            { name: 'Laboratory & Facilities Fee', amount: 2000 },
+            { name: 'Registration & Student ID', amount: 1000 }
+          ];
+        } else {
+          feeItems = [
+            { name: 'Tuition Fee', amount: 18000 },
+            { name: 'Miscellaneous & Facilities Fee', amount: 5000 },
+            { name: 'Track / Specialization Fee', amount: 3000 },
+            { name: 'Registration & Student ID', amount: 1000 }
+          ];
+        }
+      }
+
+      const container = document.getElementById('otcFeeChecklist');
+      if (!container) return;
+
+      container.innerHTML = feeItems.map(f => `
+        <label class="flex items-center justify-between p-2 rounded-xl border border-academy-border bg-white hover:bg-academy-soft cursor-pointer transition">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" class="otc-fee-cb w-4 h-4 rounded text-academy-navy accent-academy-navy" value="${f.amount}" data-name="${f.name}" onchange="recalculateOtcTotal()">
+            <span class="text-xs font-bold text-academy-navy">${f.name}</span>
+          </div>
+          <span class="text-xs font-extrabold text-slate-700">${money(f.amount)}</span>
+        </label>
+      `).join('');
+
+      recalculateOtcTotal();
+    }
+
+    function recalculateOtcTotal() {
+      const cbs = document.querySelectorAll('.otc-fee-cb:checked');
+      let total = 0;
+      cbs.forEach(cb => { total += Number(cb.value || 0) });
+      
+      const totEl = document.getElementById('otcItemizedTotal');
+      if (totEl) totEl.textContent = money(total);
+      const amtEl = document.getElementById('otcAmount');
+      if (amtEl) amtEl.value = total;
+    }
+
+    function selectAllOtcFeeItems(select = true) {
+      document.querySelectorAll('.otc-fee-cb').forEach(cb => { cb.checked = select });
+      recalculateOtcTotal();
+    }
+
+    function openInPersonPaymentModal(id) {
+      const s = appData.students.find(x => x.id === id);
+      if (!s) return;
+      currentOtcMode = 'custom';
+      const currentBal = balance(s);
+      const autoRef = 'OR-' + (appData.settings?.schoolYear || '2026') + '-' + Math.floor(100000 + Math.random() * 900000);
+
+      formModalLabel.textContent = 'Cash & Over-The-Counter Payment';
+      formModalTitle.textContent = `Record Payment for ${s.name}`;
+      formModalContent.innerHTML = `
+        <form id="otcPaymentForm" class="space-y-4">
+          <div class="p-4 rounded-2xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs">
+            <div>
+              <p class="font-extrabold text-academy-navy text-sm">${s.name}</p>
+              <p class="text-academy-muted">${classLabel(s)} · ID: ${s.id}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-academy-muted font-bold">Outstanding Balance</p>
+              <p class="text-base font-extrabold text-red-600">${money(currentBal)}</p>
+            </div>
+          </div>
+
+          <!-- Payment Option Toggle -->
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1.5">Payment Option</label>
+            <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-academy-soft border border-academy-border">
+              <button id="otcModeCustom" type="button" onclick="setOtcPayMode('custom', '${s.id}')" class="py-2 px-3 rounded-lg font-extrabold text-xs transition bg-white text-academy-navy shadow-xs">
+                Custom / Partial Amount
+              </button>
+              <button id="otcModeItemized" type="button" onclick="setOtcPayMode('itemized', '${s.id}')" class="py-2 px-3 rounded-lg font-extrabold text-xs transition text-academy-muted hover:text-academy-navy">
+                Select Specific Fee Items
+              </button>
+            </div>
+          </div>
+
+          <!-- Itemized Fee Selection Checklist -->
+          <div id="otcItemizedSection" class="hidden space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="block text-xs font-extrabold text-academy-navy">Check Fee Items Being Paid</label>
+              <button type="button" onclick="selectAllOtcFeeItems(true)" class="text-xs font-bold text-academy-blue hover:underline">Select All</button>
+            </div>
+            <div id="otcFeeChecklist" class="space-y-1.5 max-h-44 overflow-y-auto pr-1"></div>
+            <div class="p-2.5 rounded-xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs font-bold">
+              <span class="text-academy-navy">Selected Fees Total:</span>
+              <span id="otcItemizedTotal" class="text-sm font-extrabold text-emerald-700">₱0</span>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Payment Method / Channel</label>
+              <select id="otcMethod" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-xs font-bold focus:outline-none">
+                <option value="Cash (In-Person)">Cash (In-Person / Accounting)</option>
+                <option value="Over-The-Counter">Over-The-Counter (OTC Bank)</option>
+                <option value="Cheque">Cheque Payment</option>
+                <option value="Bank Deposit">Direct Bank Deposit</option>
+                <option value="Manual Adjustment">Manual Ledger Adjustment</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Payment Amount (PHP)</label>
+              <input type="number" id="otcAmount" min="1" step="any" required value="${currentBal > 0 ? currentBal : ''}" placeholder="0" class="w-full px-3 py-2.5 rounded-xl border border-academy-border font-extrabold text-sm focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Official Receipt (OR) / Ref No.</label>
+              <input type="text" id="otcRefNo" required value="${autoRef}" class="w-full px-3 py-2.5 rounded-xl border border-academy-border font-mono text-xs focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Payment Date</label>
+              <input type="date" id="otcDate" value="${new Date().toISOString().slice(0, 10)}" class="w-full px-3 py-2.5 rounded-xl border border-academy-border text-xs focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Optional Remarks / Notes</label>
+            <input type="text" id="otcNotes" placeholder="e.g. Paid at Accounting Office Counter 2" class="w-full px-3 py-2.5 rounded-xl border border-academy-border text-xs focus:outline-none">
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-md transition flex items-center justify-center gap-2">
+            <span class="material-symbols-rounded text-lg">check_circle</span>Confirm & Record Payment
+          </button>
+        </form>
+      `;
+
+      document.getElementById('otcPaymentForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const amt = Number(document.getElementById('otcAmount').value) || 0;
+        const method = document.getElementById('otcMethod').value;
+        const refNo = document.getElementById('otcRefNo').value.trim() || autoRef;
+        const dateStr = document.getElementById('otcDate').value || new Date().toISOString().slice(0, 10);
+        const notes = document.getElementById('otcNotes').value.trim();
+
+        if (amt <= 0) {
+          showToast('Invalid Payment Amount', 'Please enter a payment amount greater than 0.', 'warning');
+          return;
+        }
+
+        let feeBreakdown = [];
+        if (currentOtcMode === 'itemized') {
+          const cbs = document.querySelectorAll('.otc-fee-cb:checked');
+          cbs.forEach(cb => feeBreakdown.push(cb.dataset.name));
+        }
+
+        const paymentObj = {
+          id: 'PAY-' + Date.now(),
+          studentId: s.id,
+          studentName: s.name,
+          amount: amt,
+          method: method,
+          referenceNo: refNo,
+          feeBreakdown: feeBreakdown,
+          remarks: notes,
+          status: 'Paid',
+          paidAt: new Date(dateStr).toISOString(),
+          date: dateStr,
+          schoolYear: appData.settings?.schoolYear || '2026-2027'
+        };
+
+        s.paid = Number(s.paid || 0) + amt;
+        appData.payments = appData.payments || [];
+        appData.payments.unshift(paymentObj);
+
+        if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+          try {
+            await window.paApi.recordPayment({
+              studentId: s.id,
+              amount: amt,
+              method: method,
+              referenceNo: refNo
+            });
+            const state = await window.paApi.fetchDatabaseState();
+            if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+          } catch (err) {
+            console.warn('Supabase OTC payment sync warning:', err);
+          }
+        }
+
+        saveData();
+        renderAll();
+        closeFormModal();
+        showToast('Payment Recorded', `Recorded ${money(amt)} payment for ${s.name} (${refNo}).`);
+      };
+
+      openFormModal();
+    }
+
+    function openEditStudentFeesModal(id) {
+      const s = appData.students.find(x => x.id === id);
+      if (!s) return;
+
+      const defaultFeeItems = appData.feeStructures?.[s.level] || [];
+      const appliedFeeNames = (s.customFees && s.customFees.length > 0)
+        ? s.customFees.map(f => f.name)
+        : defaultFeeItems.map(f => f.name);
+
+      const checkboxesHtml = defaultFeeItems.map(f => {
+        const isChecked = appliedFeeNames.includes(f.name);
+        return `
+          <label class="flex items-center justify-between p-2.5 rounded-xl border border-academy-border bg-white hover:bg-academy-soft cursor-pointer transition">
+            <div class="flex items-center gap-2.5">
+              <input type="checkbox" class="student-fee-cb w-4 h-4 text-academy-navy rounded accent-academy-navy" value="${f.amount}" data-name="${f.name}" ${isChecked ? 'checked' : ''} onchange="updateStudentFeeModalCalc()">
+              <span class="text-xs font-bold text-academy-navy">${f.name}</span>
+            </div>
+            <span class="text-xs font-extrabold text-slate-700">${money(f.amount)}</span>
+          </label>
+        `;
+      }).join('');
+
+      const activeVouchers = (appData.vouchers || []).filter(v => v.active !== false && (v.appliesTo === s.level || v.appliesTo === 'All' || v.appliesTo === 'SHS' || v.appliesTo === 'JHS'));
+      const voucherOptionsHtml = `<option value="None" ${(!s.voucher || s.voucher === 'None') ? 'selected' : ''}>None (No Voucher)</option>` +
+        activeVouchers.map(v => `<option value="${v.name}" ${s.voucher === v.name ? 'selected' : ''}>${v.name} (${money(v.amount)})</option>`).join('');
+
+      formModalLabel.textContent = 'Custom Student Assessment';
+      formModalTitle.textContent = `Customize Fees & Balance for ${s.name}`;
+      formModalContent.innerHTML = `
+        <form id="editStudentFeesForm" class="space-y-4">
+          <div class="p-3.5 rounded-2xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs">
+            <div>
+              <p class="font-extrabold text-academy-navy text-sm">${s.name}</p>
+              <p class="text-academy-muted">${classLabel(s)} · ID: ${s.id}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-academy-muted font-bold">Current Total Paid</p>
+              <p class="text-sm font-extrabold text-green-700">${money(s.paid)}</p>
+            </div>
+          </div>
+
+          <!-- Select Standard Fee Components -->
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1.5">1. Applied Standard Fees (${s.level})</label>
+            <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+              ${checkboxesHtml}
+            </div>
+          </div>
+
+          <!-- Voucher Selection -->
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1.5">2. Assigned Voucher / Discount Grant</label>
+            <select id="modVoucherSelect" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-xs font-bold focus:outline-none" onchange="updateStudentFeeModalCalc()">
+              ${voucherOptionsHtml}
+            </select>
+          </div>
+
+          <!-- Additional Custom Fee & Discount -->
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">3. Custom Discount / Scholarship (PHP)</label>
+              <input type="number" id="modDiscount" min="0" step="any" value="${s.feeDiscount || 0}" placeholder="0" class="w-full px-3 py-2 rounded-xl border border-academy-border text-xs font-bold focus:outline-none" oninput="updateStudentFeeModalCalc()">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">4. Direct Net Fee Override (Optional)</label>
+              <input type="number" id="modOverride" min="0" step="any" value="${s.assessedOverride !== undefined && s.assessedOverride !== null ? s.assessedOverride : ''}" placeholder="Leave blank for auto-calc" class="w-full px-3 py-2 rounded-xl border border-academy-border text-xs font-bold focus:outline-none" oninput="updateStudentFeeModalCalc()">
+            </div>
+          </div>
+
+          <!-- Live Calculation Preview -->
+          <div class="p-4 rounded-2xl bg-slate-900 text-white space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-300">Sum of Selected Standard Fees:</span>
+              <span id="modSelectedSum" class="font-bold text-white">₱0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-300">Voucher Discount (<span id="modVoucherLabel">None</span>):</span>
+              <span id="modVoucherPreview" class="font-bold text-blue-300">-₱0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-300">Custom Discount:</span>
+              <span id="modDiscountPreview" class="font-bold text-amber-300">-₱0</span>
+            </div>
+            <div class="border-t border-slate-700 pt-2 flex justify-between font-extrabold text-sm">
+              <span>New Net Assessed Fee:</span>
+              <span id="modNetAssessedPreview" class="text-emerald-400">₱0</span>
+            </div>
+            <div class="flex justify-between text-xs font-bold">
+              <span>New Remaining Balance:</span>
+              <span id="modNetBalancePreview" class="text-red-400">₱0</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button type="button" onclick="resetStudentFeesToDefault('${s.id}')" class="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100">
+              Reset to Standard
+            </button>
+            <button type="submit" class="flex-1 py-3.5 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold shadow-md transition">
+              Save Fee & Balance Adjustments
+            </button>
+          </div>
+        </form>
+      `;
+
+      window.updateStudentFeeModalCalc = () => {
+        const selectedCbs = document.querySelectorAll('.student-fee-cb:checked');
+        let selectedSum = 0;
+        selectedCbs.forEach(cb => { selectedSum += Number(cb.value || 0) });
+
+        const selVoucherName = document.getElementById('modVoucherSelect')?.value || 'None';
+        const foundVoucher = (appData.vouchers || []).find(x => x.name === selVoucherName && x.active !== false);
+        const vAmt = foundVoucher ? Number(foundVoucher.amount || 0) : 0;
+
+        const customDiscount = Number(document.getElementById('modDiscount')?.value || 0);
+        const overrideVal = document.getElementById('modOverride')?.value;
+
+        let netAssessed = 0;
+        if (overrideVal !== undefined && overrideVal !== null && overrideVal !== '') {
+          netAssessed = Math.max(0, Number(overrideVal));
+        } else {
+          netAssessed = Math.max(0, selectedSum - vAmt - customDiscount);
+        }
+
+        const netBal = Math.max(0, netAssessed - Number(s.paid || 0));
+
+        document.getElementById('modSelectedSum').textContent = money(selectedSum);
+        if (document.getElementById('modVoucherLabel')) document.getElementById('modVoucherLabel').textContent = selVoucherName;
+        if (document.getElementById('modVoucherPreview')) document.getElementById('modVoucherPreview').textContent = '-' + money(vAmt);
+        document.getElementById('modDiscountPreview').textContent = '-' + money(customDiscount);
+        document.getElementById('modNetAssessedPreview').textContent = money(netAssessed);
+        document.getElementById('modNetBalancePreview').textContent = money(netBal);
+      };
+
+      window.updateStudentFeeModalCalc();
+
+      document.getElementById('editStudentFeesForm').onsubmit = (e) => {
+        e.preventDefault();
+        const selectedCbs = document.querySelectorAll('.student-fee-cb:checked');
+        const customFees = Array.from(selectedCbs).map(cb => ({
+          name: cb.dataset.name,
+          amount: Number(cb.value || 0)
+        }));
+
+        const selectedVoucher = document.getElementById('modVoucherSelect').value;
+        const customDiscount = Number(document.getElementById('modDiscount').value || 0);
+        const overrideRaw = document.getElementById('modOverride').value;
+        const assessedOverride = (overrideRaw !== '' && !isNaN(overrideRaw)) ? Number(overrideRaw) : null;
+
+        s.voucher = selectedVoucher;
+        s.customFees = customFees;
+        s.feeDiscount = customDiscount;
+        s.assessedOverride = assessedOverride;
+
+        saveData();
+        syncStudentVoucherToSupabase(s.id, selectedVoucher);
+        renderAll();
+        closeFormModal();
+        showToast('Fee Structure Updated', `Custom fees & voucher saved for ${s.name}.`);
+      };
+
+      openFormModal();
+    }
+
+    function resetStudentFeesToDefault(studentId) {
+      const s = appData.students.find(x => x.id === studentId);
+      if (!s) return;
+      s.voucher = 'None';
+      delete s.customFees;
+      delete s.feeDiscount;
+      delete s.assessedOverride;
+      saveData();
+      syncStudentVoucherToSupabase(s.id, 'None');
+      renderAll();
+      closeFormModal();
+      showToast('Reset Complete', `Reverted ${s.name} to standard level fee structure.`);
+    }
+
+    function applyFeeSetup() { appData.students.forEach(s => { s.total = assessedTotal(s) }); saveData(); renderAll(); showToast('Fees applied', 'JHS/SHS fees and voucher discounts were recalculated.') }
+    function generateInstallments() { saveData(); renderDueDates(); showToast('Installments generated', 'Student installment schedules follow the current due date template.') }
+    async function approveNextClearance(id) {
+      const s = appData.students.find(x => x.id === id);
+      const order = ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'];
+
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          for (const k of order) {
+            if (k === 'Teacher' && s.clearance.Teacher !== 'approved') {
+              const rows = teacherRowsForStudent(s);
+              if (!rows.length) {
+                showToast('No teacher assigned', 'Please assign teacher clearance heads to this grade/section first.', 'error');
+                return;
+              }
+              await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
+              for (const row of rows) {
+                await window.paApi.updateTeacherClearance(s.id, row.teacher.id, row.assignment.subject, 'approved', 'Approved by Admin');
+              }
+              const state = await window.paApi.fetchDatabaseState();
+              if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+              renderAll();
+              showToast('Teacher approvals updated', `All assigned teacher approvals were marked approved for ${s.name}.`);
+              return;
+            }
+
+            if (k !== 'Teacher' && s.clearance[k] !== 'approved') {
+              await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
+              await window.paApi.updateOfficeClearance(s.id, k, 'approved', 'Approved by Admin');
+              const state = await window.paApi.fetchDatabaseState();
+              if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+              renderAll();
+              showToast('Clearance updated', `${k} approved for ${s.name}.`);
+              return;
+            }
+          }
+          showToast('Already complete', 'All clearance approvals are complete.');
+        } catch (err) {
+          showToast('Action locked / failed', err.message || 'Database error.', 'error');
+        }
+      } else {
+        for (const k of order) {
+          if (k === 'Teacher' && !allTeacherApprovalsApproved(s)) {
+            const rows = teacherRowsForStudent(s);
+            if (!rows.length) { showToast('No teacher assigned', 'Add teacher assignments for this grade/section first.', 'error'); return }
+            rows.forEach(row => {
+              let req = teacherRequestFor(row);
+              if (!req) {
+                req = { key: row.key, studentId: s.id, teacherId: row.teacher.id, teacherName: row.teacher.name, subject: row.assignment.subject || 'Subject', grade: s.grade, section: s.section, strand: s.strand, status: 'requested', requestedAt: new Date().toISOString() };
+                appData.teacherClearanceRequests.push(req);
+              }
+              req.status = 'approved';
+              req.approvedAt = new Date().toISOString();
+            });
+            s.clearance.Teacher = 'approved';
+            saveData();
+            renderAll();
+            showToast('Teacher approvals updated', `All assigned teacher approvals were marked approved for ${s.name}.`);
+            return;
+          }
+          if (k === 'Principal' && !principalUnlocked(s)) { showToast('Principal locked', 'Teachers, Guidance, Prefect, and Library must approve first.', 'error'); return }
+          if ((k === 'Accounting' || k === 'Registrar') && !finalUnlocked(s)) { showToast('Final approval locked', 'Principal must approve and balance must be zero.', 'error'); return }
+          if (s.clearance[k] !== 'approved') {
+            s.clearance[k] = 'approved';
+            saveData();
+            renderAll();
+            showToast('Clearance updated', `${k} approved for ${s.name}.`);
+            return;
+          }
+        }
+        showToast('Already complete', 'All clearance approvals are complete.');
+      }
+    }
+    function refreshClearanceApprovals() { renderClearance(); showToast('Requirements refreshed', 'Teacher approval requirements were generated from account assignments.') }
+    async function requestCertificate(id) {
+      const s = appData.students.find(x => x.id === id);
+      if (!clearanceComplete(s)) {
+        showToast('Not eligible', 'Certificate can only be requested after all approvals are complete.', 'error');
+        return;
+      }
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await window.paApi.requestCertificate(s.id);
+          const state = await window.paApi.fetchDatabaseState();
+          if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+        } catch (err) {
+          showToast('Error requesting certificate', err.message || 'Database error.', 'error');
+          return;
+        }
+      } else {
+        if (!appData.certificateRequests.find(r => r.studentId === id)) appData.certificateRequests.push({ studentId: id, status: 'approved', requestedAt: new Date().toISOString().slice(0, 10) });
+        saveData();
+      }
+      renderAll();
+      openCertificate(id);
+    }
+    function openCertificate(id) { window.open(`certificate.html?studentId=${encodeURIComponent(id)}&from=admin`, '_blank') }
+    function openFeeItemModal() { formModalLabel.textContent = 'Fee Item'; formModalTitle.textContent = 'Add Fee Item'; formModalContent.innerHTML = `<form id="feeForm" class="space-y-4"><div><label class="block text-sm font-bold mb-2">Level</label><select id="feeLevel" class="w-full px-4 py-3 rounded-xl border border-academy-border bg-white"><option>JHS</option><option>SHS</option></select></div><div><label class="block text-sm font-bold mb-2">Fee Name</label><input id="feeName" required class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><div><label class="block text-sm font-bold mb-2">Amount</label><input id="feeAmount" type="number" required class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><button class="w-full py-3 rounded-xl bg-academy-navy text-white font-bold">Save</button></form>`; feeForm.onsubmit = e => { e.preventDefault(); appData.feeStructures[feeLevel.value].push({ id: 'FEE-' + Date.now(), name: feeName.value, amount: Number(feeAmount.value), required: true }); applyFeeSetup(); closeFormModal(); }; openFormModal() }
+    function openVoucherModal(id = '') {
+      const v = (appData.vouchers || []).find(x => x.id === id);
+      formModalLabel.textContent = 'Voucher Discount';
+      formModalTitle.textContent = v ? 'Edit Voucher Discount' : 'Add Voucher Discount';
+      formModalContent.innerHTML = `
+        <form id="voucherForm" class="space-y-4">
+          <input type="hidden" id="vId" value="${v?.id || ''}">
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Voucher Name</label>
+            <input id="voucherName" value="${v?.name || ''}" placeholder="e.g. ESC Voucher / DepEd Voucher QVR" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Applies To Level</label>
+              <select id="voucherLevel" class="w-full px-3 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold focus:outline-none">
+                <option value="JHS" ${v?.appliesTo === 'JHS' ? 'selected' : ''}>JHS Only</option>
+                <option value="SHS" ${v?.appliesTo === 'SHS' ? 'selected' : ''}>SHS Only</option>
+                <option value="All" ${v?.appliesTo === 'All' ? 'selected' : ''}>All Levels (JHS & SHS)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-extrabold text-academy-navy mb-1">Discount Amount (PHP)</label>
+              <input id="voucherAmt" type="number" min="0" step="any" value="${v?.amount ?? ''}" placeholder="e.g. 9000" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Status</label>
+            <select id="voucherActive" class="w-full px-3 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold focus:outline-none">
+              <option value="true" ${v?.active !== false ? 'selected' : ''}>Active</option>
+              <option value="false" ${v?.active === false ? 'selected' : ''}>Inactive / Disabled</option>
+            </select>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold shadow-md transition">
+            Save Voucher
+          </button>
+        </form>
+      `;
+
+      document.getElementById('voucherForm').onsubmit = (e) => {
+        e.preventDefault();
+        const item = {
+          id: document.getElementById('vId').value || 'V-' + Date.now(),
+          name: document.getElementById('voucherName').value.trim(),
+          appliesTo: document.getElementById('voucherLevel').value,
+          amount: Number(document.getElementById('voucherAmt').value || 0),
+          active: document.getElementById('voucherActive').value === 'true'
+        };
+
+        appData.vouchers = appData.vouchers || [];
+        const idx = appData.vouchers.findIndex(x => x.id === item.id);
+        if (idx >= 0) {
+          appData.vouchers[idx] = item;
+        } else {
+          appData.vouchers.push(item);
+        }
+
+        applyFeeSetup();
+        closeFormModal();
+        showToast('Voucher Saved', `Saved voucher discount "${item.name}".`);
+      };
+
+      openFormModal();
+    }
+
+    function toggleVoucherStatus(id) {
+      const v = (appData.vouchers || []).find(x => x.id === id);
+      if (!v) return;
+      v.active = !v.active;
+      applyFeeSetup();
+      showToast('Voucher Updated', `Voucher "${v.name}" is now ${v.active ? 'Active' : 'Inactive'}.`);
+    }
+
+    function deleteVoucher(id) {
+      const v = (appData.vouchers || []).find(x => x.id === id);
+      if (!v) return;
+      if (!confirm(`Are you sure you want to delete the voucher "${v.name}"?`)) return;
+      appData.vouchers = (appData.vouchers || []).filter(x => x.id !== id);
+      applyFeeSetup();
+      showToast('Voucher Deleted', `Removed voucher "${v.name}".`);
+    }
+    function openInstallmentModal(id = '') {
+      const t = (appData.installmentTemplate || []).find(x => x.id === id);
+      formModalLabel.textContent = 'Due Date Schedule';
+      formModalTitle.textContent = t ? 'Edit Due Date Schedule' : 'Add Due Date Schedule';
+      formModalContent.innerHTML = `
+        <form id="insForm" class="space-y-4">
+          <input type="hidden" id="insId" value="${t?.id || ''}">
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Installment Title / Name</label>
+            <input id="insTitle" value="${t?.title || ''}" placeholder="e.g. Downpayment / 1st Trimester" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Description / Details</label>
+            <textarea id="insDescription" rows="3" placeholder="e.g. Initial payment due upon enrollment covering tuition & registration fees" class="w-full px-4 py-2.5 rounded-xl border border-academy-border text-xs focus:outline-none">${t?.description || ''}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Due Date</label>
+            <input id="insDate" type="date" value="${t?.dueDate || ''}" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold shadow-md transition">
+            Save Due Date Schedule
+          </button>
+        </form>
+      `;
+
+      document.getElementById('insForm').onsubmit = (e) => {
+        e.preventDefault();
+        const item = {
+          id: document.getElementById('insId').value || 'INS-' + Date.now(),
+          title: document.getElementById('insTitle').value.trim(),
+          description: document.getElementById('insDescription').value.trim(),
+          dueDate: document.getElementById('insDate').value
+        };
+
+        appData.installmentTemplate = appData.installmentTemplate || [];
+        const idx = appData.installmentTemplate.findIndex(x => x.id === item.id);
+        if (idx >= 0) {
+          appData.installmentTemplate[idx] = item;
+        } else {
+          appData.installmentTemplate.push(item);
+        }
+
+        saveData();
+        renderAll();
+        closeFormModal();
+        showToast('Schedule Saved', `Saved due date schedule "${item.title}".`);
+      };
+
+      openFormModal();
+    }
+
+    function deleteInstallment(id) {
+      if (!confirm('Are you sure you want to delete this due date schedule?')) return;
+      appData.installmentTemplate = (appData.installmentTemplate || []).filter(x => x.id !== id);
+      saveData();
+      renderAll();
+      showToast('Schedule Deleted', 'Due date schedule removed.');
+    }
+
+    function clearAllDueDates() {
+      if (!confirm('Are you sure you want to remove all due date schedules?')) return;
+      appData.installmentTemplate = [];
+      saveData();
+      renderAll();
+      showToast('Schedules Cleared', 'All due date schedules were removed.');
+    }
+
+    function updateAssignmentRowDropdowns(rowEl, selectedSection = '', selectedStrand = '') {
+      const grade = rowEl.querySelector('.assign-grade').value;
+      const sectionSelect = rowEl.querySelector('.assign-section');
+      const strandSelect = rowEl.querySelector('.assign-strand');
+      const subjectSelect = rowEl.querySelector('.assign-subject');
+
+      const sections = SECTIONS_BY_GRADE[grade] || [];
+      sectionSelect.innerHTML = `<option value="N/A">All Sections (N/A)</option>` +
+        sections.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (selectedSection && (sections.includes(selectedSection) || selectedSection === 'N/A')) {
+        sectionSelect.value = selectedSection;
+      }
+
+      const isSHS = ['Grade 11', 'Grade 12'].includes(grade);
+      if (isSHS) {
+        strandSelect.disabled = false;
+        strandSelect.innerHTML = `<option value="N/A">All Strands (N/A)</option>` +
+          SHS_STRANDS.map(st => `<option value="${st}">${st}</option>`).join('');
+        if (selectedStrand) strandSelect.value = selectedStrand;
+      } else {
+        strandSelect.innerHTML = `<option value="N/A">N/A</option>`;
+        strandSelect.value = 'N/A';
+        strandSelect.disabled = true;
+      }
+
+      if (subjectSelect) {
+        const currentSubject = subjectSelect.value;
+        const subjectsList = isSHS ? SHS_SUBJECTS : JHS_SUBJECTS;
+        let subjectOptions = subjectsList.map(s => `<option value="${s}">${s}</option>`).join('');
+        if (currentSubject && !subjectsList.includes(currentSubject)) {
+          subjectOptions = `<option value="${currentSubject}">${currentSubject}</option>` + subjectOptions;
+        }
+        subjectSelect.innerHTML = subjectOptions;
+        if (currentSubject && (subjectsList.includes(currentSubject) || subjectOptions.includes(`value="${currentSubject}"`))) {
+          subjectSelect.value = currentSubject;
+        }
+      }
+    }
+
+    function onAssignmentGradeChange(gradeSelect) {
+      const rowEl = gradeSelect.closest('.assignment-row');
+      if (rowEl) updateAssignmentRowDropdowns(rowEl);
+    }
+
+    function assignmentRowsHtml(assignments = []) {
+      const rows = assignments.length ? assignments : [{ grade: 'Grade 7', section: 'Cattleya', strand: 'N/A', subject: 'Filipino' }];
+      return rows.map((a) => {
+        const grade = a.grade || 'Grade 7';
+        const isSHS = ['Grade 11', 'Grade 12'].includes(grade);
+        const sections = SECTIONS_BY_GRADE[grade] || ['Cattleya', 'Orchids', 'Rose'];
+        const sectionOptions = `<option value="N/A" ${a.section === 'N/A' ? 'selected' : ''}>All Sections (N/A)</option>` +
+          sections.map(s => `<option value="${s}" ${s === a.section ? 'selected' : ''}>${s}</option>`).join('');
+        const strandOptions = isSHS
+          ? `<option value="N/A" ${!a.strand || a.strand === 'N/A' ? 'selected' : ''}>All Strands (N/A)</option>` +
+            SHS_STRANDS.map(st => `<option value="${st}" ${st === a.strand ? 'selected' : ''}>${st}</option>`).join('')
+          : `<option value="N/A">N/A</option>`;
+
+        const subjectsList = isSHS ? SHS_SUBJECTS : JHS_SUBJECTS;
+        const currentSubj = a.subject || subjectsList[0];
+        let subjectOptions = subjectsList.map(s => `<option value="${s}" ${s === currentSubj ? 'selected' : ''}>${s}</option>`).join('');
+        if (currentSubj && !subjectsList.includes(currentSubj)) {
+          subjectOptions = `<option value="${currentSubj}" selected>${currentSubj}</option>` + subjectOptions;
+        }
+
+        return `<div class="assignment-row grid sm:grid-cols-4 gap-2 p-3 rounded-xl bg-academy-soft border border-academy-border items-center">
+          <select class="assign-grade px-3 py-2 rounded-xl border border-academy-border bg-white text-xs font-bold" onchange="onAssignmentGradeChange(this)">
+            <option ${grade === 'Grade 7' ? 'selected' : ''}>Grade 7</option>
+            <option ${grade === 'Grade 8' ? 'selected' : ''}>Grade 8</option>
+            <option ${grade === 'Grade 9' ? 'selected' : ''}>Grade 9</option>
+            <option ${grade === 'Grade 10' ? 'selected' : ''}>Grade 10</option>
+            <option ${grade === 'Grade 11' ? 'selected' : ''}>Grade 11</option>
+            <option ${grade === 'Grade 12' ? 'selected' : ''}>Grade 12</option>
+          </select>
+          <select class="assign-section px-3 py-2 rounded-xl border border-academy-border bg-white text-xs font-bold">
+            ${sectionOptions}
+          </select>
+          <select class="assign-strand px-3 py-2 rounded-xl border border-academy-border bg-white text-xs font-bold" ${isSHS ? '' : 'disabled'}>
+            ${strandOptions}
+          </select>
+          <div class="flex gap-1 items-center">
+            <select class="assign-subject px-3 py-2 rounded-xl border border-academy-border bg-white text-xs font-bold w-full">
+              ${subjectOptions}
+            </select>
+            <button type="button" onclick="this.closest('.assignment-row').remove()" class="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100 hover:bg-red-100 shrink-0">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openAccountModal(id = '') {
+      const account = appData.accounts.find(a => a.id === id);
+      formModalLabel.textContent = 'School Account';
+      formModalTitle.textContent = account ? 'Edit Account' : 'Create Account';
+      formModalContent.innerHTML = `<form id="accountForm" class="space-y-4">
+        <input type="hidden" id="accountId" value="${account?.id || ''}">
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-bold mb-2">Full Name</label>
+            <input id="accountName" required value="${account?.name || ''}" class="w-full px-4 py-3 rounded-xl border border-academy-border">
+          </div>
+          <div>
+            <label class="block text-sm font-bold mb-2">Email</label>
+            <input id="accountEmail" type="email" required value="${account?.email || ''}" class="w-full px-4 py-3 rounded-xl border border-academy-border">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-2">Role</label>
+          <select id="accountRole" class="w-full px-4 py-3 rounded-xl border border-academy-border bg-white">
+            <option value="teacher_clearance_head">Teacher Clearance Head</option>
+            <option value="guidance_head">Guidance Head</option>
+            <option value="prefect_head">Prefect of Discipline</option>
+            <option value="librarian_head">Librarian</option>
+            <option value="principal">Principal</option>
+            <option value="accounting_admin">Accounting/Admin</option>
+            <option value="registrar">Registrar</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="p-4 rounded-2xl border border-academy-border">
+          <div class="flex justify-between mb-3">
+            <div>
+              <strong class="text-academy-navy">Teacher Assignments</strong>
+              <p class="text-xs text-academy-muted">Use this only for teacher clearance heads. Add multiple grade/section/subject rows.</p>
+            </div>
+            <button type="button" onclick="addAssignmentRow()" class="px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-xs font-bold">Add Row</button>
+          </div>
+          <div id="assignmentRows" class="space-y-3">${assignmentRowsHtml(account?.assignments || [])}</div>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-2">Temporary Password</label>
+          <input id="accountTempPassword" type="text" placeholder="Leave blank to auto-generate" class="w-full px-4 py-3 rounded-xl border border-academy-border">
+        </div>
+        <button class="w-full py-3 rounded-xl bg-academy-navy text-white font-bold">Save Account</button>
+      </form>`;
+      if (account) { accountRole.value = account.role; }
+      accountForm.onsubmit = saveAccount;
+      openFormModal();
+    }
+    function addAssignmentRow() { assignmentRows.insertAdjacentHTML('beforeend', assignmentRowsHtml([{ grade: 'Grade 7', section: 'Cattleya', strand: 'N/A', subject: 'Filipino' }])) }
+    async function saveAccount(e) {
+      e.preventDefault();
+      const id = document.getElementById('accountId')?.value || '';
+      const name = document.getElementById('accountName')?.value || '';
+      const email = document.getElementById('accountEmail')?.value || '';
+      const role = document.getElementById('accountRole')?.value || 'teacher_clearance_head';
+
+      const assignments = [...document.querySelectorAll('.assignment-row')].map(r => {
+        const grade = r.querySelector('.assign-grade')?.value || 'Grade 7';
+        const section = r.querySelector('.assign-section')?.value || 'Cattleya';
+        const strandEl = r.querySelector('.assign-strand');
+        const strand = ['Grade 11', 'Grade 12'].includes(grade) ? (strandEl ? strandEl.value : 'N/A') : 'N/A';
+        const subject = r.querySelector('.assign-subject')?.value || 'Subject';
+        return { grade, section, strand, subject };
+      });
+
+      const rawPass = document.getElementById('accountTempPassword')?.value?.trim();
+      const password = rawPass || 'password123';
+
+      const data = {
+        id: id || 'ACC-' + Date.now(),
+        name: name,
+        email: email,
+        role: role,
+        tempPassword: password,
+        active: true,
+        assignments: role === 'teacher_clearance_head' ? assignments : []
+      };
+
+      const isNew = !id;
+      if (isNew && window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          const result = await window.paApi.createSchoolAccount({
+            full_name: data.name,
+            email: data.email,
+            role: data.role,
+            temporary_password: password,
+            school_year: appData.settings.schoolYear,
+            assignments: data.assignments.map(a => ({
+              grade_level: a.grade,
+              section_name: a.section,
+              strand: a.strand,
+              subject_name: a.subject,
+              school_year: appData.settings.schoolYear
+            }))
+          });
+          showToast('Supabase Account Created', `Auth user created for ${data.name}. Password: ${password}`);
+        } catch (error) {
+          console.warn('Supabase account creation warning:', error);
+        }
+      }
+
+      const registeredUsers = JSON.parse(localStorage.getItem('pa_registered_users') || '[]');
+      const regIdx = registeredUsers.findIndex(u => String(u.email || '').toLowerCase() === String(data.email).toLowerCase());
+      const regUser = {
+        id: data.id,
+        email: data.email,
+        password: password,
+        tempPassword: password,
+        role: data.role,
+        fullName: data.name,
+        name: data.name,
+        assignments: data.assignments
+      };
+      if (regIdx >= 0) registeredUsers[regIdx] = { ...registeredUsers[regIdx], ...regUser };
+      else registeredUsers.push(regUser);
+      localStorage.setItem('pa_registered_users', JSON.stringify(registeredUsers));
+
+      const i = appData.accounts.findIndex(a => a.id === data.id || (data.email && String(a.email || '').toLowerCase() === String(data.email).toLowerCase()));
+      if (i >= 0) {
+        data.active = appData.accounts[i].active;
+        appData.accounts[i] = data;
+      } else {
+        appData.accounts.push(data);
+      }
+
+      saveData();
+      closeFormModal();
+      renderAll();
+      syncAccountToSupabase(data);
+      showToast('Account Created & Ready for Sign-In', `Account saved for ${data.name}. Password: ${password}`);
+    }
+
+    async function syncAccountToSupabase(data) {
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (!client) return;
+        try {
+          const { data: prof } = await client.from('profiles').upsert({
+            full_name: data.name,
+            email: data.email,
+            role: data.role,
+            status: data.active !== false ? 'active' : 'inactive'
+          }, { onConflict: 'email' }).select().maybeSingle();
+
+          const profileId = prof ? prof.id : data.id;
+
+          await client.from('staff_accounts').upsert({
+            profile_id: profileId,
+            full_name: data.name,
+            email: data.email,
+            role: data.role
+          }, { onConflict: 'email' });
+
+          if (data.role === 'teacher_clearance_head' && data.assignments && data.assignments.length > 0) {
+            await client.from('teacher_assignments').delete().eq('teacher_profile_id', profileId);
+            const rows = data.assignments.map(a => ({
+              teacher_profile_id: profileId,
+              grade_level: a.grade,
+              section_name: a.section,
+              strand: a.strand,
+              subject_name: a.subject,
+              school_year: appData.settings.schoolYear || '2026-2027'
+            }));
+            await client.from('teacher_assignments').insert(rows);
+          }
+        } catch (err) {
+          console.warn('Syncing account to Supabase DB notice:', err);
+        }
+      }
+    }
+    function toggleAccount(id) { const a = appData.accounts.find(x => x.id === id); a.active = !a.active; saveData(); syncAccountToSupabase(a); renderAll() }
+    async function deleteAccount(id) {
+      const a = appData.accounts.find(x => x.id === id);
+      if (!a) return;
+      if (!confirm(`Are you sure you want to delete the account for "${a.name}" (${a.email})?`)) return;
+
+      appData.accounts = appData.accounts.filter(x => x.id !== id);
+
+      try {
+        const registered = JSON.parse(localStorage.getItem('pa_registered_users') || '[]');
+        const updated = registered.filter(u => u.id !== id && String(u.email || '').toLowerCase() !== String(a.email || '').toLowerCase());
+        localStorage.setItem('pa_registered_users', JSON.stringify(updated));
+      } catch (err) {}
+
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (client) {
+          try {
+            await client.from('profiles').delete().eq('email', a.email);
+            await client.from('staff_accounts').delete().eq('email', a.email);
+          } catch (err) {
+            console.warn('Supabase delete account notice:', err);
+          }
+        }
+      }
+
+      saveData();
+      renderAll();
+      showToast('Account Deleted', `Successfully deleted account for ${a.name}.`);
+    }
+    function exportCsv(filename, headers, rows) { const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(','))].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href) }
+    function exportCollectionReport() { exportCsv('collections-report.csv', ['Student', 'Level', 'Assessed', 'Paid', 'Balance'], appData.students.map(s => [s.name, s.level, assessedTotal(s), s.paid, balance(s)])) }
+    function exportOutstandingReport() { exportCsv('outstanding-report.csv', ['Student', 'Class', 'Balance', 'Due Status'], appData.students.filter(s => balance(s) > 0).map(s => [s.name, classLabel(s), balance(s), dueStatus(s)])) }
+    function downloadBackup() { const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pagbilao-backup.json'; a.click(); URL.revokeObjectURL(a.href) }
+    document.getElementById('settingsForm')?.addEventListener('submit', e => { e.preventDefault(); appData.settings.schoolName = document.getElementById('schoolNameInput').value; appData.settings.schoolYear = document.getElementById('schoolYearInput').value; saveData(); showToast('Settings saved', 'Prototype settings updated.') });
+    async function syncStudentVoucherToSupabase(studentId, voucherName) {
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (!client) return;
+        try {
+          const isUuid = val => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+          const filter = isUuid(studentId) ? `id.eq.${studentId},student_number.eq.${studentId}` : `student_number.eq.${studentId}`;
+          const { data: std } = await client.from('students').select('id').or(filter).maybeSingle();
+          if (!std) return;
+
+          await client.from('student_vouchers').delete().eq('student_id', std.id);
+
+          if (voucherName && voucherName !== 'None') {
+            const { data: vType } = await client.from('voucher_types').select('id').eq('voucher_name', voucherName).maybeSingle();
+            if (vType) {
+              await client.from('student_vouchers').insert({
+                student_id: std.id,
+                voucher_type_id: vType.id
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('Syncing student voucher notice:', err);
+        }
+      }
+    }
+
+    function mergeStudentsState(localStudents = [], dbStudents = []) {
+      if (!dbStudents || dbStudents.length === 0) return localStudents;
+      if (!localStudents || localStudents.length === 0) return dbStudents;
+
+      const map = new Map();
+
+      localStudents.forEach(s => {
+        const key = String(s.email || s.id || '').toLowerCase();
+        if (key) map.set(key, { ...s });
+      });
+
+      dbStudents.forEach(dbS => {
+        const key = String(dbS.email || dbS.id || '').toLowerCase();
+        if (key) {
+          const local = map.get(key);
+          if (local) {
+            const highestPaid = Math.max(Number(dbS.paid || 0), Number(local.paid || 0));
+            map.set(key, {
+              ...dbS,
+              ...local,
+              voucher: (local.voucher !== undefined && local.voucher !== null) ? local.voucher : dbS.voucher,
+              customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
+              feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
+              assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
+              paid: highestPaid,
+              clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+            });
+          } else {
+            map.set(key, { ...dbS });
+          }
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    async function syncInstallmentsToSupabase() {
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (client) {
+          try {
+            await client.from('installment_templates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const list = appData.installmentTemplate || [];
+            if (list.length > 0) {
+              const rows = list.map((t, i) => ({
+                id: (t.id && !t.id.startsWith('INS-')) ? t.id : undefined,
+                title: t.title,
+                description: t.description || '',
+                due_date: t.dueDate,
+                sort_order: i + 1
+              }));
+              await client.from('installment_templates').insert(rows);
+            }
+          } catch (e) {
+            console.warn('Syncing installment_templates error:', e);
+          }
+        }
+      }
+    }
+
+    async function syncVouchersToSupabase() {
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (client) {
+          try {
+            await client.from('vouchers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const list = appData.vouchers || [];
+            if (list.length > 0) {
+              const rows = list.map(v => ({
+                id: (v.id && !v.id.startsWith('V-')) ? v.id : undefined,
+                voucher_name: v.name,
+                applies_to: v.appliesTo,
+                amount: v.amount,
+                active: v.active !== false
+              }));
+              await client.from('vouchers').insert(rows);
+            }
+          } catch (e) {
+            console.warn('Syncing vouchers error:', e);
+          }
+        }
+      }
+    }
+
+    function saveData() {
+      ensurePrototypeData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      syncInstallmentsToSupabase();
+      syncVouchersToSupabase();
+    }
+
+    function mergeAccountsState(localAccounts = [], dbAccounts = []) {
+      const map = new Map();
+
+      (localAccounts || []).forEach(acc => {
+        if (acc && (acc.email || acc.id)) {
+          const key = String(acc.email || acc.id).toLowerCase();
+          map.set(key, { ...acc });
+        }
+      });
+
+      (dbAccounts || []).forEach(dbAcc => {
+        if (dbAcc && (dbAcc.email || dbAcc.id)) {
+          const key = String(dbAcc.email || dbAcc.id).toLowerCase();
+          const localAcc = map.get(key);
+          if (localAcc) {
+            map.set(key, {
+              ...dbAcc,
+              ...localAcc,
+              tempPassword: localAcc.tempPassword || dbAcc.tempPassword,
+              assignments: (localAcc.assignments && localAcc.assignments.length > 0) ? localAcc.assignments : (dbAcc.assignments || [])
+            });
+          } else {
+            map.set(key, { ...dbAcc });
+          }
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    async function initAdminDashboard() {
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          const state = await window.paApi.fetchDatabaseState();
+          if (state) {
+            if (state.students && state.students.length > 0) {
+              appData.students = mergeStudentsState(appData.students || [], state.students);
+            }
+            if (state.accounts && state.accounts.length > 0) {
+              appData.accounts = mergeAccountsState(appData.accounts || [], state.accounts);
+            }
+            if (state.payments && state.payments.length > 0) {
+              appData.payments = window.paApi?.mergePaymentsState
+                ? window.paApi.mergePaymentsState(appData.payments || [], state.payments)
+                : state.payments;
+            }
+            if (state.certificateRequests && state.certificateRequests.length > 0) appData.certificateRequests = state.certificateRequests;
+            if (state.teacherClearanceRequests && state.teacherClearanceRequests.length > 0) appData.teacherClearanceRequests = state.teacherClearanceRequests;
+            
+            const rawLocal = localStorage.getItem(STORAGE_KEY);
+            const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
+            if (parsedLocal && Array.isArray(parsedLocal.vouchers)) {
+              appData.vouchers = parsedLocal.vouchers;
+            } else if (state.vouchers && state.vouchers.length > 0) {
+              appData.vouchers = state.vouchers;
+            }
+
+            if (parsedLocal && Array.isArray(parsedLocal.installmentTemplate)) {
+              appData.installmentTemplate = parsedLocal.installmentTemplate;
+            } else if (state.installmentTemplate) {
+              appData.installmentTemplate = state.installmentTemplate;
+            }
+
+            if (state.feeStructures) {
+              if (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) appData.feeStructures.JHS = state.feeStructures.JHS;
+              if (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) appData.feeStructures.SHS = state.feeStructures.SHS;
+            }
+            if (state.settings) appData.settings = { ...appData.settings, ...state.settings };
+          }
+        } catch (err) {
+          console.warn("Could not load dynamic state from Supabase, using localStorage:", err);
+        }
+      }
+      renderNav();
+      renderAll();
+
+      const savedKey = localStorage.getItem('pa_gemini_api_key');
+      if (savedKey && document.getElementById('geminiApiKeyInput')) {
+        document.getElementById('geminiApiKeyInput').value = savedKey;
+      }
+    }
+    initAdminDashboard();
+  </script>
+</body>
+
+</html>

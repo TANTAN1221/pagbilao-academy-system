@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/student-dashboard", "dest": "/student-dashboard.html" },
+    { "src": "/admin-dashboard", "dest": "/admin-dashboard.html" },
+    { "src": "/clearance-dashboard", "dest": "/clearance-dashboard.html" },
+    { "src": "/certificate", "dest": "/certificate.html" }
+  ]
+}

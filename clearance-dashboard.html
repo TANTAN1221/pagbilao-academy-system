@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Clearance Head Dashboard | Pagbilao Academy Inc.</title><script src="https://cdn.tailwindcss.com"></script><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"><style>.material-symbols-rounded{font-family:'Material Symbols Rounded';font-size:22px;line-height:1}</style><script>tailwind.config={theme:{extend:{colors:{academy:{navy:'#1E3A8A',blue:'#2563EB',soft:'#F5F8FF',border:'#DDE8F8',text:'#0F2A5F',muted:'#6B7A90',light:'#EEF5FF'}},boxShadow:{card:'0 10px 30px rgba(30,58,138,.08)'}}}};</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/app-config.js"></script>
+  <script>window.logoutToIndex = window.logoutToIndex || async function () {try { if (window.paApi && window.paApi.logout) return await window.paApi.logout("index.html"); } catch (error) { console.warn("Logout fallback used:", error); }["pa_current_user", "pa_logged_in_user", "pa_user_role", "pa_user_session", "pa_demo_session", "pa_auth_role"].forEach((key) => localStorage.removeItem(key));window.location.href = "index.html";};</script></head>
+<body class="min-h-screen bg-[#F7FAFF] text-academy-text">
+  <!-- Toast Notification -->
+  <div id="toast"
+    class="fixed top-5 right-5 z-[200] hidden max-w-sm w-full rounded-2xl border border-academy-border bg-white/95 backdrop-blur-md shadow-2xl p-4 transition-all duration-300">
+    <div class="flex items-start gap-3">
+      <div id="toastIcon"
+        class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0"><span
+          class="material-symbols-rounded">check_circle</span></div>
+      <div class="flex-1 min-w-0">
+        <p id="toastTitle" class="text-sm font-extrabold text-academy-navy">Success</p>
+        <p id="toastMessage" class="mt-0.5 text-xs text-academy-muted leading-5">Action completed.</p>
+      </div>
+      <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 p-0.5 transition rounded-lg hover:bg-slate-100 shrink-0">
+        <span class="material-symbols-rounded text-lg">close</span>
+      </button>
+    </div>
+  </div>
+<header class="h-16 bg-white border-b border-academy-border px-6 flex items-center justify-between"><div class="flex items-center gap-3"><img src="assets/logo.png" class="w-10 h-10 rounded-full object-contain border"><div><h1 class="font-extrabold text-academy-navy">Pagbilao Academy Inc.</h1><p class="text-xs text-academy-muted">Clearance Head Portal</p></div></div><div class="flex items-center gap-3"><div class="text-right"><p id="teacherNameLabel" class="text-sm font-extrabold">Teacher</p><p id="teacherRoleLabel" class="text-xs text-academy-muted">Teacher Clearance Head</p></div><button onclick="logoutToIndex()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-extrabold hover:bg-red-100 transition"><span class="material-symbols-rounded text-[18px]">logout</span>Logout</button></div></header>
+<main class="max-w-7xl mx-auto p-6 space-y-5"><section><h2 class="text-2xl font-extrabold text-academy-navy">Assigned Clearance Requests</h2><p class="text-sm text-academy-muted mt-1">This shows the students who match the teacher's assigned grade/section/subject. Students must request approval before the teacher approves.</p></section><section class="grid md:grid-cols-3 gap-4"><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Requested / Pending</p><h3 id="pendingCount" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Approved</p><h3 id="approvedCount" class="text-3xl font-extrabold text-green-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Assignments</p><h3 id="assignmentCount" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3></div></section><section class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-academy-navy mb-3">My Teaching Assignments</h3><div id="assignmentPills" class="flex flex-wrap gap-2"></div></section><section class="bg-white border border-academy-border rounded-2xl shadow-card overflow-hidden"><div class="overflow-x-auto"><table class="w-full min-w-[900px] text-sm"><thead class="bg-academy-navy text-white"><tr><th class="text-left px-4 py-3">Student</th><th class="text-left px-4 py-3">Grade / Section</th><th class="text-left px-4 py-3">Subject Scope</th><th class="text-left px-4 py-3">Request Status</th><th class="text-left px-4 py-3">Remarks</th><th class="text-left px-4 py-3">Action</th></tr></thead><tbody id="requestBody" class="divide-y divide-slate-100"></tbody></table></div></section></main><script>
+const STORAGE_KEY='pa_full_admin_v2';
+const fallbackAccounts=[];
+const fallbackStudents=[];
+function showToast(title, message, type = 'info') {
+  const toast = document.getElementById('toast');
+  const toastTitle = document.getElementById('toastTitle');
+  const toastMessage = document.getElementById('toastMessage');
+  const toastIcon = document.getElementById('toastIcon');
+  if (!toast || !toastTitle || !toastMessage) return;
+
+  toastTitle.textContent = title;
+  toastMessage.textContent = message;
+
+  if (type === 'error') {
+    toastIcon.className = 'w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0';
+    toastIcon.innerHTML = '<span class="material-symbols-rounded">error</span>';
+  } else if (type === 'warning') {
+    toastIcon.className = 'w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0';
+    toastIcon.innerHTML = '<span class="material-symbols-rounded">warning</span>';
+  } else {
+    toastIcon.className = 'w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0';
+    toastIcon.innerHTML = '<span class="material-symbols-rounded">check_circle</span>';
+  }
+
+  toast.classList.remove('hidden');
+  if (window.toastTimeout) clearTimeout(window.toastTimeout);
+  window.toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4500);
+}
+function loadData(){try{const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');return {...parsed,students:parsed.students||[],accounts:parsed.accounts||[],teacherClearanceRequests:parsed.teacherClearanceRequests||[]}}catch{return {students:[],accounts:[],teacherClearanceRequests:[]}}}
+let appData=loadData();function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(appData))}
+function currentSession(){try{return JSON.parse(localStorage.getItem('pa_user_session')||localStorage.getItem('pa_current_user')||'{}')}catch{return {}}}
+function currentAccount(){
+  const session = currentSession();
+  const email = String(session.email || '').toLowerCase();
+  const acc = appData.accounts.find(a => String(a.email || '').toLowerCase() === email || a.id === session.id);
+  if (acc) return acc;
+  return {
+    id: session.id || 'ACC-' + Date.now(),
+    name: session.fullName || session.name || 'Clearance Head',
+    email: session.email || email,
+    role: session.role || 'teacher_clearance_head',
+    active: true,
+    assignments: session.assignments || []
+  };
+}
+function currentTeacher(){ return currentAccount(); }
+function roleLabel(role) {
+  return {
+    teacher_clearance_head: 'Teacher Clearance Head',
+    guidance_head: 'Guidance Head',
+    prefect_head: 'Prefect of Discipline',
+    librarian_head: 'Librarian',
+    principal: 'Principal',
+    accounting_admin: 'Accounting/Admin',
+    registrar: 'Registrar',
+    super_admin: 'Super Admin'
+  }[role] || 'Clearance Head';
+}
+function classLabel(s){if(s.level==='SHS'){const strandStr=s.strand&&s.strand!=='N/A'?` (${s.strand})`:'';return `${s.grade} - ${s.section||'N/A'}${strandStr}`}return `${s.grade} - ${s.section||'N/A'}`}
+function assignmentMatchesStudent(a,s){const grade=a.grade||a.grade_level;const section=a.section||a.section_name||'N/A';const strand=a.strand||'N/A';if(grade&&s.grade&&grade!==s.grade)return false;if(section!=='N/A'&&s.section&&section!==s.section)return false;if(strand!=='N/A'&&s.strand){const normA=strand.replace('HUMMS','HUMSS');const normS=(s.strand||'').replace('HUMMS','HUMSS');if(normA!==normS&&s.strand!=='N/A')return false}return true}
+function rowKey(student,teacher,assignment){return `${student.id}|${teacher.id}|${assignment.subject||'Subject'}|${assignment.grade}|${assignment.section||'N/A'}`}
+function requestFor(key){
+  const list = appData.teacherClearanceRequests || [];
+  const req = list.find(r => r.key === key);
+  if (req) return req;
+
+  const parts = String(key).split('|');
+  if (parts.length >= 3) {
+    const studentId = parts[0];
+    const teacherId = parts[1];
+    const subject = parts[2];
+
+    const match = list.find(r =>
+      (r.studentId === studentId || String(r.key || '').startsWith(studentId)) &&
+      (r.teacherId === teacherId || r.subject === subject)
+    );
+    if (match) return match;
+
+    if (parts.length === 3) {
+      const s = (appData.students || []).find(x => x.id === studentId);
+      if (s && s.clearance) {
+        const status = s.clearance[subject] || 'requested';
+        return { key, status, remarks: '' };
+      }
+    }
+  }
+  return null;
+}
+function teacherRows(){
+  const acc = currentAccount();
+  if (acc.role === 'teacher_clearance_head') {
+    return (appData.students||[]).flatMap(s=>(acc.assignments||[]).filter(a=>assignmentMatchesStudent(a,s)).map(a=>({student:s,teacher:acc,assignment:a,key:rowKey(s,acc,a)})));
+  }
+
+  const roleFieldMap = {
+    guidance_head: 'Guidance',
+    prefect_head: 'Prefect',
+    librarian_head: 'Library',
+    principal: 'Principal',
+    accounting_admin: 'Accounting',
+    registrar: 'Registrar'
+  };
+
+  const field = roleFieldMap[acc.role] || 'Principal';
+
+  let list = appData.students || [];
+
+  // Directive: Principal only sees students who have cleared their teacher clearances
+  if (acc.role === 'principal') {
+    list = list.filter(s => (s.clearance?.Teacher === 'approved' || allTeacherRowsApproved(s)));
+  }
+
+  return list.map(s => {
+    const key = `${s.id}|${acc.id}|${field}`;
+    return {
+      student: s,
+      teacher: acc,
+      field: field,
+      assignment: { subject: field + ' Clearance Approval' },
+      key: key
+    };
+  });
+}
+function statusBadge(status){const cls={approved:'bg-green-50 text-green-700',requested:'bg-blue-50 text-blue-700',pending:'bg-amber-50 text-amber-700',on_hold:'bg-amber-50 text-amber-700',not_requested:'bg-slate-100 text-slate-600'}[status]||'bg-slate-100 text-slate-600';return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${cls}">${status.replace('_',' ')}</span>`}
+function allTeacherRowsApproved(student){const rows=(appData.accounts||[]).filter(a=>a.role==='teacher_clearance_head'&&a.active).flatMap(t=>(t.assignments||[]).filter(a=>assignmentMatchesStudent(a,student)).map(a=>rowKey(student,t,a)));return rows.length>0&&rows.every(k=>requestFor(k)?.status==='approved')}
+function mergeStudentsState(localStudents = [], dbStudents = []) {
+  if (!dbStudents || dbStudents.length === 0) return localStudents;
+  if (!localStudents || localStudents.length === 0) return dbStudents;
+
+  const map = new Map();
+
+  localStudents.forEach(s => {
+    const key = String(s.email || s.id || '').toLowerCase();
+    if (key) map.set(key, { ...s });
+  });
+
+  dbStudents.forEach(dbS => {
+    const key = String(dbS.email || dbS.id || '').toLowerCase();
+    if (key) {
+      const local = map.get(key);
+      if (local) {
+        const highestPaid = Math.max(Number(dbS.paid || 0), Number(local.paid || 0));
+        map.set(key, {
+          ...dbS,
+          ...local,
+          voucher: (local.voucher !== undefined && local.voucher !== null) ? local.voucher : dbS.voucher,
+          customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
+          feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
+          assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
+          paid: highestPaid,
+          clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+        });
+      } else {
+        map.set(key, { ...dbS });
+      }
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function updateClearanceRequestState(row, status, remarks = '') {
+  appData.teacherClearanceRequests = appData.teacherClearanceRequests || [];
+  const sId = String(row.student.id).toLowerCase();
+  const tId = String(row.teacher.id).toLowerCase();
+  const subj = String(row.assignment?.subject || 'Subject').toLowerCase();
+
+  let matches = appData.teacherClearanceRequests.filter(r => {
+    const rKey = String(r.key || '').toLowerCase();
+    const rStudent = String(r.studentId || rKey.split('|')[0] || '').toLowerCase();
+    const rTeacher = String(r.teacherId || rKey.split('|')[1] || '').toLowerCase();
+    const rSubject = String(r.subject || rKey.split('|')[2] || '').toLowerCase();
+
+    return rKey === String(row.key).toLowerCase() ||
+           (rStudent === sId && (rTeacher === tId || rSubject === subj));
+  });
+
+  if (matches.length === 0) {
+    appData.teacherClearanceRequests.push({
+      key: row.key,
+      studentId: row.student.id,
+      teacherId: row.teacher.id,
+      teacherName: row.teacher.name,
+      subject: row.assignment?.subject || 'Subject',
+      grade: row.student.grade,
+      section: row.student.section,
+      strand: row.student.strand,
+      status: status,
+      remarks: remarks,
+      updatedAt: new Date().toISOString()
+    });
+  } else {
+    matches.forEach(m => {
+      m.key = row.key;
+      m.status = status;
+      m.remarks = remarks;
+      m.updatedAt = new Date().toISOString();
+    });
+  }
+
+  row.student.clearance = row.student.clearance || {};
+  if (status === 'approved') {
+    if (allTeacherRowsApproved(row.student)) {
+      row.student.clearance.Teacher = 'approved';
+    }
+  } else {
+    row.student.clearance.Teacher = 'pending';
+  }
+
+  saveData();
+}
+
+async function approve(key, btn){
+  const row=teacherRows().find(r=>r.key===key);
+  if(!row)return;
+  const remarks = btn ? btn.closest('tr').querySelector('input').value : '';
+
+  if (row.field) {
+    row.student.clearance = row.student.clearance || {};
+    row.student.clearance[row.field] = 'approved';
+    saveData();
+    renderAll();
+    return;
+  }
+
+  updateClearanceRequestState(row, 'approved', remarks);
+
+  if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
+    try {
+      await window.paApi.updateTeacherClearance(row.student.id, row.teacher.id, row.assignment.subject, 'approved', remarks);
+    } catch (err) {
+      console.warn("Supabase clearance approval notice:", err);
+    }
+  }
+  renderAll();
+}
+
+async function hold(key, btn){
+  const row=teacherRows().find(r=>r.key===key);
+  if(!row)return;
+
+  const currentReq = requestFor(key);
+  if (currentReq && currentReq.status === 'approved') {
+    showToast('Action Locked', 'Clearance has already been approved and cannot be placed on hold again.', 'warning');
+    return;
+  }
+  const remarks = btn ? btn.closest('tr').querySelector('input').value : '';
+
+  if (row.field) {
+    if (row.student.clearance?.[row.field] === 'approved') {
+      showToast('Action Locked', 'Clearance has already been approved and cannot be placed on hold again.', 'warning');
+      return;
+    }
+    row.student.clearance = row.student.clearance || {};
+    row.student.clearance[row.field] = 'on_hold';
+    saveData();
+    renderAll();
+    return;
+  }
+
+  updateClearanceRequestState(row, 'on_hold', remarks);
+
+  if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
+    try {
+      await window.paApi.updateTeacherClearance(row.student.id, row.teacher.id, row.assignment.subject, 'on_hold', remarks);
+    } catch (err) {
+      console.warn("Supabase clearance hold notice:", err);
+    }
+  }
+  renderAll();
+}
+
+function mergeClearanceRequestsState(localRequests = [], dbRequests = []) {
+  if (!dbRequests || dbRequests.length === 0) return localRequests;
+  const map = new Map();
+  (localRequests || []).forEach(r => { if (r && r.key) map.set(r.key, { ...r }); });
+  (dbRequests || []).forEach(dbR => {
+    if (dbR && dbR.key) {
+      const local = map.get(dbR.key);
+      if (local) map.set(dbR.key, { ...dbR, ...local });
+      else map.set(dbR.key, { ...dbR });
+    }
+  });
+  return Array.from(map.values());
+}
+function renderAll(){
+  const acc = currentAccount();
+  teacherNameLabel.textContent = acc.name;
+  teacherRoleLabel.textContent = roleLabel(acc.role);
+
+  if (acc.role === 'teacher_clearance_head') {
+    assignmentCount.textContent = (acc.assignments || []).length;
+    assignmentPills.innerHTML = (acc.assignments || []).map(a => `<span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">${a.grade} · ${a.section || 'N/A'} · ${a.subject || 'Subject'}</span>`).join('') || '<span class="text-sm text-academy-muted">No assignments yet.</span>';
+  } else {
+    assignmentCount.textContent = (appData.students || []).length;
+    assignmentPills.innerHTML = `<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">All Students Scope (${roleLabel(acc.role)})</span>`;
+  }
+
+  const rows = teacherRows();
+  const pending = rows.filter(r => ['requested', 'on_hold', 'pending'].includes(requestFor(r.key)?.status)).length;
+  const approved = rows.filter(r => requestFor(r.key)?.status === 'approved').length;
+  pendingCount.textContent = pending;
+  approvedCount.textContent = approved;
+
+  requestBody.innerHTML = rows.length ? rows.map(r => {
+    const req = requestFor(r.key);
+    const status = req?.status || (r.field ? (r.student.clearance?.[r.field] || 'requested') : 'requested');
+    const isApproved = status === 'approved';
+
+    return `<tr>
+      <td class="px-4 py-3 font-extrabold text-academy-navy">${r.student.name}</td>
+      <td class="px-4 py-3">${classLabel(r.student)}</td>
+      <td class="px-4 py-3">${r.assignment.subject || 'Subject'}</td>
+      <td class="px-4 py-3">${statusBadge(status)}</td>
+      <td class="px-4 py-3"><input value="${req?.remarks || ''}" placeholder="Optional remarks" class="px-3 py-2 rounded-xl border border-academy-border w-full" ${isApproved ? 'disabled' : ''}></td>
+      <td class="px-4 py-3 flex items-center gap-2">
+        <button onclick="approve('${r.key.replaceAll("'", "\\'")}', this)" ${isApproved ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg ${isApproved ? 'bg-green-100 text-green-800 cursor-not-allowed opacity-80' : 'bg-green-50 text-green-700 hover:bg-green-100'} font-bold text-xs">
+          ${isApproved ? 'Approved ✓' : 'Approve'}
+        </button>
+        ${!isApproved ? `
+          <button onclick="hold('${r.key.replaceAll("'", "\\'")}', this)" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs">Hold</button>
+        ` : ''}
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" class="px-4 py-8 text-center text-academy-muted">No clearance requests pending for this role.</td></tr>`;
+}
+function mergeAccountsState(localAccounts = [], dbAccounts = []) {
+  const map = new Map();
+
+  (localAccounts || []).forEach(acc => {
+    if (acc && (acc.email || acc.id)) {
+      const key = String(acc.email || acc.id).toLowerCase();
+      map.set(key, { ...acc });
+    }
+  });
+
+  (dbAccounts || []).forEach(dbAcc => {
+    if (dbAcc && (dbAcc.email || dbAcc.id)) {
+      const key = String(dbAcc.email || dbAcc.id).toLowerCase();
+      const localAcc = map.get(key);
+      if (localAcc) {
+        map.set(key, {
+          ...dbAcc,
+          ...localAcc,
+          tempPassword: localAcc.tempPassword || dbAcc.tempPassword,
+          assignments: (localAcc.assignments && localAcc.assignments.length > 0) ? localAcc.assignments : (dbAcc.assignments || [])
+        });
+      } else {
+        map.set(key, { ...dbAcc });
+      }
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+async function initClearanceDashboard(){
+  if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
+    try {
+      const state = await window.paApi.fetchDatabaseState();
+      if (state) {
+        appData = {
+          ...appData,
+          ...state,
+          students: mergeStudentsState(appData.students || [], state.students || []),
+          accounts: mergeAccountsState(appData.accounts || [], state.accounts || []),
+          teacherClearanceRequests: mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests || [])
+        };
+      }
+    } catch (err) {
+      console.warn("Could not load dynamic state from Supabase:", err);
+    }
+  }
+  renderAll();
+}
+initClearanceDashboard();
+</script></body></html>

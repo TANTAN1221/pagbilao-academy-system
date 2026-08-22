@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard | Pagbilao Academy Inc.</title>
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app-config.js"></script>
+  <script>
+    window.logoutToIndex = window.logoutToIndex || async function () {
+      try { if (window.paApi && window.paApi.logout) return await window.paApi.logout("index.html"); }
+      catch (error) { console.warn("Logout fallback used:", error); }
+      ["pa_current_user", "pa_logged_in_user", "pa_user_role", "pa_user_session", "pa_demo_session", "pa_auth_role"].forEach((key) => localStorage.removeItem(key));
+      window.location.href = "index.html";
+    };
+  </script>
+  <style>
+    .material-symbols-rounded {
+      font-family: 'Material Symbols Rounded';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1;
+      display: inline-block;
+      white-space: nowrap;
+      -webkit-font-smoothing: antialiased
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableStatementArea, #printableStatementArea *,
+      #receiptPrintArea, #receiptPrintArea * {
+        visibility: visible !important;
+      }
+      #printableStatementArea, #receiptPrintArea {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            academy: {
+              navy: '#1E3A8A',
+              blue: '#2563EB',
+              soft: '#F5F8FF',
+              border: '#DDE8F8',
+              text: '#0F2A5F',
+              muted: '#6B7A90',
+              light: '#EEF5FF'
+            }
+          },
+          boxShadow: {
+            soft: '0 20px 50px rgba(30,58,138,.10)',
+            card: '0 10px 30px rgba(30,58,138,.08)'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="min-h-screen bg-[#F7FAFF] text-academy-text">
+  <!-- Toast Notification -->
+  <div id="toast"
+    class="fixed top-5 right-5 z-[200] hidden max-w-sm w-full rounded-2xl border border-academy-border bg-white/95 backdrop-blur-md shadow-2xl p-4 transition-all duration-300">
+    <div class="flex items-start gap-3">
+      <div id="toastIcon"
+        class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0"><span
+          class="material-symbols-rounded">check_circle</span></div>
+      <div class="flex-1 min-w-0">
+        <p id="toastTitle" class="text-sm font-extrabold text-academy-navy">Success</p>
+        <p id="toastMessage" class="mt-0.5 text-xs text-academy-muted leading-5">Action completed.</p>
+      </div>
+      <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 p-0.5 transition rounded-lg hover:bg-slate-100 shrink-0">
+        <span class="material-symbols-rounded text-lg">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Navigation Bar -->
+  <aside class="fixed inset-y-0 left-0 z-40 w-[260px] bg-academy-navy text-white hidden lg:flex flex-col border-r border-white/10 shadow-xl">
+    <div class="px-5 py-5 flex items-center gap-3 border-b border-white/10">
+      <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+        class="w-11 h-11 rounded-full bg-white object-contain border border-white/30 p-0.5 shadow-sm">
+      <div>
+        <h1 class="text-sm font-extrabold leading-tight">Pagbilao Academy</h1>
+        <p class="text-xs text-blue-200">Student Portal</p>
+      </div>
+    </div>
+
+    <!-- Nav Items -->
+    <nav id="sideNav" class="flex-1 px-3 py-5 space-y-1.5 text-sm overflow-y-auto"></nav>
+
+    <!-- Sidebar Footer -->
+    <div class="px-5 py-4 border-t border-white/10 bg-black/10">
+      <div class="flex items-center justify-between text-xs text-blue-200">
+        <span>School Year</span>
+        <span class="font-bold text-white">2026–2027</span>
+      </div>
+      <button onclick="logoutToIndex()"
+        class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-bold transition">
+        <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Sidebar Overlay Drawer -->
+  <div id="mobileDrawer" class="fixed inset-0 z-50 hidden lg:hidden">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleMobileDrawer()"></div>
+    <div class="fixed inset-y-0 left-0 w-[270px] bg-academy-navy text-white flex flex-col shadow-2xl p-4">
+      <div class="flex items-center justify-between pb-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <img src="assets/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white object-contain p-0.5">
+          <div>
+            <h2 class="text-sm font-extrabold">Pagbilao Academy</h2>
+            <p class="text-xs text-blue-200">Student Portal</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileDrawer()" class="p-1 rounded-lg hover:bg-white/10 text-white">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <nav id="mobileSideNav" class="flex-1 py-4 space-y-1 text-sm overflow-y-auto"></nav>
+      <div class="pt-3 border-t border-white/10">
+        <button onclick="logoutToIndex()"
+          class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/20 text-red-200 text-xs font-bold">
+          <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Wrapper -->
+  <div class="lg:pl-[260px] min-h-screen flex flex-col">
+    <!-- Top Header -->
+    <header class="h-16 bg-white border-b border-academy-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light">
+          <span class="material-symbols-rounded">menu</span>
+        </button>
+        <div>
+          <h2 id="pageTitle" class="text-lg sm:text-xl font-extrabold text-academy-navy">Dashboard Overview</h2>
+          <p id="pageSubtitle" class="hidden sm:block text-xs text-academy-muted">Summary of your fees, clearance, and account status</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="startStudentWalkthrough()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-blue-50 transition shadow-xs">
+          <span class="material-symbols-rounded text-[18px] text-academy-blue">help</span>
+          <span class="hidden sm:inline">Portal Tour</span>
+        </button>
+        <button onclick="startPayMongoCheckout()" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
+          <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition
+        </button>
+        <div id="avatarInitials" class="w-10 h-10 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
+          ST
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Pages -->
+    <main class="p-4 sm:p-6 space-y-6 flex-1">
+      
+      <!-- TAB 1: OVERVIEW PAGE -->
+      <section id="dashboardPage" class="page-section space-y-5">
+        <!-- Welcome Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-8 shadow-card relative overflow-hidden">
+          <div class="relative z-10">
+            <span class="px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold tracking-wide uppercase">Student Overview</span>
+            <h2 id="welcomeName" class="mt-3 text-2xl sm:text-3xl font-black">Welcome back</h2>
+            <p id="studentMeta" class="mt-1 text-sm text-blue-100/90">Loading student profile...</p>
+          </div>
+          <div class="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
+        </div>
+
+        <!-- 4 Stat Cards -->
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-academy-muted">Net Balance Due</p>
+              <span class="p-2 rounded-xl bg-red-50 text-red-600"><span class="material-symbols-rounded">account_balance_wallet</span></span>
+            </div>
+            <h3 id="netBalance" class="mt-3 text-2xl font-extrabold text-red-600">₱0</h3>
+            <p id="voucherNote" class="mt-1 text-xs text-academy-muted">After voucher</p>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-academy-muted">Voucher Applied</p>
+              <span class="p-2 rounded-xl bg-blue-50 text-academy-navy"><span class="material-symbols-rounded">confirmation_number</span></span>
+            </div>
+            <h3 id="voucherApplied" class="mt-3 text-2xl font-extrabold text-academy-navy">₱0</h3>
+            <p id="voucherName" class="mt-1 text-xs text-academy-muted">Voucher</p>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-academy-muted">Clearance Progress</p>
+              <span class="p-2 rounded-xl bg-green-50 text-green-600"><span class="material-symbols-rounded">fact_check</span></span>
+            </div>
+            <h3 id="clearanceProgress" class="mt-3 text-2xl font-extrabold text-green-600">0/0</h3>
+            <p class="mt-1 text-xs text-academy-muted">Approvals completed</p>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-academy-muted">Next Installment</p>
+              <span class="p-2 rounded-xl bg-amber-50 text-amber-600"><span class="material-symbols-rounded">calendar_month</span></span>
+            </div>
+            <h3 class="mt-3 text-2xl font-extrabold text-amber-600">Jan 15</h3>
+            <p class="mt-1 text-xs text-academy-muted">Partial payment allowed</p>
+          </div>
+        </div>
+
+        <!-- Quick Action Grid -->
+        <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <button onclick="showPage('paymentsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+            <span class="w-10 h-10 rounded-xl bg-blue-50 text-academy-blue flex items-center justify-center font-bold mb-3 group-hover:bg-academy-navy group-hover:text-white transition">
+              <span class="material-symbols-rounded">add_card</span>
+            </span>
+            <p class="font-extrabold text-academy-navy">Make Payment</p>
+            <p class="text-xs text-academy-muted mt-1">Pay via QR Ph, GCash, or Card</p>
+          </button>
+
+          <button onclick="showPage('transactionsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+            <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+              <span class="material-symbols-rounded">receipt_long</span>
+            </span>
+            <p class="font-extrabold text-academy-navy">Payment History</p>
+            <p class="text-xs text-academy-muted mt-1">View receipts & transactions</p>
+          </button>
+
+          <button onclick="showPage('clearancePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+            <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold mb-3 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <span class="material-symbols-rounded">fact_check</span>
+            </span>
+            <p class="font-extrabold text-academy-navy">Clearance Status</p>
+            <p class="text-xs text-academy-muted mt-1">Request teacher approvals</p>
+          </button>
+
+          <button onclick="showPage('certificatePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+            <span class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold mb-3 group-hover:bg-purple-600 group-hover:text-white transition">
+              <span class="material-symbols-rounded">workspace_premium</span>
+            </span>
+            <p class="font-extrabold text-academy-navy">Clearance Certificate</p>
+            <p class="text-xs text-academy-muted mt-1">View & download certificate</p>
+          </button>
+        </div>
+
+        <!-- Total Fee Breakdown Card -->
+        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-academy-border">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center shrink-0 border border-blue-100 shadow-xs">
+                <span class="material-symbols-rounded text-2xl">account_balance</span>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-extrabold text-academy-navy flex items-center gap-2">
+                  Total Fee Breakdown & Statement of Account
+                </h3>
+                <p class="text-xs text-academy-muted mt-0.5">Itemized assessment of tuition, fees, applied vouchers, payments & balance</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <button onclick="printFeeBreakdown()" class="px-4 py-2.5 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition flex items-center gap-2 shadow-sm">
+                <span class="material-symbols-rounded text-[18px]">print</span>Print Statement
+              </button>
+              <button onclick="showPage('paymentsPage')" class="px-4 py-2.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold hover:bg-academy-light transition flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-[18px]">payments</span>Pay Tuition
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Chips -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-academy-soft border border-academy-border text-xs">
+            <div>
+              <p class="text-academy-muted font-bold">Gross Fees Total</p>
+              <p id="overviewGrossFees" class="text-base font-extrabold text-academy-navy mt-1">₱0</p>
+            </div>
+            <div>
+              <p class="text-academy-muted font-bold">Vouchers / Discounts</p>
+              <p id="overviewDiscounts" class="text-base font-extrabold text-blue-700 mt-1">-₱0</p>
+            </div>
+            <div>
+              <p class="text-academy-muted font-bold">Total Amount Paid</p>
+              <p id="overviewTotalPaid" class="text-base font-extrabold text-green-600 mt-1">₱0</p>
+            </div>
+            <div>
+              <p class="text-academy-muted font-bold">Net Balance Due</p>
+              <p id="overviewBalanceDue" class="text-base font-extrabold text-red-600 mt-1">₱0</p>
+            </div>
+          </div>
+
+          <!-- Fee Items Table -->
+          <div class="overflow-x-auto rounded-xl border border-academy-border">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-academy-light text-academy-navy font-bold border-b border-academy-border">
+                <tr>
+                  <th class="p-3">Fee Item / Particulars</th>
+                  <th class="p-3 text-right">Base Amount</th>
+                  <th class="p-3 text-right">Voucher / Discount</th>
+                  <th class="p-3 text-right">Net Amount</th>
+                  <th class="p-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="overviewFeeBreakdownBody" class="divide-y divide-academy-border bg-white"></tbody>
+              <tfoot id="overviewFeeBreakdownFoot" class="bg-slate-50 font-extrabold border-t-2 border-academy-border"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Activity Preview -->
+        <div class="grid lg:grid-cols-2 gap-5">
+          <!-- Recent Transactions Preview -->
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-emerald-600 text-[20px]">history</span>Recent Transactions
+              </h3>
+              <button onclick="showPage('transactionsPage')" class="text-xs font-extrabold text-academy-blue hover:underline">View All →</button>
+            </div>
+            <div id="recentTransactionsList" class="space-y-3"></div>
+          </div>
+
+          <!-- Clearance Quick Summary -->
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-academy-blue text-[20px]">fact_check</span>Clearance Overview
+              </h3>
+              <button onclick="showPage('clearancePage')" class="text-xs font-extrabold text-academy-blue hover:underline">Manage Clearance →</button>
+            </div>
+            <div id="clearanceSummaryGrid" class="grid grid-cols-2 gap-3"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: TUITION & PAYMENTS PAGE -->
+      <section id="paymentsPage" class="page-section space-y-5 hidden">
+        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-[22px] text-academy-blue">account_balance_wallet</span>Tuition & Billing Overview
+              </h3>
+              <p class="text-xs text-academy-muted mt-1">Review your total fees, applied vouchers, and current net balance due.</p>
+            </div>
+            <button onclick="startPayMongoCheckout()" class="px-6 py-3 rounded-xl bg-academy-navy text-white font-extrabold hover:bg-blue-900 transition flex items-center justify-center gap-2 shadow-sm">
+              <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition Now
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 text-center gap-4 p-5 rounded-2xl bg-academy-soft border border-academy-border mb-5">
+            <div>
+              <p class="text-xs text-academy-muted font-bold">Gross Tuition Fees</p>
+              <p id="grossFees" class="text-lg font-extrabold text-academy-navy mt-1">₱0</p>
+            </div>
+            <div>
+              <p class="text-xs text-academy-muted font-bold">Voucher Discount</p>
+              <p id="paymentVoucher" class="text-lg font-extrabold text-blue-700 mt-1">-₱0</p>
+            </div>
+            <div>
+              <p class="text-xs text-academy-muted font-bold">Total Paid</p>
+              <p id="amountPaid" class="text-lg font-extrabold text-green-600 mt-1">₱0</p>
+            </div>
+            <div>
+              <p class="text-xs text-academy-muted font-bold">Net Balance Due</p>
+              <p id="paymentBalance" class="text-lg font-extrabold text-red-600 mt-1">₱0</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-bold text-academy-muted">
+              <span>Payment Progress</span>
+              <span id="paymentPctLabel">0% Paid</span>
+            </div>
+            <div class="h-3 bg-academy-light rounded-full overflow-hidden p-0.5 border border-academy-border">
+              <div id="paymentProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
+          <p class="mt-4 text-xs text-academy-muted">Partial payments are accepted. You can make custom partial payments or select specific fee items to pay.</p>
+        </div>
+
+        <!-- Installment Schedule Table -->
+        <div class="bg-white rounded-2xl border border-academy-border shadow-card overflow-hidden">
+          <div class="p-5 border-b border-academy-border">
+            <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+              <span class="material-symbols-rounded text-[20px] text-amber-600">calendar_month</span>Installment Schedule
+            </h3>
+            <p class="text-xs text-academy-muted mt-1">Track upcoming due dates and partial payments.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-academy-light text-academy-navy font-bold">
+                <tr>
+                  <th class="text-left p-4">Installment Due</th>
+                  <th class="text-left p-4">Amount Due</th>
+                  <th class="text-left p-4">Amount Paid</th>
+                  <th class="text-left p-4">Payment Status</th>
+                </tr>
+              </thead>
+              <tbody id="installmentBody" class="divide-y divide-academy-border"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: PAYMENT HISTORY & TRANSACTIONS PAGE -->
+      <section id="transactionsPage" class="page-section space-y-5 hidden">
+        <!-- Transaction Summary Header -->
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+            <p class="text-xs font-bold text-academy-muted">Total Successful Payments</p>
+            <h3 id="txCount" class="mt-2 text-2xl font-extrabold text-academy-navy">0</h3>
+            <p class="text-xs text-academy-muted mt-1">Recorded transactions</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+            <p class="text-xs font-bold text-academy-muted">Total Amount Paid</p>
+            <h3 id="txTotalPaid" class="mt-2 text-2xl font-extrabold text-green-600">₱0</h3>
+            <p class="text-xs text-academy-muted mt-1">Confirmed payments</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+            <p class="text-xs font-bold text-academy-muted">Latest Transaction Date</p>
+            <h3 id="txLatestDate" class="mt-2 text-lg font-extrabold text-academy-navy">N/A</h3>
+            <p class="text-xs text-academy-muted mt-1">Most recent payment</p>
+          </div>
+        </div>
+
+        <!-- Payment History Table Card -->
+        <div class="bg-white rounded-2xl border border-academy-border shadow-card overflow-hidden">
+          <div class="p-5 border-b border-academy-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-emerald-600 text-[20px]">receipt_long</span>Payment History & Transaction Logs
+              </h3>
+              <p class="text-xs text-academy-muted mt-1">Full breakdown of all payments made to your account.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="txSearchInput" onkeyup="renderPaymentsHistory()" placeholder="Search reference..." class="px-3 py-2 rounded-xl border border-academy-border text-xs w-44 focus:outline-none focus:border-academy-blue">
+              <select id="txMethodFilter" onchange="renderPaymentsHistory()" class="px-3 py-2 rounded-xl border border-academy-border text-xs bg-white focus:outline-none">
+                <option value="all">All Channels</option>
+                <option value="paymongo">PayMongo / QR Ph</option>
+                <option value="gcash">GCash</option>
+                <option value="maya">Maya</option>
+                <option value="instapay">InstaPay</option>
+                <option value="manual">Cash / OTC</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-academy-light text-academy-navy font-bold">
+                <tr>
+                  <th class="text-left p-4">Reference / ID</th>
+                  <th class="text-left p-4">Date & Time</th>
+                  <th class="text-left p-4">Payment Channel</th>
+                  <th class="text-left p-4">Amount</th>
+                  <th class="text-left p-4">Status</th>
+                  <th class="text-left p-4">Receipt</th>
+                </tr>
+              </thead>
+              <tbody id="paymentHistoryBody" class="divide-y divide-academy-border"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: CLEARANCE MONITORING PAGE -->
+      <section id="clearancePage" class="page-section space-y-5 hidden">
+        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div>
+              <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-indigo-600 text-[22px]">fact_check</span>Clearance Approval Status
+              </h3>
+              <p class="text-xs text-academy-muted mt-1">Subject teachers are assigned based on your enrolled grade, section, and strand.</p>
+            </div>
+            <button onclick="requestAllTeacherApprovals()" class="px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
+              Request All Teachers →
+            </button>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
+              <span class="material-symbols-rounded text-[18px] text-blue-600">person</span>Assigned Subject Teachers
+            </h4>
+            <div class="grid sm:grid-cols-2 gap-3" id="teacherClearanceCards"></div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
+              <span class="material-symbols-rounded text-[18px] text-purple-600">domain</span>School Offices & Final Approvals
+            </h4>
+            <div class="grid sm:grid-cols-2 gap-3" id="officeClearanceCards"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: CLEARANCE CERTIFICATE PAGE -->
+      <section id="certificatePage" class="page-section space-y-5 hidden">
+        <div class="bg-white rounded-2xl border border-academy-border p-8 shadow-card max-w-3xl mx-auto text-center">
+          <div class="w-16 h-16 rounded-3xl bg-blue-50 text-academy-navy grid place-items-center mx-auto mb-4">
+            <span class="material-symbols-rounded text-[36px]">workspace_premium</span>
+          </div>
+          <h3 class="text-2xl font-black text-academy-navy">Official Clearance Certificate</h3>
+          <p class="text-sm text-academy-muted mt-2 max-w-md mx-auto">
+            Once all assigned subject teachers and school department heads have approved your clearance, your official clearance certificate will be unlocked for viewing and printing.
+          </p>
+
+          <div id="certificateStatusBox" class="my-6 p-5 rounded-2xl border border-academy-border bg-academy-soft max-w-md mx-auto">
+            <p class="text-xs font-bold text-academy-muted">Clearance Status</p>
+            <p id="certificateStatusBadge" class="text-base font-extrabold text-amber-700 mt-1">Pending Approval</p>
+          </div>
+
+          <button id="openCertificateBtn" onclick="openCertificate()" class="px-8 py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition">
+            View & Print Clearance Certificate
+          </button>
+        </div>
+      </section>
+
+      <!-- TAB 6: STUDENT PROFILE PAGE -->
+      <section id="profilePage" class="page-section space-y-5 hidden">
+        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card max-w-3xl mx-auto">
+          <div class="flex items-center gap-4 pb-6 border-b border-academy-border">
+            <div id="profileInitials" class="w-16 h-16 rounded-full bg-academy-navy text-white grid place-items-center text-xl font-black">
+              ST
+            </div>
+            <div>
+              <h3 id="profileName" class="text-xl font-extrabold text-academy-navy">Student Name</h3>
+              <p id="profileMeta" class="text-xs text-academy-muted mt-1">Student ID · Level</p>
+            </div>
+          </div>
+
+          <div class="py-6 space-y-4">
+            <h4 class="text-sm font-extrabold text-academy-navy">Academic & Account Information</h4>
+            <div id="profileDetailsGrid" class="grid sm:grid-cols-2 gap-4"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- STUDENT DASHBOARD WALKTHROUGH POP-UP MODAL -->
+  <div id="walkthroughModal" class="fixed inset-0 z-[150] hidden items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm animate-in fade-in duration-200">
+    <div class="relative w-full max-w-lg bg-white rounded-[2.5rem] border border-academy-border shadow-2xl overflow-hidden flex flex-col transition-all">
+      
+      <!-- Top Progress Bar & Header -->
+      <div class="bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-7 relative">
+        <button type="button" onclick="skipWalkthrough()" class="absolute top-5 right-5 text-white/70 hover:text-white p-1 rounded-xl hover:bg-white/10 transition" aria-label="Close walkthrough">
+          <span class="material-symbols-rounded text-xl">close</span>
+        </button>
+
+        <div class="flex items-center justify-between text-xs font-extrabold text-blue-200 uppercase tracking-wider mb-2.5 pr-8">
+          <span class="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-white backdrop-blur-sm">
+            <span class="material-symbols-rounded text-[16px] text-sky-300">explore</span>
+            Portal Walkthrough
+          </span>
+          <span id="wtStepBadge">Step 1 of 5</span>
+        </div>
+
+        <h3 id="wtTitle" class="text-xl sm:text-2xl font-black text-white mt-1">Welcome to your Student Portal</h3>
+        <p id="wtSubtitle" class="text-xs sm:text-sm text-blue-100/90 mt-1">Here is a quick tour to help you navigate your account features.</p>
+
+        <!-- Step Indicator Dots / Bar -->
+        <div class="w-full bg-white/20 h-2 rounded-full mt-4 overflow-hidden">
+          <div id="wtProgressBar" class="bg-sky-400 h-full w-1/5 transition-all duration-300 rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Step Body Content -->
+      <div class="p-6 sm:p-7 space-y-5 text-academy-text flex-1">
+        
+        <!-- Dynamic Visual Icon & Highlight Box -->
+        <div class="flex items-center gap-4 p-4 rounded-2xl bg-academy-soft border border-academy-border">
+          <div id="wtIconBox" class="w-12 h-12 rounded-2xl bg-blue-100 text-academy-navy flex items-center justify-center shrink-0 shadow-xs">
+            <span id="wtIcon" class="material-symbols-rounded text-2xl">dashboard</span>
+          </div>
+          <div>
+            <h4 id="wtHighlightTitle" class="text-sm font-extrabold text-academy-navy">Dashboard Overview</h4>
+            <p id="wtHighlightText" class="text-xs text-academy-muted mt-0.5">Quickly view your total net fees, vouchers applied, and paid amounts.</p>
+          </div>
+        </div>
+
+        <!-- Main Step Text Description -->
+        <p id="wtDescription" class="text-xs sm:text-sm text-academy-muted leading-relaxed">
+          Your main dashboard presents an instant financial breakdown of your account, including applied ESC/SHS vouchers, remaining net balance due, and overall clearance progress.
+        </p>
+
+        <!-- Useful Tip Pill -->
+        <div id="wtTipBox" class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-950 text-xs">
+          <span class="material-symbols-rounded text-lg text-amber-600 shrink-0 mt-0.5">lightbulb</span>
+          <span id="wtTipText" class="leading-normal font-medium">Tip: You can access specific sections anytime using the navigation sidebar menu.</span>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Controls -->
+      <div class="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+        <button type="button" onclick="skipWalkthrough()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold text-xs transition">
+          Skip Tour
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="wtPrevBtn" onclick="prevWalkthroughStep()" class="hidden px-4 py-2 rounded-xl border border-academy-border text-academy-navy font-extrabold text-xs hover:bg-white transition">
+            Back
+          </button>
+
+          <button type="button" id="wtNextBtn" onclick="nextWalkthroughStep()" class="px-6 py-2.5 rounded-xl bg-academy-navy text-white font-extrabold text-xs shadow-md hover:bg-blue-900 transition flex items-center gap-1">
+            <span>Next</span>
+            <span class="material-symbols-rounded text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL WITH PARTIAL & ITEMIZED FEE OPTIONS -->
+  <div id="paymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl border border-academy-border max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-extrabold text-lg text-academy-navy">Make Tuition Payment</h3>
+          <p class="text-xs text-academy-muted">Pay custom amount or choose specific fees</p>
+        </div>
+        <button onclick="closePaymentModal()" class="p-1 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      <!-- Payment Option Toggle (Custom Partial vs Itemized Fee Selection) -->
+      <div>
+        <label class="block text-xs font-extrabold text-academy-navy mb-2">Select Payment Option</label>
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-academy-soft border border-academy-border">
+          <button id="modeBtnCustom" type="button" onclick="setPaymentMode('custom')"
+            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs">
+            Custom / Partial Amount
+          </button>
+          <button id="modeBtnItemized" type="button" onclick="setPaymentMode('itemized')"
+            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy">
+            Select Specific Fee Items
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Partial Payment Controls -->
+      <div id="modeSectionCustom" class="space-y-3">
+        <div>
+          <label class="block text-xs font-extrabold text-academy-navy mb-1">Enter Payment Amount (PHP)</label>
+          <div class="relative">
+            <span class="absolute left-4 top-3 font-extrabold text-slate-400">₱</span>
+            <input type="number" id="payAmountInput" min="1" step="any"
+              class="w-full pl-9 pr-4 py-3 rounded-2xl border-2 border-academy-border font-extrabold text-lg text-slate-900 focus:border-academy-blue focus:outline-none" placeholder="0">
+          </div>
+          <p id="payAmountHint" class="text-xs text-slate-500 mt-1.5">Current outstanding balance: ₱0</p>
+        </div>
+
+        <!-- Quick Preset Buttons -->
+        <div>
+          <p class="text-[11px] font-bold text-academy-muted mb-1.5">Quick Presets</p>
+          <div class="grid grid-cols-4 gap-2 text-xs font-bold">
+            <button type="button" onclick="applyPayPreset('full')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">Full Balance</button>
+            <button type="button" onclick="applyPayPreset('half')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">50% Balance</button>
+            <button type="button" onclick="applyPayPreset(5000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱5,000</button>
+            <button type="button" onclick="applyPayPreset(2000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱2,000</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itemized Mode Fee Selection Checklist -->
+      <div id="modeSectionItemized" class="hidden space-y-3">
+        <div class="flex justify-between items-center">
+          <label class="block text-xs font-extrabold text-academy-navy">Check Fee Items You Wish to Pay</label>
+          <button type="button" onclick="selectAllFeeItems(true)" class="text-xs font-bold text-academy-blue hover:underline">Select All</button>
+        </div>
+
+        <div id="feeItemsChecklist" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+
+        <div class="p-3.5 rounded-2xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs font-bold">
+          <span class="text-academy-navy">Selected Fees Total:</span>
+          <span id="itemizedSelectedTotal" class="text-base font-extrabold text-emerald-700">₱0</span>
+        </div>
+      </div>
+
+      <!-- Payment Method (QR Ph via PayMongo) -->
+      <div>
+        <label class="block text-xs font-extrabold text-academy-navy mb-2">Payment Channel</label>
+        <div class="p-3.5 rounded-2xl border-2 border-academy-blue bg-blue-50/70 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-academy-navy text-white flex items-center justify-center shrink-0">
+              <span class="material-symbols-rounded text-xl">qr_code_2</span>
+            </div>
+            <div>
+              <p class="font-extrabold text-xs text-academy-navy">QR Ph (PayMongo)</p>
+              <p class="text-[11px] text-academy-muted mt-0.5">Instant online QR payment via PayMongo</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">Active</span>
+        </div>
+      </div>
+
+      <!-- Channel Details -->
+      <div id="viewPaymongo" class="pay-view space-y-3">
+        <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs text-blue-950 leading-5">
+          <p class="font-bold text-academy-navy flex items-center gap-1.5">
+            <span class="material-symbols-rounded text-base text-blue-600">verified</span>Official PayMongo Gateway
+          </p>
+          <p class="mt-1 text-slate-600">Generates an official QR Ph checkout session. You can scan the QR code using GCash, Maya, ShopeePay, BDO, BPI, UnionBank, or any Philippine bank app supporting QR Ph.</p>
+        </div>
+        <button onclick="triggerPayMongoLiveFromModal()" class="w-full py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2 text-sm">
+          Generate PayMongo QR Ph Checkout →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIPT MODAL -->
+  <div id="receiptModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div id="receiptPrintArea" class="bg-white rounded-3xl border border-academy-border max-w-md w-full p-6 shadow-2xl text-slate-800 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-3">
+          <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-10 h-10 object-contain rounded-full border p-0.5 bg-white">
+          <div>
+            <h3 class="font-extrabold text-sm text-academy-navy leading-tight">PAGBILAO ACADEMY INC.</h3>
+            <p class="text-[11px] text-slate-500">Official Student Payment Receipt</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wide">Success</span>
+      </div>
+
+      <div id="receiptDetails" class="bg-slate-50 rounded-2xl p-4 text-xs space-y-2 border border-slate-200"></div>
+
+      <div class="flex gap-2 no-print">
+        <button onclick="printReceipt()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 flex items-center justify-center gap-1.5">
+          <span class="material-symbols-rounded text-base">print</span>Print Receipt
+        </button>
+        <button onclick="closeReceiptModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINTABLE STATEMENT OF ACCOUNT MODAL -->
+  <div id="statementPrintModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl border border-academy-border max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
+      <!-- Modal Action Bar -->
+      <div class="flex justify-between items-center pb-4 border-b border-slate-200 no-print">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-rounded text-academy-blue text-2xl">description</span>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg text-academy-navy">Official Statement of Account</h3>
+            <p class="text-xs text-academy-muted">Printable fee breakdown receipt for Pagbilao Academy Inc.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition flex items-center gap-2 shadow-sm">
+            <span class="material-symbols-rounded text-[18px]">print</span>Print Now
+          </button>
+          <button onclick="closeStatementPrintModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Area Document -->
+      <div id="printableStatementArea" class="bg-white p-2 sm:p-4 text-slate-800 space-y-6">
+        <!-- Letterhead Header -->
+        <div class="flex items-center justify-between border-b-2 border-academy-navy pb-4">
+          <div class="flex items-center gap-3">
+            <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-16 h-16 object-contain rounded-full border p-1 bg-white">
+            <div>
+              <h1 class="text-lg font-black text-academy-navy tracking-tight">PAGBILAO ACADEMY INC.</h1>
+              <p class="text-xs font-semibold text-slate-600">La Purisima Concepcion St., Pagbilao, Quezon</p>
+              <p class="text-[11px] text-slate-500">Tel: (042) 731-2054 · Student Information & Billing System</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="px-3 py-1 rounded-full bg-blue-50 text-academy-navy border border-blue-200 text-xs font-extrabold uppercase tracking-wide">Statement of Account</span>
+            <p id="stmtDateStr" class="text-xs font-semibold text-slate-500 mt-2">Date: July 24, 2026</p>
+          </div>
+        </div>
+
+        <!-- Student Info Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Student Name</p>
+            <p id="stmtStudentName" class="font-black text-slate-900 text-sm mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Student ID Number</p>
+            <p id="stmtStudentId" class="font-extrabold text-slate-900 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Grade & Section</p>
+            <p id="stmtClass" class="font-extrabold text-slate-900 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Education Level</p>
+            <p id="stmtLevel" class="font-extrabold text-slate-900 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Voucher Applied</p>
+            <p id="stmtVoucher" class="font-extrabold text-blue-700 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">School Year</p>
+            <p id="stmtSY" class="font-extrabold text-slate-900 mt-0.5">2026-2027</p>
+          </div>
+        </div>
+
+        <!-- Fee Itemized Table -->
+        <div>
+          <h4 class="text-xs font-extrabold text-academy-navy uppercase tracking-wider mb-2">Itemized Assessment Breakdown</h4>
+          <table class="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
+            <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Fee Particulars</th>
+                <th class="p-2.5 text-right">Base Amount</th>
+                <th class="p-2.5 text-right">Voucher / Discount</th>
+                <th class="p-2.5 text-right">Net Assessed</th>
+              </tr>
+            </thead>
+            <tbody id="stmtFeeTableBody" class="divide-y divide-slate-200"></tbody>
+            <tfoot id="stmtFeeTableFoot" class="bg-slate-50 font-bold border-t border-slate-300"></tfoot>
+          </table>
+        </div>
+
+        <!-- Payment History Table on Statement -->
+        <div>
+          <h4 class="text-xs font-extrabold text-academy-navy uppercase tracking-wider mb-2">Payment History Ledger</h4>
+          <table class="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
+            <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Ref / OR No.</th>
+                <th class="p-2.5">Date Paid</th>
+                <th class="p-2.5">Channel / Method</th>
+                <th class="p-2.5 text-right">Amount Paid</th>
+              </tr>
+            </thead>
+            <tbody id="stmtPaymentsBody" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+
+        <!-- Financial Summary Card -->
+        <div class="p-4 rounded-xl border-2 border-academy-navy bg-blue-50/50 space-y-2 text-xs">
+          <div class="flex justify-between font-bold text-slate-700">
+            <span>Total Gross Assessed Fees:</span>
+            <span id="stmtGrossTotal">₱0</span>
+          </div>
+          <div class="flex justify-between font-bold text-blue-800">
+            <span>Less Total Vouchers & Discounts:</span>
+            <span id="stmtDeductionsTotal">-₱0</span>
+          </div>
+          <div class="flex justify-between font-extrabold text-slate-900 border-t border-slate-300 pt-1.5">
+            <span>Total Net Assessed Tuition & Fees:</span>
+            <span id="stmtNetAssessedTotal">₱0</span>
+          </div>
+          <div class="flex justify-between font-extrabold text-green-700">
+            <span>Less Total Payments Received:</span>
+            <span id="stmtTotalPaid">-₱0</span>
+          </div>
+          <div class="flex justify-between font-black text-base text-red-600 border-t-2 border-academy-navy pt-2">
+            <span>NET REMAINING BALANCE DUE:</span>
+            <span id="stmtNetBalance">₱0</span>
+          </div>
+        </div>
+
+        <!-- Signatures & Note -->
+        <div class="pt-6 border-t border-slate-300 grid grid-cols-2 gap-8 text-xs text-slate-600">
+          <div>
+            <p class="text-[11px] italic leading-4 text-slate-500">
+              This statement of account serves as an official summary of fees, discounts, and payments recorded in Pagbilao Academy Inc.'s Billing System.
+            </p>
+          </div>
+          <div class="text-center space-y-8">
+            <div class="border-b border-slate-400 pb-1">
+              <p class="font-bold text-slate-800">Accounting Office / Cashier</p>
+            </div>
+            <p class="text-[10px] text-slate-400">Authorized Official Stamp & Signature</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CONTROLLER -->
+  <script>
+    const STORAGE_KEY = 'pa_full_admin_v2';
+    const currency = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+    const fallbackData = { settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' }, feeStructures: { JHS: [], SHS: [] }, vouchers: [], installmentTemplate: [], students: [], accounts: [], teacherClearanceRequests: [], payments: [] };
+    
+    function money(n) { return currency.format(Math.round(Number(n) || 0)) }
+    
+    function showToast(title, message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast || !toastTitle || !toastMessage) return;
+
+      toastTitle.textContent = title;
+      toastMessage.textContent = message;
+
+      if (type === 'error') {
+        toastIcon.className = 'w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<span class="material-symbols-rounded">error</span>';
+      } else if (type === 'warning') {
+        toastIcon.className = 'w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<span class="material-symbols-rounded">warning</span>';
+      } else {
+        toastIcon.className = 'w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<span class="material-symbols-rounded">check_circle</span>';
+      }
+
+      toast.classList.remove('hidden');
+      if (window.toastTimeout) clearTimeout(window.toastTimeout);
+      window.toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4500);
+    }
+    
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return ensureData({ ...fallbackData, ...parsed, feeStructures: { ...fallbackData.feeStructures, ...(parsed.feeStructures || {}) }, settings: { ...fallbackData.settings, ...(parsed.settings || {}) }, vouchers: parsed.vouchers || [], installmentTemplate: parsed.installmentTemplate || [], students: parsed.students || [], accounts: parsed.accounts || [], payments: parsed.payments || [] });
+      } catch { return ensureData(JSON.parse(JSON.stringify(fallbackData))) }
+    }
+
+    function ensureData(data) {
+      data.teacherClearanceRequests = data.teacherClearanceRequests || [];
+      data.students = data.students || [];
+      data.accounts = data.accounts || [];
+      data.payments = data.payments || [];
+      return data;
+    }
+
+    let appData = loadData();
+    let currentPayMode = 'custom'; // 'custom' or 'itemized'
+
+    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
+
+    function currentSession() {
+      try { return JSON.parse(localStorage.getItem('pa_user_session') || localStorage.getItem('pa_current_user') || '{}') } catch { return {} }
+    }
+
+    function registeredUser() {
+      const session = currentSession();
+      const users = JSON.parse(localStorage.getItem('pa_registered_users') || '[]');
+      return users.find(u => String(u.email || '').toLowerCase() === String(session.email || '').toLowerCase());
+    }
+
+    function inferLevelFromGrade(grade) { return ['Grade 11', 'Grade 12'].includes(String(grade || '')) ? 'SHS' : 'JHS' }
+
+    function normalizeStudentRecord(source, session = {}) {
+      const firstName = source.firstName || source.first_name || '';
+      const lastName = source.lastName || source.last_name || '';
+      const fullName = (source.name || source.fullName || `${firstName} ${lastName}`.trim() || session.fullName || session.email || 'Student');
+      const grade = source.gradeLevel || source.grade_level || source.grade || session.gradeLevel || 'Grade 11';
+      const level = source.educationLevel || source.education_level || source.level || session.educationLevel || inferLevelFromGrade(grade);
+      const section = source.section || source.section_name || session.section || (grade === 'Grade 7' ? 'Cattleya' : grade === 'Grade 8' ? 'Vermillion' : grade === 'Grade 9' ? 'Aristotle' : grade === 'Grade 10' ? 'Diamond' : grade === 'Grade 11' ? 'Humility' : 'Honesty');
+      const strand = source.strand || session.strand || (level === 'SHS' ? 'GAS' : 'N/A');
+      return {
+        id: source.studentId || source.student_number || source.id || session.studentId || session.id || `STU-${Date.now()}`,
+        authUserId: source.authUserId || source.auth_user_id || session.id || null,
+        name: fullName,
+        email: source.email || session.email || '',
+        level, grade, section, strand,
+        voucher: (source.voucher !== undefined && source.voucher !== null && source.voucher !== '') ? source.voucher : 'None',
+        paid: Number(source.paid || 0),
+        clearance: source.clearance || { Teacher: 'pending', Guidance: 'pending', Prefect: 'pending', Library: 'pending', Principal: 'pending', Accounting: 'pending', Registrar: 'pending' }
+      }
+    }
+
+    function upsertCurrentStudent(source) {
+      const session = currentSession();
+      const student = normalizeStudentRecord(source, session);
+      const email = String(student.email || '').toLowerCase();
+      const idx = appData.students.findIndex(s => s.id === student.id || String(s.email || '').toLowerCase() === email || (student.authUserId && s.authUserId === student.authUserId));
+      if (idx >= 0) {
+        const existingVoucher = appData.students[idx].voucher;
+        appData.students[idx] = {
+          ...student,
+          ...appData.students[idx],
+          voucher: (existingVoucher !== undefined && existingVoucher !== null) ? existingVoucher : student.voucher,
+          clearance: { ...(appData.students[idx].clearance || {}), ...(student.clearance || {}) }
+        }
+      } else {
+        appData.students.push(student)
+      }
+      saveData();
+      return idx >= 0 ? appData.students[idx] : student;
+    }
+
+    function currentStudent() {
+      const session = currentSession();
+      const reg = registeredUser();
+      const email = String(session.email || reg?.email || '').toLowerCase();
+      let student = appData.students.find(s => (session.studentId && s.id === session.studentId) || (session.id && s.authUserId === session.id) || (email && String(s.email || '').toLowerCase() === email) || (reg?.studentId && s.id === reg.studentId));
+      if (!student && (reg || session.email)) { student = upsertCurrentStudent(reg || session) }
+      if (!student) { student = normalizeStudentRecord({ name: 'Student', email: session.email || '', studentId: session.studentId || '' }, session) }
+      return student;
+    }
+
+    async function hydrateCurrentStudentFromSupabase() {
+      if (!window.paApi || !window.paApi.isSupabaseReady || !window.paApi.isSupabaseReady()) return;
+      try {
+        const supabase = window.paApi.client();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        let session = currentSession();
+        if (!session.email) session = { ...session, id: user.id, email: user.email, fullName: user.user_metadata?.full_name || user.email, role: 'student', source: 'supabase' };
+        let source = null;
+        const { data: studentRow } = await supabase.from('students').select('auth_user_id,student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,school_year,status').eq('auth_user_id', user.id).maybeSingle();
+        if (studentRow) {
+          source = { ...studentRow, authUserId: user.id, studentId: studentRow.student_number, firstName: studentRow.first_name, lastName: studentRow.last_name, educationLevel: studentRow.education_level, gradeLevel: studentRow.grade_level, section: studentRow.section_name }
+        } else {
+          const { data: req } = await supabase.from('student_registration_requests').select('auth_user_id,student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,status').eq('auth_user_id', user.id).maybeSingle();
+          if (req) source = { ...req, authUserId: user.id, studentId: req.student_number, firstName: req.first_name, lastName: req.last_name, educationLevel: req.education_level, gradeLevel: req.grade_level, section: req.section_name }
+        }
+        if (source) {
+          const student = upsertCurrentStudent(source);
+          const updatedSession = { ...session, id: user.id, email: user.email || student.email, fullName: student.name, role: 'student', studentId: student.id, educationLevel: student.level, gradeLevel: student.grade, section: student.section, strand: student.strand, studentStatus: source.status || session.status || 'active', source: 'supabase' };
+          localStorage.setItem('pa_user_session', JSON.stringify(updatedSession));
+          localStorage.setItem('pa_current_user', JSON.stringify(updatedSession));
+          localStorage.setItem('pa_user_role', 'student');
+        }
+      } catch (error) { console.warn('Student Supabase hydration skipped:', error) }
+    }
+
+    function classLabel(s) { if (s.level === 'SHS') { const strandStr = s.strand && s.strand !== 'N/A' ? ` (${s.strand})` : ''; return `${s.grade} - ${s.section || 'N/A'}${strandStr}` } return `${s.grade} - ${s.section || 'N/A'}` }
+    function feeTotal(level) {
+      const items = (appData.feeStructures && appData.feeStructures[level]) || [];
+      if (items && items.length > 0) {
+        return items.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+      }
+      return level === 'SHS' ? 27000 : 22000;
+    }
+    function voucherAmount(s) { const v = (appData.vouchers || []).find(x => x.name === s.voucher && x.active); return v ? Number(v.amount || 0) : 0 }
+    function assessedTotal(s) {
+      if (s.assessedOverride !== undefined && s.assessedOverride !== null && s.assessedOverride !== '') {
+        return Math.max(0, Number(s.assessedOverride));
+      }
+      let baseFee = 0;
+      if (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0) {
+        baseFee = s.customFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+      } else {
+        baseFee = feeTotal(s.level);
+      }
+      const discount = Number(s.feeDiscount || 0);
+      return Math.max(0, baseFee - voucherAmount(s) - discount);
+    }
+    function getStudentPayments(s) {
+      if (!s) return [];
+      const allPayments = appData.payments || [];
+      const studentEmail = String(s.email || '').toLowerCase();
+      const studentId = String(s.id || '').toLowerCase();
+      const cleanStudentId = studentId.replace('stu-', '').trim();
+      const authUserId = String(s.authUserId || s.auth_user_id || '').toLowerCase();
+
+      return allPayments.filter(p => {
+        if (!p) return false;
+        const pStudentId = String(p.studentId || p.student_id || '').toLowerCase();
+        const pCleanId = pStudentId.replace('stu-', '').trim();
+        const pEmail = String(p.email || p.studentEmail || '').toLowerCase();
+
+        return (
+          (studentId && pStudentId === studentId) ||
+          (cleanStudentId && pCleanId === cleanStudentId) ||
+          (authUserId && pStudentId === authUserId) ||
+          (studentEmail && pEmail && pEmail === studentEmail)
+        );
+      });
+    }
+
+    function getStudentTotalPaid(s) {
+      if (!s) return 0;
+      const studentPayments = getStudentPayments(s);
+      const paidFromLedger = studentPayments
+        .filter(p => String(p.status || 'paid').toLowerCase() === 'paid')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      return Math.max(Number(s.paid || 0), paidFromLedger);
+    }
+
+    function balance(s) { return Math.max(0, assessedTotal(s) - getStudentTotalPaid(s)) }
+    function initials(name) { return String(name || 'Student').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || 'ST' }
+    
+    function assignmentMatchesStudent(a, s) {
+      const grade = a.grade || a.grade_level; const section = a.section || a.section_name || 'N/A'; const strand = a.strand || 'N/A';
+      if (grade && s.grade && grade !== s.grade) return false;
+      if (section !== 'N/A' && s.section && section !== s.section) return false;
+      if (strand !== 'N/A' && s.strand) {
+        const normA = strand.replace('HUMMS', 'HUMSS');
+        const normS = (s.strand || '').replace('HUMMS', 'HUMSS');
+        if (normA !== normS && s.strand !== 'N/A') return false
+      }
+      return true;
+    }
+    
+    function assignedTeacherRows(s) { return (appData.accounts || []).filter(a => a.role === 'teacher_clearance_head' && a.active !== false).flatMap(t => (t.assignments || []).filter(a => assignmentMatchesStudent(a, s)).map(a => ({ teacher: t, assignment: a, key: `${s.id}|${t.id}|${a.subject || 'Subject'}|${a.grade}|${a.section || 'N/A'}` }))) }
+    function requestFor(row) { return appData.teacherClearanceRequests.find(r => r.key === row.key) }
+    
+    function statusBadge(status) {
+      const cls = { approved: 'bg-green-50 text-green-700', paid: 'bg-green-50 text-green-700', requested: 'bg-blue-50 text-blue-700', pending: 'bg-amber-50 text-amber-700', on_hold: 'bg-amber-50 text-amber-700', not_requested: 'bg-slate-100 text-slate-600' }[status] || 'bg-slate-100 text-slate-600';
+      return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${cls}">${status.replace('_', ' ')}</span>`;
+    }
+
+    // Navigation & Tabs
+    const navItems = [
+      ['dashboardPage', 'dashboard', 'Dashboard Overview', 'Summary of your fees, clearance, and account status'],
+      ['paymentsPage', 'account_balance_wallet', 'Tuition & Billing', 'View gross fees, discounts, net balance, and pay installments'],
+      ['transactionsPage', 'receipt_long', 'Payment History', 'View past transactions, payment receipts, and payment references'],
+      ['clearancePage', 'fact_check', 'Clearance Status', 'Track subject teacher and school office clearance approvals'],
+      ['certificatePage', 'workspace_premium', 'Clearance Certificate', 'Generate and view your official clearance certificate'],
+      ['profilePage', 'person', 'Student Profile', 'View your personal, academic, and enrollment information']
+    ];
+
+    function renderSideNav() {
+      const activePage = document.querySelector('.page-section:not(.hidden)')?.id || 'dashboardPage';
+      const navHtml = navItems.map(([id, icon, label]) => {
+        const isActive = id === activePage;
+        return `<button onclick="showPage('${id}')" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition font-bold text-left ${isActive ? 'bg-white text-academy-navy shadow-sm' : 'text-blue-100 hover:bg-white/10'}">
+          <span class="material-symbols-rounded text-[20px]">${icon}</span>${label}
+        </button>`;
+      }).join('');
+      
+      const sideNav = document.getElementById('sideNav');
+      const mobileSideNav = document.getElementById('mobileSideNav');
+      if (sideNav) sideNav.innerHTML = navHtml;
+      if (mobileSideNav) mobileSideNav.innerHTML = navHtml;
+    }
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+      const activeEl = document.getElementById(pageId);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      const item = navItems.find(x => x[0] === pageId);
+      if (item) {
+        document.getElementById('pageTitle').textContent = item[2];
+        document.getElementById('pageSubtitle').textContent = item[3];
+      }
+      renderSideNav();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMobileDrawer() {
+      document.getElementById('mobileDrawer').classList.toggle('hidden');
+    }
+
+    function studentInstallments(s) {
+      let paid = getStudentTotalPaid(s);
+      return (appData.installmentTemplate || []).map(t => {
+        const amount = Math.round(assessedTotal(s) * (Number(t.percent) / 100));
+        const applied = Math.min(paid, amount);
+        paid -= applied;
+        return { ...t, amount, paid: applied, status: applied >= amount ? 'Paid' : applied > 0 ? 'Partial' : 'Unpaid' }
+      });
+    }
+
+    function renderPayments(s) {
+      const gross = feeTotal(s.level), voucher = voucherAmount(s), net = assessedTotal(s), paid = getStudentTotalPaid(s), bal = balance(s), pct = net ? Math.min(100, Math.round(paid / net * 100)) : 0;
+      
+      netBalance.textContent = money(bal);
+      voucherApplied.textContent = money(voucher);
+      voucherName.textContent = s.voucher || 'No voucher';
+      voucherNote.textContent = s.voucher === 'None' ? 'No voucher applied' : `After ${s.voucher}`;
+      grossFees.textContent = money(gross);
+      paymentVoucher.textContent = '-' + money(voucher);
+      amountPaid.textContent = money(paid);
+      paymentBalance.textContent = money(bal);
+      paymentProgressBar.style.width = pct + '%';
+      paymentPctLabel.textContent = `${pct}% Paid`;
+
+      const insts = studentInstallments(s);
+      if (!insts || insts.length === 0) {
+        installmentBody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-academy-muted">
+          <p class="font-extrabold text-sm text-academy-navy">No Due Date Schedules Set</p>
+          <p class="text-xs mt-1">School administration has not set active installment due dates yet.</p>
+        </td></tr>`;
+      } else {
+        installmentBody.innerHTML = insts.map(i => `<tr>
+          <td class="p-4 font-bold text-academy-navy">
+            ${i.title}
+            ${i.description ? `<br><span class="text-xs font-normal text-slate-500">${i.description}</span>` : ''}
+            <br><span class="text-xs font-semibold text-amber-700">Due: ${i.dueDate}</span>
+          </td>
+          <td class="p-4 font-bold">${money(i.amount)}</td>
+          <td class="p-4 font-bold text-green-600">${money(i.paid)}</td>
+          <td class="p-4">${statusBadge(i.status.toLowerCase())}</td>
+        </tr>`).join('');
+      }
+    }
+
+    function renderPaymentsHistory() {
+      const s = currentStudent();
+      const studentPayments = getStudentPayments(s);
+      const totalPaid = getStudentTotalPaid(s);
+      
+      // Update Summary Cards
+      txCount.textContent = studentPayments.length;
+      txTotalPaid.textContent = money(totalPaid);
+      if (studentPayments.length > 0) {
+        const latest = studentPayments[0];
+        txLatestDate.textContent = latest.date || new Date(latest.paidAt || Date.now()).toLocaleDateString();
+      } else {
+        txLatestDate.textContent = 'None';
+      }
+
+      // Filter & Search
+      const search = (document.getElementById('txSearchInput')?.value || '').toLowerCase();
+      const channelFilter = (document.getElementById('txMethodFilter')?.value || 'all').toLowerCase();
+
+      let filtered = studentPayments.filter(p => {
+        const matchesSearch = !search || String(p.referenceNo || p.id || '').toLowerCase().includes(search) || String(p.method || '').toLowerCase().includes(search);
+        const matchesChannel = channelFilter === 'all' || String(p.method || '').toLowerCase().includes(channelFilter);
+        return matchesSearch && matchesChannel;
+      });
+
+      const body = document.getElementById('paymentHistoryBody');
+      if (!filtered.length) {
+        body.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted">
+          <p class="font-bold">No payment history found</p>
+          <p class="text-xs mt-1">Make a payment using QR Ph, GCash, or Card to see your transaction history.</p>
+        </td></tr>`;
+        return;
+      }
+
+      body.innerHTML = filtered.map(p => {
+        const ref = p.referenceNo || p.id || 'N/A';
+        const dateStr = p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'Today');
+        const channel = p.method || 'Online';
+        const channelColor = channel.includes('GCash') ? 'bg-emerald-50 text-emerald-700' :
+                             channel.includes('Maya') ? 'bg-sky-50 text-sky-700' :
+                             channel.includes('PayMongo') || channel.includes('QR') ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700';
+        return `<tr class="hover:bg-academy-soft">
+          <td class="p-4 font-extrabold text-academy-navy">${ref}</td>
+          <td class="p-4 text-xs font-semibold text-academy-muted">${dateStr}</td>
+          <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${channelColor}">${channel}</span></td>
+          <td class="p-4 font-extrabold text-green-700">${money(p.amount)}</td>
+          <td class="p-4">${statusBadge('paid')}</td>
+          <td class="p-4">
+            <button onclick='showReceiptModal(${JSON.stringify(p).replaceAll("'", "\\'")})' class="px-3 py-1.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-academy-light">
+              Receipt
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      // Recent Preview on Overview Tab
+      const recentList = document.getElementById('recentTransactionsList');
+      if (recentList) {
+        if (!studentPayments.length) {
+          recentList.innerHTML = `<p class="text-xs text-academy-muted py-3">No payments recorded yet.</p>`;
+        } else {
+          recentList.innerHTML = studentPayments.slice(0, 3).map(p => `
+            <div class="p-3 rounded-xl border border-academy-border flex items-center justify-between">
+              <div>
+                <p class="font-extrabold text-xs text-academy-navy">${p.referenceNo || p.id}</p>
+                <p class="text-[11px] text-academy-muted">${p.method} · ${p.date || 'Today'}</p>
+              </div>
+              <span class="font-extrabold text-sm text-green-600">${money(p.amount)}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    function renderTeacherClearance(s) {
+      const rows = assignedTeacherRows(s);
+      teacherClearanceCards.innerHTML = rows.length ? rows.map(row => {
+        const req = requestFor(row);
+        const status = req?.status || 'not_requested';
+        const disabled = status !== 'not_requested';
+        return `<div class="border border-academy-border rounded-xl p-4 bg-white"><div class="flex items-start justify-between gap-3"><div><p class="font-extrabold text-sm text-academy-navy">${row.teacher.name}</p><p class="text-xs text-academy-muted mt-1">${row.assignment.subject || 'Subject'} · ${row.assignment.grade} ${row.assignment.section || 'N/A'}</p></div>${statusBadge(status)}</div><button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="mt-3 w-full px-3 py-2 rounded-xl text-xs font-extrabold ${disabled ? 'bg-slate-100 text-slate-400' : 'bg-academy-navy text-white hover:bg-blue-900'}">${status === 'not_requested' ? 'Request Approval' : 'Request Sent'}</button></div>`
+      }).join('') : `<div class="sm:col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">No teacher assignment found for ${classLabel(s)}. Ask the admin to add teacher clearance heads for this grade/section.</div>`;
+
+      officeClearanceCards.innerHTML = officeKeys().map(k => `<div class="flex items-center justify-between border border-academy-border rounded-xl p-3 bg-white"><span class="font-bold text-sm text-academy-navy">${k}</span>${statusBadge(s.clearance?.[k] || 'pending')}</div>`).join('');
+
+      // Render Overview Clearance Summary
+      const summaryGrid = document.getElementById('clearanceSummaryGrid');
+      if (summaryGrid) {
+        summaryGrid.innerHTML = [
+          ['Subject Teachers', teacherApprovalsApproved(s) ? 'approved' : 'pending'],
+          ['Guidance Office', s.clearance?.Guidance || 'pending'],
+          ['Prefect of Discipline', s.clearance?.Prefect || 'pending'],
+          ['Library Head', s.clearance?.Library || 'pending'],
+          ['Principal', s.clearance?.Principal || 'pending'],
+          ['Accounting / Final', s.clearance?.Accounting || 'pending']
+        ].map(([title, st]) => `
+          <div class="p-3 rounded-xl border border-academy-border flex items-center justify-between text-xs">
+            <span class="font-bold text-academy-navy">${title}</span>
+            ${statusBadge(st)}
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderProfile(s) {
+      welcomeName.textContent = `Welcome back, ${s.name.split(' ')[0] || 'Student'}`;
+      studentMeta.textContent = `${classLabel(s)} · Student ID: ${s.id} · SY ${(appData.settings || {}).schoolYear || '2026-2027'}`;
+      profileName.textContent = s.name;
+      profileMeta.innerHTML = `Student ID: <strong>${s.id}</strong><br>${classLabel(s)}`;
+      avatarInitials.textContent = profileInitials.textContent = initials(s.name);
+
+      const grid = document.getElementById('profileDetailsGrid');
+      if (grid) {
+        grid.innerHTML = [
+          ['Full Name', s.name],
+          ['Student Number', s.id],
+          ['Email Address', s.email || 'N/A'],
+          ['Education Level', s.level],
+          ['Grade Level', s.grade],
+          ['Section Name', s.section || 'N/A'],
+          ['Strand', s.strand || 'N/A'],
+          ['Voucher Status', s.voucher || 'None'],
+          ['School Year', (appData.settings || {}).schoolYear || '2026-2027']
+        ].map(([k, v]) => `
+          <div class="p-3.5 rounded-xl border border-academy-border bg-academy-soft">
+            <p class="text-xs text-academy-muted font-bold">${k}</p>
+            <p class="text-sm font-extrabold text-academy-navy mt-0.5">${v}</p>
+          </div>
+        `).join('');
+      }
+
+      // Certificate Tab Status
+      const certBadge = document.getElementById('certificateStatusBadge');
+      const certBtn = document.getElementById('openCertificateBtn');
+      const c = clearanceCounts(s);
+      const isEligible = c.done === c.total && c.total > 0;
+
+      if (certBadge) {
+        if (isEligible) {
+          certBadge.textContent = 'Completed & Approved ✓';
+          certBadge.className = 'text-base font-extrabold mt-1 text-emerald-600';
+        } else {
+          const pendingCount = Math.max(1, c.total - c.done);
+          certBadge.textContent = `Locked (${pendingCount} clearance approval(s) pending)`;
+          certBadge.className = 'text-sm font-extrabold mt-1 text-amber-700';
+        }
+      }
+
+      if (certBtn) {
+        if (isEligible) {
+          certBtn.disabled = false;
+          certBtn.className = 'px-8 py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition cursor-pointer flex items-center justify-center gap-2 mx-auto';
+          certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">workspace_premium</span>View & Print Official Certificate';
+        } else {
+          certBtn.disabled = true;
+          certBtn.className = 'px-8 py-3.5 rounded-2xl bg-slate-200 text-slate-400 font-extrabold cursor-not-allowed flex items-center justify-center gap-2 mx-auto';
+          certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">lock</span>Certificate Locked (Clearance Incomplete)';
+        }
+      }
+    }
+
+    function officeKeys() { return ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'] }
+    
+    function clearanceCounts(s) {
+      const teacherRows = assignedTeacherRows(s);
+      const teacherDone = teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
+      const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
+      return { done: teacherDone + officeDone, total: teacherRows.length + officeKeys().length }
+    }
+
+    function teacherApprovalsApproved(s) { const rows = assignedTeacherRows(s); return rows.length > 0 && rows.every(row => requestFor(row)?.status === 'approved') }
+
+    function renderAll() {
+      appData = ensureData(appData);
+      const s = currentStudent();
+      renderProfile(s);
+      renderPayments(s);
+      renderOverviewFeeBreakdown(s);
+      renderPaymentsHistory();
+      renderTeacherClearance(s);
+      renderSideNav();
+      const c = clearanceCounts(s);
+      clearanceProgress.textContent = `${c.done}/${c.total}`;
+      saveData();
+    }
+
+    function renderOverviewFeeBreakdown(s) {
+      const feeItems = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
+        ? s.customFees
+        : getFeeItemsForStudent(s);
+
+      const grossSum = feeItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+      const voucherAmt = voucherAmount(s);
+      const discountAmt = Number(s.feeDiscount || 0);
+      const totalDeductions = voucherAmt + discountAmt;
+      const netAssessed = assessedTotal(s);
+      const paidAmt = getStudentTotalPaid(s);
+      const netBal = balance(s);
+
+      const grossEl = document.getElementById('overviewGrossFees');
+      const discEl = document.getElementById('overviewDiscounts');
+      const paidEl = document.getElementById('overviewTotalPaid');
+      const balEl = document.getElementById('overviewBalanceDue');
+
+      if (grossEl) grossEl.textContent = money(grossSum);
+      if (discEl) discEl.textContent = totalDeductions > 0 ? '-' + money(totalDeductions) : '₱0';
+      if (paidEl) paidEl.textContent = money(paidAmt);
+      if (balEl) balEl.textContent = money(netBal);
+
+      const tbody = document.getElementById('overviewFeeBreakdownBody');
+      const tfoot = document.getElementById('overviewFeeBreakdownFoot');
+      if (!tbody || !tfoot) return;
+
+      let rowsHtml = feeItems.map((item, idx) => {
+        const itemAmt = Number(item.amount || 0);
+        const itemNet = grossSum > 0 ? Math.max(0, itemAmt - Math.round((itemAmt / grossSum) * totalDeductions)) : itemAmt;
+        const isPaid = paidAmt >= netAssessed && netAssessed > 0;
+        const isPartial = paidAmt > 0 && !isPaid;
+
+        return `<tr class="hover:bg-academy-soft/50 transition">
+          <td class="p-3 font-extrabold text-academy-navy flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-academy-blue"></span>
+            ${item.name || `Fee Item ${idx + 1}`}
+          </td>
+          <td class="p-3 text-right font-semibold text-slate-600">${money(itemAmt)}</td>
+          <td class="p-3 text-right font-semibold text-slate-400">₱0</td>
+          <td class="p-3 text-right font-extrabold text-academy-navy">${money(itemNet)}</td>
+          <td class="p-3 text-center">
+            ${isPaid ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-green-50 text-green-700">Paid</span>' :
+              isPartial ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-50 text-blue-700">Partial</span>' :
+              '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700">Unpaid</span>'}
+          </td>
+        </tr>`;
+      }).join('');
+
+      if (voucherAmt > 0) {
+        rowsHtml += `<tr class="bg-blue-50/50">
+          <td class="p-3 font-extrabold text-blue-900 flex items-center gap-2">
+            <span class="material-symbols-rounded text-sm text-blue-600">confirmation_number</span>
+            Voucher Discount (${s.voucher})
+          </td>
+          <td class="p-3 text-right font-semibold text-slate-400">-</td>
+          <td class="p-3 text-right font-extrabold text-blue-700">-${money(voucherAmt)}</td>
+          <td class="p-3 text-right font-extrabold text-blue-700">-${money(voucherAmt)}</td>
+          <td class="p-3 text-center"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-100 text-blue-800">Applied</span></td>
+        </tr>`;
+      }
+
+      if (discountAmt > 0) {
+        rowsHtml += `<tr class="bg-indigo-50/50">
+          <td class="p-3 font-extrabold text-indigo-900 flex items-center gap-2">
+            <span class="material-symbols-rounded text-sm text-indigo-600">sell</span>
+            Special Fee Discount
+          </td>
+          <td class="p-3 text-right font-semibold text-slate-400">-</td>
+          <td class="p-3 text-right font-extrabold text-indigo-700">-${money(discountAmt)}</td>
+          <td class="p-3 text-right font-extrabold text-indigo-700">-${money(discountAmt)}</td>
+          <td class="p-3 text-center"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-800">Applied</span></td>
+        </tr>`;
+      }
+
+      tbody.innerHTML = rowsHtml;
+
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100 text-slate-800">
+          <td class="p-3 text-left">Total Net Assessed Fees</td>
+          <td class="p-3 text-right font-bold text-slate-500">${money(grossSum)}</td>
+          <td class="p-3 text-right font-bold text-blue-700">-${money(totalDeductions)}</td>
+          <td class="p-3 text-right text-sm font-black text-academy-navy" colspan="2">${money(netAssessed)}</td>
+        </tr>
+        <tr class="bg-emerald-50/70 text-emerald-950">
+          <td class="p-3 text-left font-bold">Total Payments Made</td>
+          <td class="p-3 text-right font-black text-emerald-700" colspan="4">-${money(paidAmt)}</td>
+        </tr>
+        <tr class="bg-slate-900 text-white text-sm font-black">
+          <td class="p-3.5 text-left uppercase tracking-wide">Net Remaining Balance Due</td>
+          <td class="p-3.5 text-right text-red-400 text-base" colspan="4">${money(netBal)}</td>
+        </tr>
+      `;
+    }
+
+    function printFeeBreakdown() {
+      const s = currentStudent();
+      const feeItems = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
+        ? s.customFees
+        : getFeeItemsForStudent(s);
+
+      const grossSum = feeItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+      const voucherAmt = voucherAmount(s);
+      const discountAmt = Number(s.feeDiscount || 0);
+      const totalDeductions = voucherAmt + discountAmt;
+      const netAssessed = assessedTotal(s);
+      const paidAmt = getStudentTotalPaid(s);
+      const netBal = balance(s);
+
+      document.getElementById('stmtDateStr').textContent = 'Date: ' + new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('stmtStudentName').textContent = s.name;
+      document.getElementById('stmtStudentId').textContent = s.id;
+      document.getElementById('stmtClass').textContent = classLabel(s);
+      document.getElementById('stmtLevel').textContent = s.level;
+      document.getElementById('stmtVoucher').textContent = s.voucher || 'None';
+      document.getElementById('stmtSY').textContent = (appData.settings || {}).schoolYear || '2026-2027';
+
+      const tbody = document.getElementById('stmtFeeTableBody');
+      let rowsHtml = feeItems.map(item => `
+        <tr>
+          <td class="p-2.5 font-bold text-slate-800">${item.name}</td>
+          <td class="p-2.5 text-right font-semibold text-slate-600">${money(item.amount)}</td>
+          <td class="p-2.5 text-right font-semibold text-slate-400">₱0</td>
+          <td class="p-2.5 text-right font-bold text-slate-900">${money(item.amount)}</td>
+        </tr>
+      `).join('');
+
+      if (voucherAmt > 0) {
+        rowsHtml += `
+          <tr class="bg-blue-50/60 text-blue-900">
+            <td class="p-2.5 font-bold">Voucher Discount (${s.voucher})</td>
+            <td class="p-2.5 text-right">-</td>
+            <td class="p-2.5 text-right font-bold text-blue-700">-${money(voucherAmt)}</td>
+            <td class="p-2.5 text-right font-bold text-blue-700">-${money(voucherAmt)}</td>
+          </tr>
+        `;
+      }
+      if (discountAmt > 0) {
+        rowsHtml += `
+          <tr class="bg-indigo-50/60 text-indigo-900">
+            <td class="p-2.5 font-bold">Special Fee Discount</td>
+            <td class="p-2.5 text-right">-</td>
+            <td class="p-2.5 text-right font-bold text-indigo-700">-${money(discountAmt)}</td>
+            <td class="p-2.5 text-right font-bold text-indigo-700">-${money(discountAmt)}</td>
+          </tr>
+        `;
+      }
+      tbody.innerHTML = rowsHtml;
+
+      document.getElementById('stmtFeeTableFoot').innerHTML = `
+        <tr>
+          <td class="p-2.5">Total Net Assessed Tuition & Fees</td>
+          <td class="p-2.5 text-right text-slate-500">${money(grossSum)}</td>
+          <td class="p-2.5 text-right text-blue-700">-${money(totalDeductions)}</td>
+          <td class="p-2.5 text-right text-slate-900 text-sm font-black">${money(netAssessed)}</td>
+        </tr>
+      `;
+
+      const studentPayments = getStudentPayments(s);
+      const pBody = document.getElementById('stmtPaymentsBody');
+      if (!studentPayments.length) {
+        pBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500 italic">No payments recorded yet.</td></tr>`;
+      } else {
+        pBody.innerHTML = studentPayments.map(p => `
+          <tr>
+            <td class="p-2.5 font-extrabold text-slate-900">${p.referenceNo || p.id}</td>
+            <td class="p-2.5 text-slate-600">${p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'N/A')}</td>
+            <td class="p-2.5 font-semibold text-slate-700">${p.method}</td>
+            <td class="p-2.5 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('stmtGrossTotal').textContent = money(grossSum);
+      document.getElementById('stmtDeductionsTotal').textContent = totalDeductions > 0 ? '-' + money(totalDeductions) : '₱0';
+      document.getElementById('stmtNetAssessedTotal').textContent = money(netAssessed);
+      document.getElementById('stmtTotalPaid').textContent = '-' + money(paidAmt);
+      document.getElementById('stmtNetBalance').textContent = money(netBal);
+
+      document.getElementById('statementPrintModal').classList.remove('hidden');
+    }
+
+    function closeStatementPrintModal() {
+      document.getElementById('statementPrintModal').classList.add('hidden');
+    }
+
+    function openCertificate() {
+      const s = currentStudent();
+      const c = clearanceCounts(s);
+      const isEligible = c.done === c.total && c.total > 0;
+      if (!isEligible) {
+        const pendingCount = Math.max(1, c.total - c.done);
+        showToast('Certificate Locked', `Your clearance certificate is locked because ${pendingCount} clearance head approval(s) are still pending.`, 'warning');
+        return;
+      }
+      window.open(`certificate.html?studentId=${encodeURIComponent(s.id)}&from=student`, '_blank');
+    }
+
+    async function requestTeacherApproval(key) {
+      const student = currentStudent();
+      const row = assignedTeacherRows(student).find(r => r.key === key);
+      if (!row) return;
+
+      const existingReq = requestFor(row);
+      appData.teacherClearanceRequests = appData.teacherClearanceRequests || [];
+      if (!existingReq) {
+        appData.teacherClearanceRequests.push({
+          key: row.key,
+          studentId: student.id,
+          teacherId: row.teacher.id,
+          teacherName: row.teacher.name,
+          subject: row.assignment.subject || 'Subject',
+          grade: student.grade,
+          section: student.section,
+          strand: student.strand,
+          status: 'requested',
+          requestedAt: new Date().toISOString()
+        });
+      } else {
+        existingReq.status = 'requested';
+        existingReq.requestedAt = new Date().toISOString();
+      }
+      saveData();
+
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await window.paApi.requestClearance(student.id, appData.settings.schoolYear);
+        } catch (err) {
+          console.warn("Supabase request clearance notice:", err);
+        }
+      }
+
+      renderAll();
+      showToast('Clearance Request Sent', 'Clearance approval request sent to ' + row.teacher.name + '.', 'info');
+    }
+
+    async function requestAllTeacherApprovals() {
+      const student = currentStudent();
+      const rows = assignedTeacherRows(student);
+      if (!rows.length) { showToast('No Teachers Assigned', 'No assigned teachers found for your grade/section yet. Please contact the admin.', 'warning'); return; }
+
+      appData.teacherClearanceRequests = appData.teacherClearanceRequests || [];
+      rows.forEach(row => {
+        const existingReq = requestFor(row);
+        if (!existingReq) {
+          appData.teacherClearanceRequests.push({
+            key: row.key,
+            studentId: student.id,
+            teacherId: row.teacher.id,
+            teacherName: row.teacher.name,
+            subject: row.assignment.subject || 'Subject',
+            grade: student.grade,
+            section: student.section,
+            strand: student.strand,
+            status: 'requested',
+            requestedAt: new Date().toISOString()
+          });
+        } else {
+          existingReq.status = 'requested';
+          existingReq.requestedAt = new Date().toISOString();
+        }
+      });
+      saveData();
+
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await window.paApi.requestClearance(student.id, appData.settings.schoolYear);
+        } catch (err) {
+          console.warn("Supabase request clearance notice:", err);
+        }
+      }
+
+      renderAll();
+      showToast('Clearance Submitted', 'Clearance requests were submitted to all assigned teachers.', 'info');
+    }
+
+    // ITEMIZE & PARTIAL PAYMENT MODAL LOGIC
+    function getFeeItemsForStudent(s) {
+      let items = appData.feeStructures?.[s.level] || [];
+      if (!items || items.length === 0) {
+        if (s.level === 'JHS') {
+          items = [
+            { id: 'f1', name: 'Tuition Fee', amount: 15000 },
+            { id: 'f2', name: 'Miscellaneous & Computer Fee', amount: 4000 },
+            { id: 'f3', name: 'Laboratory & Facilities Fee', amount: 2000 },
+            { id: 'f4', name: 'Registration & Student ID', amount: 1000 }
+          ];
+        } else {
+          items = [
+            { id: 'f1', name: 'Tuition Fee', amount: 18000 },
+            { id: 'f2', name: 'Miscellaneous & Facilities Fee', amount: 5000 },
+            { id: 'f3', name: 'Track / Specialization Fee', amount: 3000 },
+            { id: 'f4', name: 'Registration & Student ID', amount: 1000 }
+          ];
+        }
+      }
+      return items;
+    }
+
+    function setPaymentMode(mode) {
+      currentPayMode = mode;
+      const btnCustom = document.getElementById('modeBtnCustom');
+      const btnItemized = document.getElementById('modeBtnItemized');
+      const secCustom = document.getElementById('modeSectionCustom');
+      const secItemized = document.getElementById('modeSectionItemized');
+
+      if (mode === 'custom') {
+        btnCustom.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
+        btnItemized.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
+        secCustom.classList.remove('hidden');
+        secItemized.classList.add('hidden');
+      } else {
+        btnItemized.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
+        btnCustom.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
+        secItemized.classList.remove('hidden');
+        secCustom.classList.add('hidden');
+        renderFeeChecklist();
+      }
+    }
+
+    function renderFeeChecklist() {
+      const s = currentStudent();
+      const items = getFeeItemsForStudent(s);
+      const checklist = document.getElementById('feeItemsChecklist');
+      if (!checklist) return;
+
+      checklist.innerHTML = items.map((item, idx) => `
+        <label class="flex items-center justify-between p-3 rounded-xl border border-academy-border bg-white hover:bg-academy-soft cursor-pointer transition">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" class="fee-item-cb w-4 h-4 rounded text-academy-navy accent-academy-navy focus:ring-0" value="${item.amount}" data-name="${item.name}" onchange="recalculateItemizedTotal()">
+            <span class="text-xs font-extrabold text-academy-navy">${item.name}</span>
+          </div>
+          <span class="text-xs font-extrabold text-slate-700">${money(item.amount)}</span>
+        </label>
+      `).join('');
+
+      recalculateItemizedTotal();
+    }
+
+    function recalculateItemizedTotal() {
+      const cbs = document.querySelectorAll('.fee-item-cb:checked');
+      let total = 0;
+      cbs.forEach(cb => { total += Number(cb.value || 0) });
+      
+      document.getElementById('itemizedSelectedTotal').textContent = money(total);
+      document.getElementById('payAmountInput').value = total;
+    }
+
+    function selectAllFeeItems(select = true) {
+      document.querySelectorAll('.fee-item-cb').forEach(cb => { cb.checked = select });
+      recalculateItemizedTotal();
+    }
+
+    function applyPayPreset(preset) {
+      const s = currentStudent();
+      const bal = balance(s);
+      let amt = bal;
+      if (preset === 'half') amt = Math.round(bal / 2);
+      else if (typeof preset === 'number') amt = Math.min(bal, preset);
+      
+      document.getElementById('payAmountInput').value = amt;
+    }
+
+    function startPayMongoCheckout() {
+      const s = currentStudent();
+      const bal = balance(s);
+      if (bal <= 0) {
+        showToast('No Outstanding Balance', 'You have no outstanding balance due!', 'info');
+        return;
+      }
+      setPaymentMode('custom');
+      document.getElementById('payAmountInput').value = bal;
+      document.getElementById('payAmountHint').textContent = `Current outstanding balance: ${money(bal)}`;
+      document.getElementById('paymentModal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+    }
+
+    function switchPayChannel(channel) {
+      document.querySelectorAll('.pay-tab').forEach(b => {
+        b.className = 'pay-tab p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-extrabold text-xs flex flex-col items-center gap-1 hover:bg-slate-100 transition';
+      });
+      document.querySelectorAll('.pay-view').forEach(v => v.classList.add('hidden'));
+
+      if (channel === 'paymongo') {
+        document.getElementById('tabPaymongo').className = 'pay-tab p-3 rounded-2xl border-2 border-academy-blue bg-blue-50 text-academy-blue font-extrabold text-xs flex flex-col items-center gap-1 transition';
+        document.getElementById('viewPaymongo').classList.remove('hidden');
+      } else if (channel === 'gcash') {
+        document.getElementById('tabGcash').className = 'pay-tab p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 font-extrabold text-xs flex flex-col items-center gap-1 transition';
+        document.getElementById('viewGcash').classList.remove('hidden');
+      } else if (channel === 'maya') {
+        document.getElementById('tabMaya').className = 'pay-tab p-3 rounded-2xl border-2 border-sky-500 bg-sky-50 text-sky-800 font-extrabold text-xs flex flex-col items-center gap-1 transition';
+        document.getElementById('viewMaya').classList.remove('hidden');
+      } else if (channel === 'instapay') {
+        document.getElementById('tabInstapay').className = 'pay-tab p-3 rounded-2xl border-2 border-indigo-500 bg-indigo-50 text-indigo-800 font-extrabold text-xs flex flex-col items-center gap-1 transition';
+        document.getElementById('viewInstapay').classList.remove('hidden');
+      }
+    }
+
+    async function processDirectPayment(method) {
+      const s = currentStudent();
+      const amountInput = Number(document.getElementById('payAmountInput').value) || 0;
+      if (amountInput <= 0) {
+        showToast('Invalid Payment Amount', 'Please select at least one fee item or enter a valid payment amount greater than 0.', 'warning');
+        return;
+      }
+
+      let refNo = '';
+      if (method === 'GCash') {
+        refNo = 'GC-' + Math.floor(1000000000 + Math.random() * 9000000000);
+      } else if (method === 'Maya') {
+        refNo = 'MY-' + Math.floor(1000000000 + Math.random() * 9000000000);
+      } else {
+        refNo = document.getElementById('instapayRef').value.trim() || ('IP-' + Math.floor(1000000000 + Math.random() * 9000000000));
+      }
+
+      // Collect fee item names if itemized mode was selected
+      let feeBreakdown = [];
+      if (currentPayMode === 'itemized') {
+        const cbs = document.querySelectorAll('.fee-item-cb:checked');
+        cbs.forEach(cb => feeBreakdown.push(cb.dataset.name));
+      }
+
+      const paymentObj = {
+        id: 'PAY-' + Date.now(),
+        studentId: s.id,
+        studentName: s.name,
+        amount: amountInput,
+        method: method,
+        referenceNo: refNo,
+        status: 'Paid',
+        feeBreakdown: feeBreakdown,
+        paidAt: new Date().toISOString(),
+        date: new Date().toISOString().slice(0, 10),
+        schoolYear: (appData.settings || {}).schoolYear || '2026-2027'
+      };
+
+      appData.payments = appData.payments || [];
+      appData.payments.unshift(paymentObj);
+
+      const idx = appData.students.findIndex(x => x.id === s.id);
+      if (idx >= 0) {
+        appData.students[idx].paid = Number(appData.students[idx].paid || 0) + amountInput;
+      }
+
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await window.paApi.recordPayment({
+            studentId: s.id,
+            amount: amountInput,
+            method: method,
+            referenceNo: refNo
+          });
+        } catch (err) {
+          console.warn('Supabase payment sync skipped:', err);
+        }
+      }
+
+      saveData();
+      renderAll();
+      closePaymentModal();
+      showReceiptModal(paymentObj);
+    }
+
+    function calculateStudentPaid(studentId, payments = [], student = null) {
+      if (student && Number(student.paid || 0) > 0) return Number(student.paid || 0);
+      return (payments || [])
+        .filter(p => (p.studentId === studentId || p.student_id === studentId) && (String(p.status || '').toLowerCase() === 'paid' || !p.status))
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    }
+
+    function showReceiptModal(p) {
+      const container = document.getElementById('receiptDetails');
+      if (!container) return;
+      const s = currentStudent();
+      const dateStr = p.paidAt ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : (p.date || 'Today');
+      
+      let feeItemsHtml = '';
+      if (p.feeBreakdown && p.feeBreakdown.length > 0) {
+        feeItemsHtml = `<div class="flex justify-between text-blue-900 font-bold mt-1"><span>Items Paid:</span><span class="text-right">${p.feeBreakdown.join(', ')}</span></div>`;
+      }
+
+      const totalNetAssessed = assessedTotal(s);
+      const remainingBal = balance(s);
+
+      container.innerHTML = `
+        <div class="border-b border-slate-200 pb-2.5 mb-2.5 space-y-1">
+          <div class="flex justify-between text-slate-500"><span>Student Name:</span><span class="font-extrabold text-slate-900 text-sm">${s.name}</span></div>
+          <div class="flex justify-between text-slate-500"><span>Student Number:</span><span class="font-bold text-slate-800">${s.id}</span></div>
+          <div class="flex justify-between text-slate-500"><span>Grade & Section:</span><span class="font-semibold text-slate-700">${classLabel(s)}</span></div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="flex justify-between"><span>Reference / Receipt No:</span><span class="font-extrabold text-academy-navy">${p.referenceNo || p.id}</span></div>
+          <div class="flex justify-between"><span>Payment Channel:</span><span class="font-bold text-emerald-700">${p.method}</span></div>
+          ${feeItemsHtml}
+          <div class="flex justify-between"><span>Transaction Date:</span><span>${dateStr}</span></div>
+          <div class="flex justify-between"><span>School Year:</span><span>${p.schoolYear || (appData.settings || {}).schoolYear || '2026-2027'}</span></div>
+        </div>
+        <div class="border-t border-slate-200 pt-2.5 mt-2.5 space-y-1.5">
+          <div class="flex justify-between text-xs"><span class="text-slate-600">Total Net Assessed Fees:</span><span class="font-bold text-slate-800">${money(totalNetAssessed)}</span></div>
+          <div class="flex justify-between text-sm font-black text-slate-900"><span>Amount Paid Now:</span><span class="text-emerald-600">${money(p.amount)}</span></div>
+          <div class="flex justify-between text-xs font-extrabold pt-1.5 border-t border-dashed border-slate-300"><span>Remaining Balance Due:</span><span class="text-red-600 text-sm">${money(remainingBal)}</span></div>
+        </div>
+      `;
+      document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    function printReceipt() {
+      window.print();
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receiptModal').classList.add('hidden');
+    }
+
+    async function triggerPayMongoLiveFromModal() {
+      const s = currentStudent();
+      const amountInput = Number(document.getElementById('payAmountInput').value) || balance(s);
+      if (amountInput <= 0) {
+        showToast('Invalid Amount', 'Please enter a valid payment amount greater than 0.', 'warning');
+        return;
+      }
+      if (!window.paApi || !window.paApi.isSupabaseReady()) {
+        showToast('Setup Notice', 'Supabase is not configured yet. Add Supabase keys first or use the built-in GCash/Maya options.', 'warning');
+        return;
+      }
+
+      let feeBreakdown = [];
+      if (currentPayMode === 'itemized') {
+        const cbs = document.querySelectorAll('.fee-item-cb:checked');
+        cbs.forEach(cb => feeBreakdown.push(cb.dataset.name));
+      }
+
+      try {
+        closePaymentModal();
+        const currentOrigin = (window.location.protocol.startsWith('http') && window.location.origin !== 'null')
+          ? (window.location.origin + window.location.pathname)
+          : 'http://localhost:5500/student-dashboard.html';
+
+        const successUrl = `${currentOrigin}?payment=success&studentId=${encodeURIComponent(s.id)}`;
+        const cancelUrl = `${currentOrigin}?payment=failed&studentId=${encodeURIComponent(s.id)}`;
+
+        const pendingData = {
+          studentId: s.id,
+          amount: amountInput,
+          feeBreakdown: feeBreakdown,
+          payMode: currentPayMode,
+          time: Date.now()
+        };
+
+        sessionStorage.setItem('pa_pending_payment', JSON.stringify(pendingData));
+        localStorage.setItem('pa_pending_payment', JSON.stringify(pendingData));
+
+        await window.paApi.createCheckout({
+          amount: Math.max(100, Math.round(amountInput * 100)),
+          description: `Payment for ${s.name}`,
+          studentId: s.id,
+          success_url: successUrl,
+          cancel_url: cancelUrl
+        });
+      } catch (err) {
+        sessionStorage.removeItem('pa_pending_payment');
+        localStorage.removeItem('pa_pending_payment');
+        showToast('Checkout Failed', err.message || 'PayMongo Edge Function is not deployed yet.', 'error');
+        document.getElementById('paymentModal').classList.remove('hidden');
+      }
+    }
+
+    function mergeStudentsState(localStudents = [], dbStudents = []) {
+      if (!dbStudents || dbStudents.length === 0) return localStudents;
+      if (!localStudents || localStudents.length === 0) return dbStudents;
+
+      const map = new Map();
+
+      localStudents.forEach(s => {
+        const key = String(s.email || s.id || '').toLowerCase();
+        if (key) map.set(key, { ...s });
+      });
+
+      dbStudents.forEach(dbS => {
+        const key = String(dbS.email || dbS.id || '').toLowerCase();
+        if (key) {
+          const local = map.get(key);
+          if (local) {
+            const highestPaid = Math.max(
+              Number(dbS.paid || 0),
+              Number(local.paid || 0),
+              getStudentTotalPaid(local),
+              getStudentTotalPaid(dbS)
+            );
+            map.set(key, {
+              ...dbS,
+              ...local,
+              voucher: (local.voucher !== undefined && local.voucher !== null) ? local.voucher : dbS.voucher,
+              customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
+              feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
+              assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
+              paid: highestPaid,
+              clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+            });
+          } else {
+            map.set(key, { ...dbS });
+          }
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    function mergeAccountsState(localAccounts = [], dbAccounts = []) {
+      if (!dbAccounts || dbAccounts.length === 0) return localAccounts;
+      if (!localAccounts || localAccounts.length === 0) return dbAccounts;
+
+      const map = new Map();
+      localAccounts.forEach(a => {
+        const key = String(a.email || a.id || '').toLowerCase();
+        if (key) map.set(key, { ...a });
+      });
+
+      dbAccounts.forEach(dbA => {
+        const key = String(dbA.email || dbA.id || '').toLowerCase();
+        if (key) {
+          const local = map.get(key);
+          map.set(key, { ...dbA, ...(local || {}) });
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    function mergeClearanceRequestsState(localReqs = [], dbReqs = []) {
+      if (!dbReqs || dbReqs.length === 0) return localReqs;
+      if (!localReqs || localReqs.length === 0) return dbReqs;
+
+      const map = new Map();
+      localReqs.forEach(r => {
+        const key = String(r.id || r.key || '').toLowerCase();
+        if (key) map.set(key, { ...r });
+      });
+
+      dbReqs.forEach(dbR => {
+        const key = String(dbR.id || dbR.key || '').toLowerCase();
+        if (key) {
+          const local = map.get(key);
+          map.set(key, { ...dbR, ...(local || {}) });
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    async function initStudentDashboard() {
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await hydrateCurrentStudentFromSupabase();
+          const state = await window.paApi.fetchDatabaseState();
+          if (state) {
+            const localFeeJHS = appData.feeStructures?.JHS || [];
+            const localFeeSHS = appData.feeStructures?.SHS || [];
+            const dbFeeJHS = state.feeStructures?.JHS || [];
+            const dbFeeSHS = state.feeStructures?.SHS || [];
+            const rawLocal = localStorage.getItem(STORAGE_KEY);
+            const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
+            const activeVouchers = (parsedLocal && Array.isArray(parsedLocal.vouchers))
+              ? parsedLocal.vouchers
+              : (state.vouchers || appData.vouchers || []);
+            const activeInstallments = (parsedLocal && Array.isArray(parsedLocal.installmentTemplate))
+              ? parsedLocal.installmentTemplate
+              : (state.installmentTemplate || appData.installmentTemplate || []);
+
+            const mergedStudents = mergeStudentsState(appData.students || [], state.students || []);
+            const mergedAccounts = mergeAccountsState(appData.accounts || [], state.accounts || []);
+            const mergedRequests = mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests || []);
+            const mergedPayments = window.paApi?.mergePaymentsState
+              ? window.paApi.mergePaymentsState(appData.payments || [], state.payments || [])
+              : (state.payments || appData.payments || []);
+
+            appData = {
+              ...appData,
+              ...state,
+              students: mergedStudents,
+              accounts: mergedAccounts,
+              teacherClearanceRequests: mergedRequests,
+              payments: mergedPayments,
+              feeStructures: {
+                JHS: dbFeeJHS.length ? dbFeeJHS : localFeeJHS,
+                SHS: dbFeeSHS.length ? dbFeeSHS : localFeeSHS
+              },
+              vouchers: activeVouchers,
+              installmentTemplate: activeInstallments
+            };
+          }
+        } catch (err) {
+          console.warn("Could not load dynamic state from Supabase, using localStorage:", err);
+        }
+      }
+
+      // Handle return from PayMongo checkout portal
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentParam = (urlParams.get('payment') || '').toLowerCase();
+      const checkoutSessionId = urlParams.get('checkout_session_id') || urlParams.get('session_id');
+
+      if (paymentParam === 'success' || paymentParam === 'paid' || checkoutSessionId) {
+        const s = currentStudent();
+        let pending = null;
+        try {
+          const rawPending = sessionStorage.getItem('pa_pending_payment') || localStorage.getItem('pa_pending_payment');
+          if (rawPending) pending = JSON.parse(rawPending);
+        } catch (e) {}
+
+        sessionStorage.removeItem('pa_pending_payment');
+        localStorage.removeItem('pa_pending_payment');
+
+        let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : 0;
+
+        // Fallback: If pending payment object was cleared, attempt balance estimate
+        if (paidAmt <= 0 && s) {
+          const totalAssessed = assessedTotal(s);
+          const alreadyPaid = (s && Number(s.paid || 0) > 0)
+            ? Number(s.paid || 0)
+            : (appData.payments || []).filter(p => (p.studentId === s.id || p.student_id === s.id) && (String(p.status || '').toLowerCase() === 'paid' || !p.status)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+          const remBal = Math.max(0, totalAssessed - alreadyPaid);
+          if (remBal > 0) paidAmt = remBal;
+        }
+
+        if (paidAmt > 0 && s) {
+          const feeBreakdown = pending?.feeBreakdown || [];
+          const refNo = checkoutSessionId ? `PM-${checkoutSessionId.slice(-10).toUpperCase()}` : ('PM-' + Math.floor(1000000000 + Math.random() * 9000000000));
+
+          const paymentObj = {
+            id: 'PAY-' + Date.now(),
+            studentId: s.id,
+            studentName: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
+            amount: paidAmt,
+            method: 'QR Ph (PayMongo)',
+            referenceNo: refNo,
+            status: 'Paid',
+            feeBreakdown: feeBreakdown,
+            paidAt: new Date().toISOString(),
+            date: new Date().toISOString().slice(0, 10),
+            schoolYear: (appData.settings || {}).schoolYear || '2026-2027'
+          };
+
+          appData.payments = appData.payments || [];
+          const existingIdx = appData.payments.findIndex(p => p.referenceNo === refNo || p.id === refNo);
+          if (existingIdx < 0) {
+            appData.payments.unshift(paymentObj);
+          }
+
+          const idx = appData.students.findIndex(x => x.id === s.id);
+          if (idx >= 0) {
+            appData.students[idx].paid = Number(appData.students[idx].paid || 0) + paidAmt;
+          }
+
+          if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+            try {
+              await window.paApi.recordPayment({
+                studentId: s.id,
+                amount: paidAmt,
+                method: 'QR Ph (PayMongo)',
+                referenceNo: refNo
+              });
+            } catch (err) {
+              console.warn('Direct payment sync skipped:', err);
+            }
+          }
+          saveData();
+          renderAll();
+          showReceiptModal(paymentObj);
+          showToast('Payment Successful!', `PHP ${paidAmt.toLocaleString()} payment recorded. Official receipt generated below.`, 'success');
+        }
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (paymentParam === 'failed' || paymentParam === 'declined' || paymentParam === 'cancelled') {
+        sessionStorage.removeItem('pa_pending_payment');
+        localStorage.removeItem('pa_pending_payment');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showToast('Payment Declined / Cancelled', 'The PayMongo payment session was cancelled or declined. No charges were made and your balance remains unchanged.', 'warning');
+      }
+
+      renderAll();
+      autoTriggerStudentWalkthrough();
+    }
+
+    /* STUDENT DASHBOARD WALKTHROUGH CONTROLLER */
+    const walkthroughSteps = [
+      {
+        step: 1,
+        title: "Welcome to your Student Portal!",
+        subtitle: "Quick overview of your dashboard features.",
+        icon: "dashboard",
+        highlightTitle: "Dashboard Overview",
+        highlightText: "View total net fees, voucher discounts, payments made, and clearance status.",
+        description: "Welcome to Pagbilao Academy Inc.! Your dashboard homepage gives you real-time visibility into your enrolled level, overall net tuition balance, active voucher discounts, and clearance progress.",
+        tip: "You can click on the stat cards or sidebar menu items to jump directly to specific details."
+      },
+      {
+        step: 2,
+        title: "Fee Assessment & Vouchers",
+        subtitle: "Transparent tuition & fee calculation formula.",
+        icon: "receipt_long",
+        highlightTitle: "Gross Fees vs. Voucher Discount",
+        highlightText: "Net Amount Due = Gross Fees - Voucher Discount",
+        description: "In the Fee Breakdown tab, inspect itemized tuition, computer, and laboratory fees. Eligible students automatically receive ESC Vouchers (JHS) or SHS Vouchers (SHS), reducing gross fees down to the Net Amount Due.",
+        tip: "Partial payments apply directly to your net amount due, not your gross fee assessment."
+      },
+      {
+        step: 3,
+        title: "Installment Due Dates",
+        subtitle: "Smart partial payment allocation.",
+        icon: "calendar_month",
+        highlightTitle: "Quarterly Milestone Schedule",
+        highlightText: "Partial payments auto-allocate to the oldest unpaid installment.",
+        description: "Track installment due dates (Enrollment, 2nd Quarter, 3rd Quarter, 4th Quarter). When you make partial payments, the system automatically satisfies your oldest due schedule first.",
+        tip: "Check installment status badges (Paid, Pending, or Overdue) to stay on top of payment deadlines."
+      },
+      {
+        step: 4,
+        title: "Clearance Approvals Workflow",
+        subtitle: "Sequential clearance tracking for graduation & certificates.",
+        icon: "fact_check",
+        highlightTitle: "Subject Teachers & Department Offices",
+        highlightText: "Request clearance from assigned subject teachers & office heads.",
+        description: "Submit digital clearance requests to your assigned subject teachers. Office sign-offs proceed sequentially: Subject Teachers → Guidance, Prefect & Librarian → Principal → Accounting & Registrar.",
+        tip: "Use the 'Request All Teachers' button on the Clearance tab to submit approval requests in bulk!"
+      },
+      {
+        step: 5,
+        title: "Online Payments & Certificates",
+        subtitle: "PayMongo QR Ph integration & PDF certificate downloads.",
+        icon: "workspace_premium",
+        highlightTitle: "Pay Online & Print Certificate",
+        highlightText: "Pay via GCash/Maya/Cards and view official Certificate when cleared.",
+        description: "Click 'Pay Tuition' to settle fees instantly via PayMongo (QR Ph, GCash, Maya, cards). Once all department clearances are approved and your net balance is zero, your official Certificate of Clearance unlocks for PDF viewing and printing!",
+        tip: "You can re-open this tour anytime by clicking the 'Portal Tour' button in the top menu bar."
+      }
+    ];
+
+    let currentWalkthroughIndex = 0;
+
+    function renderWalkthroughStep() {
+      const stepData = walkthroughSteps[currentWalkthroughIndex];
+      if (!stepData) return;
+
+      document.getElementById("wtStepBadge").textContent = `Step ${stepData.step} of ${walkthroughSteps.length}`;
+      document.getElementById("wtTitle").textContent = stepData.title;
+      document.getElementById("wtSubtitle").textContent = stepData.subtitle;
+      document.getElementById("wtIcon").textContent = stepData.icon;
+      document.getElementById("wtHighlightTitle").textContent = stepData.highlightTitle;
+      document.getElementById("wtHighlightText").textContent = stepData.highlightText;
+      document.getElementById("wtDescription").textContent = stepData.description;
+      document.getElementById("wtTipText").textContent = stepData.tip;
+
+      const pct = ((currentWalkthroughIndex + 1) / walkthroughSteps.length) * 100;
+      document.getElementById("wtProgressBar").style.width = `${pct}%`;
+
+      const prevBtn = document.getElementById("wtPrevBtn");
+      const nextBtn = document.getElementById("wtNextBtn");
+
+      if (currentWalkthroughIndex === 0) {
+        prevBtn.classList.add("hidden");
+      } else {
+        prevBtn.classList.remove("hidden");
+      }
+
+      if (currentWalkthroughIndex === walkthroughSteps.length - 1) {
+        nextBtn.innerHTML = `<span>Finish</span><span class="material-symbols-rounded text-[18px]">check_circle</span>`;
+        nextBtn.className = "px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-md hover:bg-emerald-700 transition flex items-center gap-1";
+      } else {
+        nextBtn.innerHTML = `<span>Next</span><span class="material-symbols-rounded text-[18px]">chevron_right</span>`;
+        nextBtn.className = "px-6 py-2.5 rounded-xl bg-academy-navy text-white font-extrabold text-xs shadow-md hover:bg-blue-900 transition flex items-center gap-1";
+      }
+    }
+
+    function startStudentWalkthrough() {
+      currentWalkthroughIndex = 0;
+      renderWalkthroughStep();
+      const modal = document.getElementById("walkthroughModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function nextWalkthroughStep() {
+      if (currentWalkthroughIndex < walkthroughSteps.length - 1) {
+        currentWalkthroughIndex++;
+        renderWalkthroughStep();
+      } else {
+        finishWalkthrough();
+      }
+    }
+
+    function prevWalkthroughStep() {
+      if (currentWalkthroughIndex > 0) {
+        currentWalkthroughIndex--;
+        renderWalkthroughStep();
+      }
+    }
+
+    function skipWalkthrough() {
+      finishWalkthrough();
+    }
+
+    function finishWalkthrough() {
+      localStorage.setItem("pa_student_walkthrough_completed", "true");
+      const modal = document.getElementById("walkthroughModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function autoTriggerStudentWalkthrough() {
+      const isCompleted = localStorage.getItem("pa_student_walkthrough_completed");
+      if (!isCompleted) {
+        setTimeout(() => {
+          startStudentWalkthrough();
+        }, 600);
+      }
+    }
+
+    initStudentDashboard();
+  </script>
+</body>
+
+</html>
