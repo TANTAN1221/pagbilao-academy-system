@@ -1137,7 +1137,7 @@
       }
 
       if (!window.paApi || !window.paApi.isSupabaseReady || !window.paApi.isSupabaseReady()) {
-        registerError.textContent = "Supabase is not connected yet. Add your Project URL and anon key in js/app-config.js first.";
+        registerError.textContent = "Unable to connect to registration server. Please try again later.";
         registerError.classList.remove("hidden");
         return;
       }

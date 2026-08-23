@@ -744,9 +744,12 @@ drop policy if exists "students can insert own payments" on public.payments;
 create policy "students can insert own payments" on public.payments
   for insert to authenticated with check (
     exists (
-      select 1 from public.students
-      where auth_user_id = auth.uid()
-        and id = student_id
+      select 1 from public.students s
+      where (s.auth_user_id = auth.uid() or s.id = student_id)
+    )
+    or exists (
+      select 1 from public.profiles p
+      where p.auth_user_id = auth.uid()
     )
   );
 

@@ -47,12 +47,12 @@ Deno.serve(async (req: Request) => {
                 quantity: 1
               }
             ],
-            payment_method_types: ["qrph"],
+            payment_method_types: ["qrph", "gcash", "paymaya", "card"],
             success_url: successUrl,
             cancel_url: cancelUrl,
             description,
             metadata: {
-              student_id: studentId,
+              student_id: String(studentId),
               source: "pagbilao_academy_payment_clearance_system"
             }
           }

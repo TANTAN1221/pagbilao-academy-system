@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
+function isUuid(val: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || "").trim());
+}
+
 async function verifySignature(
   rawBody: string,
   signatureHeader: string | null,
@@ -103,7 +107,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Check if this event indicates a successful payment
-    if (["paid", "succeeded", "completed"].includes(String(rawStatus).toLowerCase())) {
+    if (["paid", "succeeded", "completed", "checkout_session.payment.paid"].includes(String(rawStatus).toLowerCase()) || String(eventType).includes("paid")) {
       if (checkoutId) {
         await supabaseAdmin
           .from("payments")
@@ -116,18 +120,29 @@ Deno.serve(async (req: Request) => {
       }
 
       if (studentId) {
-        const { data: student } = await supabaseAdmin
-          .from("students")
-          .select("id")
-          .or(`student_number.eq.${studentId},id.eq.${studentId}`)
-          .maybeSingle();
+        let studentQuery = supabaseAdmin.from("students").select("id");
+        if (isUuid(studentId)) {
+          studentQuery = studentQuery.or(`student_number.eq.${studentId},id.eq.${studentId}`);
+        } else {
+          studentQuery = studentQuery.eq("student_number", studentId);
+        }
+
+        const { data: student, error: studentLookupErr } = await studentQuery.maybeSingle();
+
+        if (studentLookupErr) {
+          console.error("Student lookup notice in webhook:", studentLookupErr);
+        }
 
         if (student) {
-          const { data: existingPayment } = await supabaseAdmin
-            .from("payments")
-            .select("id")
-            .eq("checkout_session_id", checkoutId)
-            .maybeSingle();
+          let existingPayment = null;
+          if (checkoutId) {
+            const { data: foundPayment } = await supabaseAdmin
+              .from("payments")
+              .select("id")
+              .eq("checkout_session_id", checkoutId)
+              .maybeSingle();
+            existingPayment = foundPayment;
+          }
 
           if (!existingPayment && amountInPesos > 0) {
             await supabaseAdmin.from("payments").insert({

@@ -530,8 +530,8 @@
 
           // Paid payments
           const studentPaid = (dbPayments || [])
-            .filter(p => (p.student_id === s.id || p.student_id === s.student_number || p.student_id === s.auth_user_id) && String(p.status || "").toLowerCase() === "paid")
-            .reduce((sum, p) => sum + Number(p.amount), 0);
+            .filter(p => (p.student_id === s.id || p.student_id === s.student_number || p.student_id === s.auth_user_id) && ["paid", "succeeded", "completed"].includes(String(p.status || "paid").toLowerCase()))
+            .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
           // Clearance request
           const req = (clRequests || []).find(cr => cr.student_id === s.id);
@@ -610,12 +610,14 @@
       // 7. Payments
       if (dbPayments && studentsList) {
         state.payments = dbPayments.map(p => {
-          const student = (studentsList || []).find(s => s.id === p.student_id || s.student_number === p.student_id);
+          const student = (studentsList || []).find(s => s.id === p.student_id || s.student_number === p.student_id || s.auth_user_id === p.student_id);
           const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : "Student";
           const refNo = p.provider_reference || p.checkout_session_id || p.id;
           return {
             id: p.id,
+            dbId: p.id,
             studentId: student?.student_number || p.student_id,
+            studentDbId: p.student_id,
             studentName: studentName,
             date: p.paid_at ? p.paid_at.slice(0, 10) : (p.created_at ? p.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
             paidAt: p.paid_at || p.created_at || new Date().toISOString(),
@@ -670,12 +672,16 @@
 
     (dbPayments || []).forEach(dbP => {
       if (dbP) {
-        const key = String(dbP.referenceNo || dbP.id || '').toLowerCase();
-        if (key) {
-          const local = map.get(key);
-          map.set(key, { ...dbP, ...local });
-        } else if (dbP.id) {
-          map.set(String(dbP.id).toLowerCase(), { ...dbP });
+        const refKey = dbP.referenceNo ? String(dbP.referenceNo).toLowerCase() : null;
+        const idKey = dbP.id ? String(dbP.id).toLowerCase() : null;
+        const matchKey = (refKey && map.has(refKey)) ? refKey : ((idKey && map.has(idKey)) ? idKey : null);
+
+        if (matchKey) {
+          const local = map.get(matchKey);
+          map.set(matchKey, { ...dbP, ...local });
+        } else {
+          const primaryKey = refKey || idKey || `db-${Date.now()}-${Math.random()}`;
+          map.set(primaryKey, { ...dbP });
         }
       }
     });
@@ -718,7 +724,7 @@
         .from("payments")
         .select("*")
         .eq("student_id", student.id)
-        .or(`provider_reference.eq.${refNo},checkout_session_id.eq.${refNo}`)
+        .eq("provider_reference", refNo)
         .maybeSingle();
       if (existing) return existing;
     }
