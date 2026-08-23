@@ -538,7 +538,7 @@
   </div>
 
   <div id="confirmModal"
-    class="fixed inset-0 z-[160] hidden items-center justify-center bg-slate-950/50 backdrop-blur-sm px-4">
+    class="fixed inset-0 z-[250] hidden items-center justify-center bg-slate-950/60 backdrop-blur-md px-4">
     <div
       class="w-full max-w-md bg-white rounded-[2rem] border border-academy-border shadow-2xl p-6 text-center animate-in fade-in zoom-in duration-200">
       <div class="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
@@ -732,6 +732,8 @@
     }
 
     function showConfirmModal({ title, message, confirmText = 'Confirm Delete', confirmClass = 'bg-red-600 hover:bg-red-700 text-white', onConfirm }) {
+      if (typeof closeFormModal === 'function') closeFormModal();
+
       const modal = document.getElementById('confirmModal');
       const titleEl = document.getElementById('confirmModalTitle');
       const msgEl = document.getElementById('confirmModalMessage');
