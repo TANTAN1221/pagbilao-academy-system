@@ -1019,15 +1019,16 @@
     function inferLevelFromGrade(grade) { return ['Grade 11', 'Grade 12'].includes(String(grade || '')) ? 'SHS' : 'JHS' }
 
     function normalizeStudentRecord(source, session = {}) {
-      const firstName = source.firstName || source.first_name || '';
-      const lastName = source.lastName || source.last_name || '';
-      const fullName = (source.name || source.fullName || `${firstName} ${lastName}`.trim() || session.fullName || session.email || 'Student');
-      const grade = source.gradeLevel || source.grade_level || source.grade || session.gradeLevel || 'Grade 11';
-      const level = source.educationLevel || source.education_level || source.level || session.educationLevel || inferLevelFromGrade(grade);
-      const section = source.section || source.section_name || session.section || (grade === 'Grade 7' ? 'Cattleya' : grade === 'Grade 8' ? 'Vermillion' : grade === 'Grade 9' ? 'Aristotle' : grade === 'Grade 10' ? 'Diamond' : grade === 'Grade 11' ? 'Humility' : 'Honesty');
-      const strand = source.strand || session.strand || (level === 'SHS' ? 'GAS' : 'N/A');
+      const meta = session.user_metadata || {};
+      const firstName = source.firstName || source.first_name || meta.first_name || '';
+      const lastName = source.lastName || source.last_name || meta.last_name || '';
+      const fullName = (source.name || source.fullName || `${firstName} ${lastName}`.trim() || session.fullName || meta.full_name || session.email || 'Student');
+      const grade = source.gradeLevel || source.grade_level || source.grade || session.gradeLevel || session.grade || meta.grade_level || meta.gradeLevel || 'Grade 7';
+      const level = source.educationLevel || source.education_level || source.level || session.educationLevel || meta.education_level || inferLevelFromGrade(grade);
+      const section = source.section || source.section_name || session.section || meta.section_name || (grade === 'Grade 7' ? 'Cattleya' : grade === 'Grade 8' ? 'Vermillion' : grade === 'Grade 9' ? 'Aristotle' : grade === 'Grade 10' ? 'Diamond' : grade === 'Grade 11' ? 'Humility' : 'Honesty');
+      const strand = source.strand || session.strand || meta.strand || (level === 'SHS' ? 'GAS' : 'N/A');
       return {
-        id: source.studentId || source.student_number || source.id || session.studentId || session.id || `STU-${Date.now()}`,
+        id: source.studentId || source.student_number || source.id || session.studentId || session.id || meta.student_number || `STU-${Date.now()}`,
         authUserId: source.authUserId || source.auth_user_id || session.id || null,
         name: fullName,
         email: source.email || session.email || '',
@@ -1042,13 +1043,13 @@
       const session = currentSession();
       const student = normalizeStudentRecord(source, session);
       const email = String(student.email || '').toLowerCase();
-      const idx = appData.students.findIndex(s => s.id === student.id || String(s.email || '').toLowerCase() === email || (student.authUserId && s.authUserId === student.authUserId));
+      const idx = appData.students.findIndex(s => s.id === student.id || (email && String(s.email || '').toLowerCase() === email) || (student.authUserId && s.authUserId === student.authUserId));
       if (idx >= 0) {
         const existingVoucher = appData.students[idx].voucher;
         appData.students[idx] = {
-          ...student,
           ...appData.students[idx],
-          voucher: (existingVoucher !== undefined && existingVoucher !== null) ? existingVoucher : student.voucher,
+          ...student,
+          voucher: (existingVoucher !== undefined && existingVoucher !== null && existingVoucher !== 'None') ? existingVoucher : student.voucher,
           clearance: { ...(appData.students[idx].clearance || {}), ...(student.clearance || {}) }
         }
       } else {
@@ -1086,12 +1087,27 @@
         let session = currentSession();
         if (!session.email) session = { ...session, id: user.id, email: user.email, fullName: user.user_metadata?.full_name || user.email, role: 'student', source: 'supabase' };
         let source = null;
-        const { data: studentRow } = await supabase.from('students').select('auth_user_id,student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,school_year,status').eq('auth_user_id', user.id).maybeSingle();
+        const { data: studentRow } = await supabase.from('students').select('*').or(`auth_user_id.eq.${user.id},email.eq.${user.email}`).maybeSingle();
         if (studentRow) {
-          source = { ...studentRow, authUserId: user.id, studentId: studentRow.student_number, firstName: studentRow.first_name, lastName: studentRow.last_name, educationLevel: studentRow.education_level, gradeLevel: studentRow.grade_level, section: studentRow.section_name }
+          source = { ...studentRow, authUserId: user.id, studentId: studentRow.student_number, firstName: studentRow.first_name, lastName: studentRow.last_name, educationLevel: studentRow.education_level, gradeLevel: studentRow.grade_level, section: studentRow.section_name, strand: studentRow.strand }
         } else {
-          const { data: req } = await supabase.from('student_registration_requests').select('auth_user_id,student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,status').eq('auth_user_id', user.id).maybeSingle();
-          if (req) source = { ...req, authUserId: user.id, studentId: req.student_number, firstName: req.first_name, lastName: req.last_name, educationLevel: req.education_level, gradeLevel: req.grade_level, section: req.section_name }
+          const { data: req } = await supabase.from('student_registration_requests').select('*').or(`auth_user_id.eq.${user.id},email.eq.${user.email}`).maybeSingle();
+          if (req) source = { ...req, authUserId: user.id, studentId: req.student_number, firstName: req.first_name, lastName: req.last_name, educationLevel: req.education_level, gradeLevel: req.grade_level, section: req.section_name, strand: req.strand }
+        }
+        if (!source && user.user_metadata) {
+          const meta = user.user_metadata;
+          source = {
+            authUserId: user.id,
+            email: user.email,
+            studentId: meta.student_number || meta.studentId,
+            firstName: meta.first_name || meta.firstName || "",
+            lastName: meta.last_name || meta.lastName || "",
+            educationLevel: meta.education_level || meta.educationLevel || (['Grade 11', 'Grade 12'].includes(meta.grade_level) ? 'SHS' : 'JHS'),
+            gradeLevel: meta.grade_level || meta.gradeLevel || "Grade 7",
+            section: meta.section_name || meta.section || "N/A",
+            strand: meta.strand || "N/A",
+            status: "active"
+          };
         }
         if (source) {
           const student = upsertCurrentStudent(source);

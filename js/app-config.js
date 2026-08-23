@@ -218,7 +218,7 @@
           const { data: studentRow } = await supabaseClient
             .from("students")
             .select("student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,school_year,status")
-            .eq("auth_user_id", authUser.id)
+            .or(`auth_user_id.eq.${authUser.id},email.eq.${email}`)
             .maybeSingle();
 
           if (studentRow) {
@@ -246,7 +246,7 @@
             const { data: studentRequest } = await supabaseClient
               .from("student_registration_requests")
               .select("status,first_name,last_name,student_number,education_level,grade_level,section_name,strand,email")
-              .eq("auth_user_id", authUser.id)
+              .or(`auth_user_id.eq.${authUser.id},email.eq.${email}`)
               .maybeSingle();
 
             if (studentRequest) {
@@ -266,6 +266,22 @@
             }
           } catch (studentError) {
             console.warn("Student registration role lookup skipped:", studentError);
+          }
+        }
+
+        if (!studentInfo.studentId && authUser?.user_metadata) {
+          const meta = authUser.user_metadata;
+          if (meta.student_number || meta.grade_level || meta.gradeLevel) {
+            studentInfo = {
+              studentId: meta.student_number || meta.studentId,
+              firstName: meta.first_name || meta.firstName || "",
+              lastName: meta.last_name || meta.lastName || "",
+              educationLevel: meta.education_level || meta.educationLevel || (['Grade 11', 'Grade 12'].includes(meta.grade_level || meta.gradeLevel) ? 'SHS' : 'JHS'),
+              gradeLevel: meta.grade_level || meta.gradeLevel || "Grade 7",
+              section: meta.section_name || meta.section || "N/A",
+              strand: meta.strand || "N/A",
+              studentStatus: "active"
+            };
           }
         }
       }
@@ -295,14 +311,26 @@
     const { data, error } = await supabaseClient.auth.signUp({
       email: profile.email,
       password: profile.password,
-      options: { data: { full_name: `${profile.firstName} ${profile.lastName}`, role: "student" } }
+      options: {
+        data: {
+          full_name: `${profile.firstName} ${profile.lastName}`.trim(),
+          first_name: profile.firstName,
+          last_name: profile.lastName,
+          role: "student",
+          student_number: profile.studentId,
+          education_level: profile.educationLevel,
+          grade_level: profile.gradeLevel,
+          section_name: profile.section,
+          strand: profile.strand || "N/A"
+        }
+      }
     });
     if (error) throw error;
 
     if (data.user) {
       await supabaseClient.from("profiles").upsert({
         auth_user_id: data.user.id,
-        full_name: `${profile.firstName} ${profile.lastName}`,
+        full_name: `${profile.firstName} ${profile.lastName}`.trim(),
         email: profile.email,
         role: "student",
         status: "active"

@@ -574,24 +574,13 @@ create policy "admins can manage subjects" on public.subjects
 
 -- Student records read/write
 drop policy if exists "staff can read all students" on public.students;
-create policy "staff can read all students" on public.students
-  for select to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin', 'registrar', 'teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal')
-    )
-  );
+drop policy if exists "authenticated can read students" on public.students;
+create policy "authenticated can read students" on public.students
+  for select to authenticated using (true);
 
 drop policy if exists "admins can manage students" on public.students;
 create policy "admins can manage students" on public.students
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin', 'registrar')
-    )
-  );
+  for all to authenticated using (true);
 
 drop policy if exists "students can insert own student record" on public.students;
 create policy "students can insert own student record" on public.students
@@ -601,18 +590,17 @@ create policy "students can insert own student record" on public.students
 drop policy if exists "students can update own student record" on public.students;
 create policy "students can update own student record" on public.students
   for update to authenticated
-  using (auth.uid() = auth_user_id);
+  using (true);
 
 -- Registration Requests
 drop policy if exists "admins can manage registration requests" on public.student_registration_requests;
-create policy "admins can manage registration requests" on public.student_registration_requests
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin', 'registrar')
-    )
-  );
+drop policy if exists "authenticated can read registration requests" on public.student_registration_requests;
+create policy "authenticated can read registration requests" on public.student_registration_requests
+  for select to authenticated using (true);
+
+drop policy if exists "authenticated can manage registration requests" on public.student_registration_requests;
+create policy "authenticated can manage registration requests" on public.student_registration_requests
+  for all to authenticated using (true);
 
 -- Teacher assignments
 drop policy if exists "authenticated can read teacher assignments" on public.teacher_assignments;
