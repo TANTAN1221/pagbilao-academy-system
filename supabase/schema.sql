@@ -396,15 +396,31 @@ insert into departments (name, type) values
 ('Teacher','teacher'),('Guidance','all_students'),('Prefect','all_students'),('Library','all_students'),('Principal','principal'),('Accounting','final'),('Registrar','final')
 on conflict do nothing;
 
+insert into fee_structures (id, name, education_level, school_year, active) values
+('10000000-0000-0000-0000-000000000001', 'JHS Standard Fee Structure', 'JHS', '2026-2027', true),
+('10000000-0000-0000-0000-000000000002', 'SHS Standard Fee Structure', 'SHS', '2026-2027', true)
+on conflict (education_level, school_year, active) do nothing;
+
+insert into fee_structure_items (fee_structure_id, fee_name, amount, required, sort_order) values
+('10000000-0000-0000-0000-000000000001', 'Tuition Fee', 15000.00, true, 1),
+('10000000-0000-0000-0000-000000000001', 'Miscellaneous & Registration Fees', 4000.00, true, 2),
+('10000000-0000-0000-0000-000000000001', 'Laboratory & Computer Fees', 1500.00, true, 3),
+('10000000-0000-0000-0000-000000000001', 'Development & Energy Fees', 1500.00, true, 4),
+('10000000-0000-0000-0000-000000000002', 'Tuition Fee', 18000.00, true, 1),
+('10000000-0000-0000-0000-000000000002', 'Miscellaneous & Registration Fees', 4500.00, true, 2),
+('10000000-0000-0000-0000-000000000002', 'Laboratory & Specialized Track Fees', 2500.00, true, 3),
+('10000000-0000-0000-0000-000000000002', 'Development & Energy Fees', 2000.00, true, 4)
+on conflict do nothing;
+
 insert into voucher_types (voucher_name, applies_to, amount, active) values
 ('ESC Voucher','JHS',9000,true),('SHS Voucher','SHS',14000,true)
 on conflict (voucher_name) do nothing;
 
 insert into installment_templates (school_year, title, due_date, percent_of_net, sort_order, active) values
-('2026-2027','Enrollment / 1st Quarter','2025-08-15',25,1,true),
-('2026-2027','2nd Quarter','2025-10-15',25,2,true),
-('2026-2027','3rd Quarter','2026-01-15',25,3,true),
-('2026-2027','4th Quarter','2026-03-15',25,4,true);
+('2026-2027','Enrollment / 1st Quarter','2026-08-15',25,1,true),
+('2026-2027','2nd Quarter','2026-11-15',25,2,true),
+('2026-2027','3rd Quarter','2027-01-15',25,3,true),
+('2026-2027','4th Quarter','2027-03-15',25,4,true);
 
 -- SECURITY
 alter table profiles enable row level security;
