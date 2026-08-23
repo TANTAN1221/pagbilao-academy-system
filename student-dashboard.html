@@ -1106,10 +1106,7 @@
     function classLabel(s) { if (s.level === 'SHS') { const strandStr = s.strand && s.strand !== 'N/A' ? ` (${s.strand})` : ''; return `${s.grade} - ${s.section || 'N/A'}${strandStr}` } return `${s.grade} - ${s.section || 'N/A'}` }
     function feeTotal(level) {
       const items = (appData.feeStructures && appData.feeStructures[level]) || [];
-      if (items && items.length > 0) {
-        return items.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-      }
-      return level === 'SHS' ? 27000 : 22000;
+      return items.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     }
     function voucherAmount(s) { const v = (appData.vouchers || []).find(x => x.name === s.voucher && x.active); return v ? Number(v.amount || 0) : 0 }
     function assessedTotal(s) {

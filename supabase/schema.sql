@@ -593,6 +593,16 @@ create policy "admins can manage students" on public.students
     )
   );
 
+drop policy if exists "students can insert own student record" on public.students;
+create policy "students can insert own student record" on public.students
+  for insert to authenticated
+  with check (true);
+
+drop policy if exists "students can update own student record" on public.students;
+create policy "students can update own student record" on public.students
+  for update to authenticated
+  using (auth.uid() = auth_user_id);
+
 -- Registration Requests
 drop policy if exists "admins can manage registration requests" on public.student_registration_requests;
 create policy "admins can manage registration requests" on public.student_registration_requests

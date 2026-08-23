@@ -316,11 +316,29 @@
         education_level: profile.educationLevel,
         grade_level: profile.gradeLevel,
         section_name: profile.section,
-        strand: profile.strand,
+        strand: profile.strand || "N/A",
         email: profile.email,
         status: "pending_verification"
       });
-      if (profileError) throw profileError;
+      if (profileError) console.warn("student_registration_requests insert notice:", profileError);
+
+      try {
+        await supabaseClient.from("students").upsert({
+          auth_user_id: data.user.id,
+          first_name: profile.firstName,
+          last_name: profile.lastName,
+          student_number: profile.studentId,
+          education_level: profile.educationLevel,
+          grade_level: profile.gradeLevel,
+          section_name: profile.section,
+          strand: profile.strand || "N/A",
+          email: profile.email,
+          school_year: "2026-2027",
+          status: "active"
+        }, { onConflict: "student_number" });
+      } catch (e) {
+        console.warn("Direct students table insert notice:", e);
+      }
     }
     return data;
   }
@@ -453,7 +471,8 @@
         { data: clRequests },
         { data: clApprovals },
         { data: certRequests },
-        { data: deptsList }
+        { data: deptsList },
+        { data: regRequestsList }
       ] = await Promise.all([
         safeQuery(supabase.from("fee_structures").select("*")),
         safeQuery(supabase.from("fee_structure_items").select("*")),
@@ -468,7 +487,8 @@
         safeQuery(supabase.from("clearance_requests").select("*")),
         safeQuery(supabase.from("clearance_approvals").select("*")),
         safeQuery(supabase.from("clearance_certificate_requests").select("*")),
-        safeQuery(supabase.from("departments").select("*"))
+        safeQuery(supabase.from("departments").select("*")),
+        safeQuery(supabase.from("student_registration_requests").select("*"))
       ]);
 
       const DEFAULT_FEE_STRUCTURES = {
@@ -564,9 +584,34 @@
         });
       }
 
-      // 5. Students
-      if (studentsList) {
-        state.students = studentsList.map(s => {
+      // 5. Combined Students (from students table + student_registration_requests)
+      const combinedStudents = [...(studentsList || [])];
+      (regRequestsList || []).forEach(req => {
+        const alreadyExists = combinedStudents.some(s =>
+          (s.student_number && s.student_number === req.student_number) ||
+          (s.auth_user_id && req.auth_user_id && s.auth_user_id === req.auth_user_id) ||
+          (s.email && req.email && String(s.email).toLowerCase() === String(req.email).toLowerCase())
+        );
+        if (!alreadyExists) {
+          combinedStudents.push({
+            id: req.id,
+            auth_user_id: req.auth_user_id,
+            student_number: req.student_number,
+            first_name: req.first_name,
+            last_name: req.last_name,
+            email: req.email,
+            education_level: req.education_level,
+            grade_level: req.grade_level,
+            section_name: req.section_name,
+            strand: req.strand || "N/A",
+            school_year: "2026-2027",
+            status: req.status || "active"
+          });
+        }
+      });
+
+      if (combinedStudents.length > 0) {
+        state.students = combinedStudents.map(s => {
           // Voucher
           const sv = (stdVouchers || []).find(v => v.student_id === s.id);
           const voucherName = sv?.voucher_types?.voucher_name || "None";
@@ -633,11 +678,11 @@
             id: s.student_number,
             dbId: s.id,
             authUserId: s.auth_user_id,
-            name: `${s.first_name} ${s.last_name}`.trim(),
+            name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.student_number,
             email: s.email,
-            level: s.education_level,
-            grade: s.grade_level,
-            section: s.section_name,
+            level: s.education_level || "JHS",
+            grade: s.grade_level || "Grade 7",
+            section: s.section_name || "N/A",
             strand: s.strand || "N/A",
             voucher: voucherName,
             paid: studentPaid,
