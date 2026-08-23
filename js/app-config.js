@@ -172,6 +172,7 @@
       let fullName = authUser?.user_metadata?.full_name || email;
       let status = "active";
 
+      let profileFound = false;
       try {
         const { data: profile } = await supabaseClient
           .from("profiles")
@@ -183,67 +184,89 @@
           role = normalizeRole(profile.role);
           fullName = profile.full_name || fullName;
           status = profile.status || status;
+          profileFound = true;
         }
       } catch (profileError) {
         console.warn("Profile role lookup skipped:", profileError);
       }
 
-      // Student self-registration may only create a student_registration_requests row at first.
-      // Load the exact student attached to the signed-in Auth user so the student dashboard
-      // does not fall back to the first demo student.
-      let studentInfo = {};
-      try {
-        const { data: studentRow } = await supabaseClient
-          .from("students")
-          .select("student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,school_year,status")
-          .eq("auth_user_id", authUser.id)
-          .maybeSingle();
+      const inferredRole = inferPrototypeRole(email);
+      const isStaffOrAdmin = ADMIN_ROLES.includes(inferredRole) || CLEARANCE_ROLES.includes(inferredRole) || ADMIN_ROLES.includes(role) || CLEARANCE_ROLES.includes(role);
 
-        if (studentRow) {
-          role = "student";
-          status = studentRow.status || status;
-          fullName = `${studentRow.first_name || ""} ${studentRow.last_name || ""}`.trim() || fullName;
-          studentInfo = {
-            studentId: studentRow.student_number,
-            firstName: studentRow.first_name,
-            lastName: studentRow.last_name,
-            educationLevel: studentRow.education_level,
-            gradeLevel: studentRow.grade_level,
-            section: studentRow.section_name,
-            strand: studentRow.strand || "N/A",
-            schoolYear: studentRow.school_year,
-            studentStatus: studentRow.status || "active"
-          };
+      if (!profileFound || isStaffOrAdmin) {
+        if (isStaffOrAdmin) {
+          role = (role && (ADMIN_ROLES.includes(role) || CLEARANCE_ROLES.includes(role))) ? role : inferredRole;
         }
-      } catch (studentRowError) {
-        console.warn("Student profile lookup skipped:", studentRowError);
+        if (!profileFound && isStaffOrAdmin) {
+          try {
+            await supabaseClient.from("profiles").upsert({
+              auth_user_id: authUser.id,
+              email: email,
+              full_name: fullName || email,
+              role: role,
+              status: "active"
+            }, { onConflict: "auth_user_id" });
+          } catch (e) {
+            console.warn("Auto-creating admin profile error:", e);
+          }
+        }
       }
 
-      if (!studentInfo.studentId) {
+      let studentInfo = {};
+      if (!isStaffOrAdmin) {
         try {
-          const { data: studentRequest } = await supabaseClient
-            .from("student_registration_requests")
-            .select("status,first_name,last_name,student_number,education_level,grade_level,section_name,strand,email")
+          const { data: studentRow } = await supabaseClient
+            .from("students")
+            .select("student_number,first_name,last_name,email,education_level,grade_level,section_name,strand,school_year,status")
             .eq("auth_user_id", authUser.id)
             .maybeSingle();
 
-          if (studentRequest) {
+          if (studentRow) {
             role = "student";
-            status = studentRequest.status || status;
-            fullName = `${studentRequest.first_name || ""} ${studentRequest.last_name || ""}`.trim() || fullName;
+            status = studentRow.status || status;
+            fullName = `${studentRow.first_name || ""} ${studentRow.last_name || ""}`.trim() || fullName;
             studentInfo = {
-              studentId: studentRequest.student_number,
-              firstName: studentRequest.first_name,
-              lastName: studentRequest.last_name,
-              educationLevel: studentRequest.education_level,
-              gradeLevel: studentRequest.grade_level,
-              section: studentRequest.section_name,
-              strand: studentRequest.strand || "N/A",
-              studentStatus: studentRequest.status || "pending_verification"
+              studentId: studentRow.student_number,
+              firstName: studentRow.first_name,
+              lastName: studentRow.last_name,
+              educationLevel: studentRow.education_level,
+              gradeLevel: studentRow.grade_level,
+              section: studentRow.section_name,
+              strand: studentRow.strand || "N/A",
+              schoolYear: studentRow.school_year,
+              studentStatus: studentRow.status || "active"
             };
           }
-        } catch (studentError) {
-          console.warn("Student registration role lookup skipped:", studentError);
+        } catch (studentRowError) {
+          console.warn("Student profile lookup skipped:", studentRowError);
+        }
+
+        if (!studentInfo.studentId) {
+          try {
+            const { data: studentRequest } = await supabaseClient
+              .from("student_registration_requests")
+              .select("status,first_name,last_name,student_number,education_level,grade_level,section_name,strand,email")
+              .eq("auth_user_id", authUser.id)
+              .maybeSingle();
+
+            if (studentRequest) {
+              role = "student";
+              status = studentRequest.status || status;
+              fullName = `${studentRequest.first_name || ""} ${studentRequest.last_name || ""}`.trim() || fullName;
+              studentInfo = {
+                studentId: studentRequest.student_number,
+                firstName: studentRequest.first_name,
+                lastName: studentRequest.last_name,
+                educationLevel: studentRequest.education_level,
+                gradeLevel: studentRequest.grade_level,
+                section: studentRequest.section_name,
+                strand: studentRequest.strand || "N/A",
+                studentStatus: studentRequest.status || "pending_verification"
+              };
+            }
+          } catch (studentError) {
+            console.warn("Student registration role lookup skipped:", studentError);
+          }
         }
       }
 
@@ -407,6 +430,15 @@
     if (!supabase) return null;
 
     try {
+      const safeQuery = async (query) => {
+        try {
+          const res = await query;
+          return res || { data: [] };
+        } catch {
+          return { data: [] };
+        }
+      };
+
       const [
         { data: feeStrs },
         { data: feeItems },
@@ -423,20 +455,20 @@
         { data: certRequests },
         { data: deptsList }
       ] = await Promise.all([
-        supabase.from("fee_structures").select("*"),
-        supabase.from("fee_structure_items").select("*"),
-        supabase.from("voucher_types").select("*"),
-        supabase.from("installment_templates").select("*"),
-        supabase.from("profiles").select("*"),
-        supabase.from("staff_accounts").select("*"),
-        supabase.from("teacher_assignments").select("*"),
-        supabase.from("students").select("*"),
-        supabase.from("student_vouchers").select("*, voucher_types(voucher_name)"),
-        supabase.from("payments").select("*"),
-        supabase.from("clearance_requests").select("*"),
-        supabase.from("clearance_approvals").select("*"),
-        supabase.from("clearance_certificate_requests").select("*"),
-        supabase.from("departments").select("*")
+        safeQuery(supabase.from("fee_structures").select("*")),
+        safeQuery(supabase.from("fee_structure_items").select("*")),
+        safeQuery(supabase.from("voucher_types").select("*")),
+        safeQuery(supabase.from("installment_templates").select("*")),
+        safeQuery(supabase.from("profiles").select("*")),
+        safeQuery(supabase.from("staff_accounts").select("*")),
+        safeQuery(supabase.from("teacher_assignments").select("*")),
+        safeQuery(supabase.from("students").select("*")),
+        safeQuery(supabase.from("student_vouchers").select("*, voucher_types(voucher_name)")),
+        safeQuery(supabase.from("payments").select("*")),
+        safeQuery(supabase.from("clearance_requests").select("*")),
+        safeQuery(supabase.from("clearance_approvals").select("*")),
+        safeQuery(supabase.from("clearance_certificate_requests").select("*")),
+        safeQuery(supabase.from("departments").select("*"))
       ]);
 
       const DEFAULT_FEE_STRUCTURES = {

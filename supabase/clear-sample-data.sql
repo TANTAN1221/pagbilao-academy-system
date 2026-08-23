@@ -1,13 +1,11 @@
--- Clears public app data created while testing the prototype.
--- This does NOT delete Supabase Auth users from Authentication > Users.
--- Run only if you want to start with empty school records.
+-- Clears test payment transactions, allocations, clearance requests, and student test records.
+-- Run in Supabase SQL Editor to start with completely empty payment history and student balances.
 
 truncate table
   notifications,
   clearance_certificate_requests,
   clearance_approvals,
   clearance_requests,
-  clearance_heads,
   payment_allocations,
   payments,
   payment_gateway_events,
@@ -16,12 +14,7 @@ truncate table
   student_vouchers,
   teacher_assignments,
   student_registration_requests,
-  students,
-  staff_accounts,
-  profiles,
-  fee_structure_items,
-  fee_structures,
-  subjects
+  students
 restart identity cascade;
 
--- Keep default setup tables such as sections, departments, voucher_types, and installment_templates.
+-- Retains default configuration tables (sections, departments, fee structures, voucher types, and staff profiles).

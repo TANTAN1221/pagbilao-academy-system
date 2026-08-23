@@ -123,6 +123,10 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button onclick="clearAllTransactions()"
+          class="hidden sm:inline-flex px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200/60 text-xs font-extrabold hover:bg-red-100 transition">
+          Clear All Transactions
+        </button>
         <button onclick="downloadBackup()"
           class="hidden sm:inline-flex px-4 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold">
           Backup JSON
@@ -541,6 +545,7 @@
           class="w-10 h-10 rounded-xl bg-slate-50 border border-academy-border text-academy-muted hover:text-red-600">×</button>
       </div>
       <div id="formModalContent"></div>
+    </div>
   </div>
 
   <div id="confirmModal"
@@ -1294,7 +1299,14 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
 
       overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${classLabel(s)} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
 
-      const allPayments = appData.payments || [];
+      const isStaffPayment = (p) => {
+        if (!p) return false;
+        const name = String(p.studentName || p.studentId || '').toLowerCase();
+        const email = String(p.email || p.studentEmail || '').toLowerCase();
+        return ['admin', 'accountant', 'accounting', 'teacher', 'principal', 'registrar', 'clearance', 'guidance', 'prefect', 'library'].some(k => name.includes(k) || email.includes(k));
+      };
+
+      const allPayments = (appData.payments || []).filter(p => !isStaffPayment(p));
       const txBadge = document.getElementById('adminTxCountBadge');
       if (txBadge) txBadge.textContent = `${allPayments.length} Transaction(s)`;
 
@@ -1945,6 +1957,38 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         }
       });
     }
+
+    function clearAllTransactions() {
+      showConfirmModal({
+        title: 'Clear All Payments & Transactions',
+        message: 'Are you sure you want to clear out all payment history and reset all student paid amounts to ₱0? This will start a completely clean test for payment monitoring.',
+        confirmText: 'Clear All Transactions',
+        onConfirm: async () => {
+          appData.payments = [];
+          (appData.students || []).forEach(s => {
+            s.paid = 0;
+          });
+          localStorage.setItem('pa_transactions_cleared', 'true');
+
+          if (window.paApi && window.paApi.client) {
+            const client = window.paApi.client();
+            if (client) {
+              try {
+                await client.from('payment_allocations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await client.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await client.from('students').update({ paid: 0 }).neq('id', '00000000-0000-0000-0000-000000000000');
+              } catch (e) {
+                console.warn('Clearing Supabase payments error:', e);
+              }
+            }
+          }
+
+          saveData();
+          renderAll();
+          showToast('Transactions Cleared', 'All payment records and student paid balances have been reset to ₱0.', 'info');
+        }
+      });
+    }
     function openVoucherModal(id = '') {
       const v = (appData.vouchers || []).find(x => x.id === id);
       formModalLabel.textContent = 'Voucher Discount';
@@ -2498,12 +2542,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         const existingIdx = merged.findIndex(localS => isSameStudent(localS, dbS));
         if (existingIdx >= 0) {
           const local = merged[existingIdx];
-          const highestPaid = Math.max(
-            Number(dbS.paid || 0),
-            Number(local.paid || 0),
-            getStudentTotalPaidInAdmin(local),
-            getStudentTotalPaidInAdmin(dbS)
-          );
+          const calcLocal = getStudentTotalPaidInAdmin(local);
+          const calcDb = getStudentTotalPaidInAdmin(dbS);
+          const calcTotal = Math.max(calcLocal, calcDb);
+          const effectivePaid = (calcTotal > 0) ? calcTotal : (local.paid !== undefined ? Number(local.paid || 0) : Number(dbS.paid || 0));
+
           merged[existingIdx] = {
             ...dbS,
             ...local,
@@ -2515,7 +2558,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
             feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
-            paid: highestPaid,
+            paid: effectivePaid,
             clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
           };
         } else {
@@ -2656,7 +2699,16 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             if (state.accounts && state.accounts.length > 0) {
               appData.accounts = mergeAccountsState(appData.accounts || [], state.accounts);
             }
-            if (state.payments && state.payments.length > 0) {
+            const rawLocal = localStorage.getItem(STORAGE_KEY);
+            const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
+
+            const isCleared = localStorage.getItem('pa_transactions_cleared') === 'true';
+            if (isCleared && (!appData.payments || appData.payments.length === 0)) {
+              appData.payments = [];
+              (appData.students || []).forEach(s => { s.paid = 0; });
+            } else if (parsedLocal && Array.isArray(parsedLocal.payments)) {
+              appData.payments = parsedLocal.payments;
+            } else if (state.payments && state.payments.length > 0) {
               appData.payments = window.paApi?.mergePaymentsState
                 ? window.paApi.mergePaymentsState(appData.payments || [], state.payments)
                 : state.payments;
@@ -2664,8 +2716,6 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             if (state.certificateRequests && state.certificateRequests.length > 0) appData.certificateRequests = state.certificateRequests;
             if (state.teacherClearanceRequests && state.teacherClearanceRequests.length > 0) appData.teacherClearanceRequests = state.teacherClearanceRequests;
             
-            const rawLocal = localStorage.getItem(STORAGE_KEY);
-            const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
             if (parsedLocal && Array.isArray(parsedLocal.vouchers)) {
               appData.vouchers = parsedLocal.vouchers;
             } else if (state.vouchers && state.vouchers.length > 0) {
@@ -2678,9 +2728,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
               appData.installmentTemplate = state.installmentTemplate;
             }
 
-            if (state.feeStructures) {
-              if (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) appData.feeStructures.JHS = state.feeStructures.JHS;
-              if (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) appData.feeStructures.SHS = state.feeStructures.SHS;
+            if (parsedLocal && parsedLocal.feeStructures) {
+              appData.feeStructures = parsedLocal.feeStructures;
+            } else if (state.feeStructures) {
+              if (state.feeStructures.JHS) appData.feeStructures.JHS = state.feeStructures.JHS;
+              if (state.feeStructures.SHS) appData.feeStructures.SHS = state.feeStructures.SHS;
             }
             if (state.settings) appData.settings = { ...appData.settings, ...state.settings };
           }

@@ -460,13 +460,13 @@ drop policy if exists "authenticated can read departments" on departments;
 create policy "authenticated can read departments" on departments for select to authenticated using (true);
 
 drop policy if exists "authenticated can read fee setup" on fee_structures;
-create policy "authenticated can read fee setup" on fee_structures for select to authenticated using (true);
+create policy "public read fee setup" on fee_structures for select using (true);
 
 drop policy if exists "authenticated can read fee items" on fee_structure_items;
-create policy "authenticated can read fee items" on fee_structure_items for select to authenticated using (true);
+create policy "public read fee items" on fee_structure_items for select using (true);
 
 drop policy if exists "authenticated can read voucher types" on voucher_types;
-create policy "authenticated can read voucher types" on voucher_types for select to authenticated using (true);
+create policy "public read voucher types" on voucher_types for select using (true);
 
 drop policy if exists "students can read own student record" on students;
 create policy "students can read own student record" on students

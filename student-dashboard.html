@@ -1063,12 +1063,21 @@
       return idx >= 0 ? appData.students[idx] : student;
     }
 
+    function isStaffOrAdminSession(session) {
+      if (!session || !session.email) return false;
+      const role = String(session.role || '').toLowerCase();
+      const staffRoles = ['accounting_admin', 'teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal', 'registrar', 'super_admin', 'admin', 'accountant'];
+      if (staffRoles.includes(role)) return true;
+      const email = String(session.email).toLowerCase();
+      return ['admin', 'accounting', 'accountant', 'teacher', 'guidance', 'prefect', 'library', 'librarian', 'principal', 'registrar'].some(k => email.includes(k));
+    }
+
     function currentStudent() {
       const session = currentSession();
       const reg = registeredUser();
       const email = String(session.email || reg?.email || '').toLowerCase();
       let student = appData.students.find(s => (session.studentId && s.id === session.studentId) || (session.id && s.authUserId === session.id) || (email && String(s.email || '').toLowerCase() === email) || (reg?.studentId && s.id === reg.studentId));
-      if (!student && (reg || session.email)) { student = upsertCurrentStudent(reg || session) }
+      if (!student && (reg || session.email) && !isStaffOrAdminSession(session)) { student = upsertCurrentStudent(reg || session) }
       if (!student) { student = normalizeStudentRecord({ name: 'Student', email: session.email || '', studentId: session.studentId || '' }, session) }
       return student;
     }
@@ -1148,13 +1157,14 @@
 
     function getStudentTotalPaid(s) {
       if (!s) return 0;
+      const recPaid = Number(s.paid || 0);
       const studentPayments = getStudentPayments(s);
-      if (studentPayments && studentPayments.length > 0) {
-        return studentPayments
-          .filter(p => ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase()))
-          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      }
-      return Number(s.paid || 0);
+      const calcPaid = (studentPayments && studentPayments.length > 0)
+        ? studentPayments
+            .filter(p => ['paid', 'succeeded', 'completed', 'active'].includes(String(p.status || 'paid').toLowerCase()))
+            .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+        : 0;
+      return Math.max(recPaid, calcPaid);
     }
 
     function balance(s) { return Math.max(0, assessedTotal(s) - getStudentTotalPaid(s)) }
@@ -1633,14 +1643,23 @@
 
       const studentPayments = getStudentPayments(s);
       const pBody = document.getElementById('stmtPaymentsBody');
-      if (!studentPayments.length) {
+      if (!studentPayments.length && paidAmt > 0) {
+        pBody.innerHTML = `
+          <tr>
+            <td class="p-2.5 font-extrabold text-slate-900">PAY-ONLINE</td>
+            <td class="p-2.5 text-slate-600">${new Date().toLocaleDateString()}</td>
+            <td class="p-2.5 font-semibold text-slate-700">Online / QR Ph Payment</td>
+            <td class="p-2.5 text-right font-extrabold text-emerald-700">${money(paidAmt)}</td>
+          </tr>
+        `;
+      } else if (!studentPayments.length) {
         pBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500 italic">No payments recorded yet.</td></tr>`;
       } else {
         pBody.innerHTML = studentPayments.map(p => `
           <tr>
             <td class="p-2.5 font-extrabold text-slate-900">${p.referenceNo || p.id}</td>
             <td class="p-2.5 text-slate-600">${p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'N/A')}</td>
-            <td class="p-2.5 font-semibold text-slate-700">${p.method}</td>
+            <td class="p-2.5 font-semibold text-slate-700">${p.method || 'Online Payment'}</td>
             <td class="p-2.5 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
           </tr>
         `).join('');
@@ -2076,12 +2095,11 @@
         const existingIdx = merged.findIndex(localS => isSameStudent(localS, dbS));
         if (existingIdx >= 0) {
           const local = merged[existingIdx];
-          const highestPaid = Math.max(
-            Number(dbS.paid || 0),
-            Number(local.paid || 0),
-            getStudentTotalPaid(local),
-            getStudentTotalPaid(dbS)
-          );
+          const calcLocal = getStudentTotalPaid(local);
+          const calcDb = getStudentTotalPaid(dbS);
+          const calcTotal = Math.max(calcLocal, calcDb);
+          const effectivePaid = (calcTotal > 0) ? calcTotal : (local.paid !== undefined ? Number(local.paid || 0) : Number(dbS.paid || 0));
+
           merged[existingIdx] = {
             ...dbS,
             ...local,
@@ -2093,7 +2111,7 @@
             customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
             feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
-            paid: highestPaid,
+            paid: effectivePaid,
             clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
           };
         } else {
@@ -2147,6 +2165,18 @@
     }
 
     async function initStudentDashboard() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPaymentReturn = Boolean(urlParams.get('payment') || urlParams.get('checkout_session_id') || urlParams.get('session_id'));
+
+      const sess = currentSession();
+      if (!isPaymentReturn && isStaffOrAdminSession(sess)) {
+        const dest = (window.paApi && window.paApi.dashboardForRole) 
+          ? window.paApi.dashboardForRole(sess.role) 
+          : (['teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal'].includes(sess.role) ? 'clearance-dashboard.html' : 'admin-dashboard.html');
+        window.location.href = dest;
+        return;
+      }
+
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
           await hydrateCurrentStudentFromSupabase();
@@ -2180,8 +2210,8 @@
               teacherClearanceRequests: mergedRequests,
               payments: mergedPayments,
               feeStructures: {
-                JHS: dbFeeJHS.length ? dbFeeJHS : localFeeJHS,
-                SHS: dbFeeSHS.length ? dbFeeSHS : localFeeSHS
+                JHS: (parsedLocal && parsedLocal.feeStructures && parsedLocal.feeStructures.JHS) ? parsedLocal.feeStructures.JHS : (dbFeeJHS.length ? dbFeeJHS : localFeeJHS),
+                SHS: (parsedLocal && parsedLocal.feeStructures && parsedLocal.feeStructures.SHS) ? parsedLocal.feeStructures.SHS : (dbFeeSHS.length ? dbFeeSHS : localFeeSHS)
               },
               vouchers: activeVouchers,
               installmentTemplate: activeInstallments
@@ -2193,7 +2223,6 @@
       }
 
       // Handle return from PayMongo checkout portal
-      const urlParams = new URLSearchParams(window.location.search);
       const paymentParam = (urlParams.get('payment') || '').toLowerCase();
       const checkoutSessionId = urlParams.get('checkout_session_id') || urlParams.get('session_id');
 
@@ -2218,6 +2247,7 @@
         let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : (urlAmt > 0 ? urlAmt : 0);
 
         if (paidAmt > 0 && s) {
+          localStorage.removeItem('pa_transactions_cleared');
           const feeBreakdown = pending?.feeBreakdown || [];
           const refNo = checkoutSessionId ? `PM-${checkoutSessionId.slice(-10).toUpperCase()}` : ('PM-' + Math.floor(1000000000 + Math.random() * 9000000000));
 

@@ -1080,11 +1080,12 @@
           loginButton.innerHTML = `Signing in... <span class="material-symbols-rounded text-[20px]">hourglass_top</span>`;
         }
 
+        const fallbackRole = (window.paApi && window.paApi.inferPrototypeRole) ? window.paApi.inferPrototypeRole(email) : "student";
         const session = window.paApi && window.paApi.login
           ? await window.paApi.login(email, password)
-          : { role: "student", dashboard: "student-dashboard.html", email };
+          : { role: fallbackRole, dashboard: (window.paApi && window.paApi.dashboardForRole) ? window.paApi.dashboardForRole(fallbackRole) : "student-dashboard.html", email };
 
-        window.location.href = session.dashboard || "student-dashboard.html";
+        window.location.href = session.dashboard || "admin-dashboard.html";
 
         if (loginButton) {
           loginButton.disabled = false;
