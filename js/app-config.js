@@ -530,7 +530,28 @@
 
           // Paid payments
           const studentPaid = (dbPayments || [])
-            .filter(p => (p.student_id === s.id || p.student_id === s.student_number || p.student_id === s.auth_user_id) && ["paid", "succeeded", "completed"].includes(String(p.status || "paid").toLowerCase()))
+            .filter(p => {
+              if (!p) return false;
+              const isPaid = ["paid", "succeeded", "completed"].includes(String(p.status || "paid").toLowerCase());
+              if (!isPaid) return false;
+              const pId = String(p.student_id || p.studentId || "").toLowerCase();
+              const pCleanId = pId.replace(/^stu-/, "").trim();
+              const pEmail = String(p.email || p.studentEmail || "").toLowerCase().trim();
+
+              const sId = String(s.id || "").toLowerCase();
+              const sNum = String(s.student_number || "").toLowerCase();
+              const sCleanNum = sNum.replace(/^stu-/, "").trim();
+              const sAuth = String(s.auth_user_id || "").toLowerCase();
+              const sEmail = String(s.email || "").toLowerCase().trim();
+
+              return (
+                (sId && pId === sId) ||
+                (sNum && pId === sNum) ||
+                (sCleanNum && pCleanId === sCleanNum) ||
+                (sAuth && pId === sAuth) ||
+                (sEmail && pEmail && pEmail === sEmail)
+              );
+            })
             .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
           // Clearance request

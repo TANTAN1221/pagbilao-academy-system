@@ -145,40 +145,60 @@ function teacherRows(){
 }
 function statusBadge(status){const cls={approved:'bg-emerald-50 text-emerald-700 border border-emerald-200/60',requested:'bg-blue-50 text-blue-700 border border-blue-200/60',pending:'bg-amber-50 text-amber-700 border border-amber-200/60',on_hold:'bg-amber-50 text-amber-700 border border-amber-200/60',not_requested:'bg-slate-100 text-slate-600 border border-slate-200/60'}[status]||'bg-slate-100 text-slate-600 border border-slate-200/60';return `<span class="px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap inline-flex items-center gap-1 capitalize ${cls}">${status.replace('_',' ')}</span>`}
 function allTeacherRowsApproved(student){const rows=(appData.accounts||[]).filter(a=>a.role==='teacher_clearance_head'&&a.active).flatMap(t=>(t.assignments||[]).filter(a=>assignmentMatchesStudent(a,student)).map(a=>rowKey(student,t,a)));return rows.length>0&&rows.every(k=>requestFor(k)?.status==='approved')}
+function isSameStudent(s1, s2) {
+  if (!s1 || !s2) return false;
+  const id1 = String(s1.id || s1.studentId || s1.student_number || '').toLowerCase();
+  const id2 = String(s2.id || s2.studentId || s2.student_number || '').toLowerCase();
+  const dbId1 = String(s1.dbId || s1.id || '').toLowerCase();
+  const dbId2 = String(s2.dbId || s2.id || '').toLowerCase();
+  const email1 = String(s1.email || '').toLowerCase().trim();
+  const email2 = String(s2.email || '').toLowerCase().trim();
+  const auth1 = String(s1.authUserId || s1.auth_user_id || '').toLowerCase().trim();
+  const auth2 = String(s2.authUserId || s2.auth_user_id || '').toLowerCase().trim();
+
+  const clean1 = id1.replace(/^stu-/, '').trim();
+  const clean2 = id2.replace(/^stu-/, '').trim();
+
+  if (id1 && id2 && id1 === id2) return true;
+  if (clean1 && clean2 && clean1 === clean2) return true;
+  if (dbId1 && dbId2 && dbId1 === dbId2) return true;
+  if (auth1 && auth2 && auth1 === auth2) return true;
+  if (email1 && email2 && email1 === email2) return true;
+
+  return false;
+}
+
 function mergeStudentsState(localStudents = [], dbStudents = []) {
   if (!dbStudents || dbStudents.length === 0) return localStudents;
   if (!localStudents || localStudents.length === 0) return dbStudents;
 
-  const map = new Map();
-
-  localStudents.forEach(s => {
-    const key = String(s.email || s.id || '').toLowerCase();
-    if (key) map.set(key, { ...s });
-  });
+  const merged = (localStudents || []).map(s => ({ ...s }));
 
   dbStudents.forEach(dbS => {
-    const key = String(dbS.email || dbS.id || '').toLowerCase();
-    if (key) {
-      const local = map.get(key);
-      if (local) {
-        const highestPaid = Math.max(Number(dbS.paid || 0), Number(local.paid || 0));
-        map.set(key, {
-          ...dbS,
-          ...local,
-          voucher: (local.voucher !== undefined && local.voucher !== null) ? local.voucher : dbS.voucher,
-          customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
-          feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
-          assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
-          paid: highestPaid,
-          clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
-        });
-      } else {
-        map.set(key, { ...dbS });
-      }
+    const existingIdx = merged.findIndex(localS => isSameStudent(localS, dbS));
+    if (existingIdx >= 0) {
+      const local = merged[existingIdx];
+      const highestPaid = Math.max(Number(dbS.paid || 0), Number(local.paid || 0));
+      merged[existingIdx] = {
+        ...dbS,
+        ...local,
+        id: local.id || dbS.id,
+        dbId: dbS.dbId || local.dbId || dbS.id,
+        authUserId: local.authUserId || dbS.authUserId || dbS.auth_user_id,
+        email: local.email || dbS.email,
+        voucher: (local.voucher !== undefined && local.voucher !== null && local.voucher !== 'None') ? local.voucher : dbS.voucher,
+        customFees: local.customFees !== undefined ? local.customFees : dbS.customFees,
+        feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
+        assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
+        paid: highestPaid,
+        clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+      };
+    } else {
+      merged.push({ ...dbS });
     }
   });
 
-  return Array.from(map.values());
+  return merged;
 }
 
 function updateClearanceRequestState(row, status, remarks = '') {
