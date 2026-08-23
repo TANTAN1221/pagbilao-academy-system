@@ -440,26 +440,11 @@
       ]);
 
       const DEFAULT_FEE_STRUCTURES = {
-        JHS: [
-          { id: "jhs-tui", name: "Tuition Fee", amount: 15000, required: true },
-          { id: "jhs-misc", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
-          { id: "jhs-lab", name: "Laboratory & Computer Fees", amount: 1500, required: true },
-          { id: "jhs-dev", name: "Development & Energy Fees", amount: 1500, required: true }
-        ],
-        SHS: [
-          { id: "shs-tui", name: "Tuition Fee", amount: 18000, required: true },
-          { id: "shs-misc", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
-          { id: "shs-lab", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
-          { id: "shs-dev", name: "Development & Energy Fees", amount: 2000, required: true }
-        ]
+        JHS: [],
+        SHS: []
       };
 
-      const DEFAULT_VOUCHERS = [
-        { id: "vouch-esc", name: "ESC Voucher (JHS)", appliesTo: "JHS", amount: 9000, active: true },
-        { id: "vouch-shs-priv", name: "SHS Voucher (Private)", appliesTo: "SHS", amount: 14000, active: true },
-        { id: "vouch-shs-pub", name: "SHS Voucher (Public)", appliesTo: "SHS", amount: 17500, active: true },
-        { id: "vouch-honor", name: "Academic Honors Discount", appliesTo: "ALL", amount: 5000, active: true }
-      ];
+      const DEFAULT_VOUCHERS = [];
 
       const DEFAULT_INSTALLMENT_TEMPLATE = [
         { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },

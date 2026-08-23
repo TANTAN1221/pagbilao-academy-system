@@ -199,10 +199,16 @@
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h3 class="text-xl font-extrabold text-academy-navy">Tuition, Fees, and Vouchers</h3>
-              <p class="text-sm text-academy-muted mt-1">Separate fee setups for JHS and SHS, with ESC Voucher and SHS
-                Voucher discounts.</p>
-            </div><button onclick="applyFeeSetup()" class="px-5 py-3 rounded-xl bg-green-600 text-white font-bold">Apply
-              Fee Setup to Students</button>
+              <p class="text-sm text-academy-muted mt-1">Separate fee setups for JHS and SHS, with ESC Voucher and SHS Voucher discounts.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="clearAllFeesAndVouchers()" class="px-4 py-3 rounded-xl bg-red-50 text-red-600 border border-red-200/60 text-xs font-bold hover:bg-red-100 transition">
+                Clear All Fees & Vouchers
+              </button>
+              <button onclick="applyFeeSetup()" class="px-5 py-3 rounded-xl bg-green-600 text-white font-bold">
+                Apply Fee Setup to Students
+              </button>
+            </div>
           </div>
         </div>
         <div class="grid xl:grid-cols-2 gap-5">
@@ -627,26 +633,11 @@
       'Disciplines and Ideas in the Social Sciences'
     ];
     const DEFAULT_FEE_STRUCTURES = {
-      JHS: [
-        { id: "jhs-tui", name: "Tuition Fee", amount: 15000, required: true },
-        { id: "jhs-misc", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
-        { id: "jhs-lab", name: "Laboratory & Computer Fees", amount: 1500, required: true },
-        { id: "jhs-dev", name: "Development & Energy Fees", amount: 1500, required: true }
-      ],
-      SHS: [
-        { id: "shs-tui", name: "Tuition Fee", amount: 18000, required: true },
-        { id: "shs-misc", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
-        { id: "shs-lab", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
-        { id: "shs-dev", name: "Development & Energy Fees", amount: 2000, required: true }
-      ]
+      JHS: [],
+      SHS: []
     };
 
-    const DEFAULT_VOUCHERS = [
-      { id: "vouch-esc", name: "ESC Voucher (JHS)", appliesTo: "JHS", amount: 9000, active: true },
-      { id: "vouch-shs-priv", name: "SHS Voucher (Private)", appliesTo: "SHS", amount: 14000, active: true },
-      { id: "vouch-shs-pub", name: "SHS Voucher (Public)", appliesTo: "SHS", amount: 17500, active: true },
-      { id: "vouch-honor", name: "Academic Honors Discount", appliesTo: "ALL", amount: 5000, active: true }
-    ];
+    const DEFAULT_VOUCHERS = [];
 
     const DEFAULT_INSTALLMENT_TEMPLATE = [
       { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
@@ -696,6 +687,15 @@
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
       if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
+      ['JHS', 'SHS'].forEach(level => {
+        if (Array.isArray(data.feeStructures[level])) {
+          data.feeStructures[level].forEach((f, idx) => {
+            if (f && typeof f === 'object' && !f.id) {
+              f.id = `fee-${level.toLowerCase()}-${idx}-${Date.now()}`;
+            }
+          });
+        }
+      });
       data.vouchers = data.vouchers || [];
       data.installmentTemplate = data.installmentTemplate || [];
       data.teacherClearanceRequests = data.teacherClearanceRequests || [];
@@ -880,10 +880,10 @@
               <div class="flex items-center gap-3">
                 <span class="font-black text-academy-navy">${money(f.amount)}</span>
                 <div class="flex items-center gap-1.5">
-                  <button onclick="openFeeItemModal('${level}', ${i})" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
+                  <button onclick="openFeeItemModal('${level}', '${f.id || i}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
                     <span class="material-symbols-rounded text-xs">edit</span> Edit
                   </button>
-                  <button onclick="deleteFeeItem('${level}', ${i})" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
+                  <button onclick="deleteFeeItem('${level}', '${f.id || i}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
                     <span class="material-symbols-rounded text-xs">delete</span> Delete
                   </button>
                 </div>
@@ -1830,19 +1830,21 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     function openCertificate(id) { window.open(`certificate.html?studentId=${encodeURIComponent(id)}&from=admin`, '_blank') }
     function findFeeItemIndex(level, feeIdOrKey) {
       const items = appData.feeStructures[level] || [];
-      if (!items.length) return -1;
+      if (!items.length || feeIdOrKey === undefined || feeIdOrKey === null || feeIdOrKey === 'undefined' || feeIdOrKey === 'null') return -1;
 
-      // 1. Exact ID match
-      let idx = items.findIndex(f => f && f.id && String(f.id) === String(feeIdOrKey));
+      // 1. Array Index match (if passed numeric index or numeric string index within range)
+      const num = Number(feeIdOrKey);
+      if (!isNaN(num) && Number.isInteger(num) && num >= 0 && num < items.length) {
+        if (items[num]) return num;
+      }
+
+      // 2. Exact ID match
+      let idx = items.findIndex(f => f && f.id !== undefined && f.id !== null && String(f.id) === String(feeIdOrKey));
       if (idx >= 0) return idx;
 
-      // 2. Exact Name match
+      // 3. Exact Name match
       idx = items.findIndex(f => f && f.name && String(f.name).toLowerCase() === String(feeIdOrKey).toLowerCase());
       if (idx >= 0) return idx;
-
-      // 3. Array Index match
-      const num = Number(feeIdOrKey);
-      if (!isNaN(num) && num >= 0 && num < items.length) return num;
 
       return -1;
     }
@@ -1926,6 +1928,22 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           }
         });
       }
+    }
+
+    function clearAllFeesAndVouchers() {
+      showConfirmModal({
+        title: 'Clear All Fees & Vouchers',
+        message: 'Are you sure you want to clear all fee structures and voucher discounts? This will remove all default and current fee setups.',
+        confirmText: 'Clear All Fees & Vouchers',
+        onConfirm: () => {
+          appData.feeStructures = { JHS: [], SHS: [] };
+          appData.vouchers = [];
+          applyFeeSetup();
+          saveData();
+          renderAll();
+          showToast('Fees & Vouchers Cleared', 'All fee structures and vouchers have been cleared.', 'info');
+        }
+      });
     }
     function openVoucherModal(id = '') {
       const v = (appData.vouchers || []).find(x => x.id === id);
@@ -2557,11 +2575,44 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       }
     }
 
+    async function syncFeeStructuresToSupabase() {
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (client) {
+          try {
+            const { data: structures } = await client.from('fee_structures').select('*');
+            if (structures && structures.length > 0) {
+              for (const level of ['JHS', 'SHS']) {
+                const fs = structures.find(s => s.education_level === level);
+                if (fs) {
+                  await client.from('fee_structure_items').delete().eq('fee_structure_id', fs.id);
+                  const items = appData.feeStructures[level] || [];
+                  if (items.length > 0) {
+                    const rows = items.map((f, idx) => ({
+                      fee_structure_id: fs.id,
+                      fee_name: f.name,
+                      amount: Number(f.amount || 0),
+                      required: f.required !== false,
+                      sort_order: idx + 1
+                    }));
+                    await client.from('fee_structure_items').insert(rows);
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Syncing fee_structure_items error:', e);
+          }
+        }
+      }
+    }
+
     function saveData() {
       ensurePrototypeData();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       syncInstallmentsToSupabase();
       syncVouchersToSupabase();
+      syncFeeStructuresToSupabase();
     }
 
     function mergeAccountsState(localAccounts = [], dbAccounts = []) {
