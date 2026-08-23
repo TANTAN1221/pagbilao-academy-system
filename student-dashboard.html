@@ -931,11 +931,24 @@
     const STORAGE_KEY = 'pa_full_admin_v2';
     const currency = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
     const DEFAULT_FEE_STRUCTURES = {
-      JHS: [],
-      SHS: []
+      JHS: [
+        { id: "fee-jhs-1", name: "Tuition Fee", amount: 15000, required: true },
+        { id: "fee-jhs-2", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
+        { id: "fee-jhs-3", name: "Laboratory & Computer Fees", amount: 1500, required: true },
+        { id: "fee-jhs-4", name: "Development & Energy Fees", amount: 1500, required: true }
+      ],
+      SHS: [
+        { id: "fee-shs-1", name: "Tuition Fee", amount: 18000, required: true },
+        { id: "fee-shs-2", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
+        { id: "fee-shs-3", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
+        { id: "fee-shs-4", name: "Development & Energy Fees", amount: 2000, required: true }
+      ]
     };
 
-    const DEFAULT_VOUCHERS = [];
+    const DEFAULT_VOUCHERS = [
+      { id: "v-esc", name: "ESC Voucher", appliesTo: "JHS", amount: 9000, active: true },
+      { id: "v-shs", name: "SHS Voucher", appliesTo: "SHS", amount: 14000, active: true }
+    ];
 
     const DEFAULT_INSTALLMENT_TEMPLATE = [
       { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
@@ -2186,21 +2199,13 @@
             const localFeeSHS = appData.feeStructures?.SHS || [];
             const dbFeeJHS = state.feeStructures?.JHS || [];
             const dbFeeSHS = state.feeStructures?.SHS || [];
-            const rawLocal = localStorage.getItem(STORAGE_KEY);
-            const parsedLocal = rawLocal ? JSON.parse(rawLocal) : null;
-            const activeVouchers = (parsedLocal && Array.isArray(parsedLocal.vouchers))
-              ? parsedLocal.vouchers
-              : (state.vouchers || appData.vouchers || []);
-            const activeInstallments = (parsedLocal && Array.isArray(parsedLocal.installmentTemplate))
-              ? parsedLocal.installmentTemplate
-              : (state.installmentTemplate || appData.installmentTemplate || []);
+
+            const activeVouchers = (state.vouchers && state.vouchers.length > 0) ? state.vouchers : appData.vouchers;
+            const activeInstallments = (state.installmentTemplate && state.installmentTemplate.length > 0) ? state.installmentTemplate : appData.installmentTemplate;
 
             const mergedStudents = mergeStudentsState(appData.students || [], state.students || []);
             const mergedAccounts = mergeAccountsState(appData.accounts || [], state.accounts || []);
             const mergedRequests = mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests || []);
-            const mergedPayments = window.paApi?.mergePaymentsState
-              ? window.paApi.mergePaymentsState(appData.payments || [], state.payments || [])
-              : (state.payments || appData.payments || []);
 
             appData = {
               ...appData,
@@ -2208,17 +2213,17 @@
               students: mergedStudents,
               accounts: mergedAccounts,
               teacherClearanceRequests: mergedRequests,
-              payments: mergedPayments,
+              payments: state.payments || [],
               feeStructures: {
-                JHS: (parsedLocal && parsedLocal.feeStructures && parsedLocal.feeStructures.JHS) ? parsedLocal.feeStructures.JHS : (dbFeeJHS.length ? dbFeeJHS : localFeeJHS),
-                SHS: (parsedLocal && parsedLocal.feeStructures && parsedLocal.feeStructures.SHS) ? parsedLocal.feeStructures.SHS : (dbFeeSHS.length ? dbFeeSHS : localFeeSHS)
+                JHS: dbFeeJHS.length ? dbFeeJHS : localFeeJHS,
+                SHS: dbFeeSHS.length ? dbFeeSHS : localFeeSHS
               },
               vouchers: activeVouchers,
               installmentTemplate: activeInstallments
             };
           }
         } catch (err) {
-          console.warn("Could not load dynamic state from Supabase, using localStorage:", err);
+          console.warn("Could not load dynamic state from Supabase, using local defaults:", err);
         }
       }
 

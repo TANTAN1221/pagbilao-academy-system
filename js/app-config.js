@@ -472,11 +472,24 @@
       ]);
 
       const DEFAULT_FEE_STRUCTURES = {
-        JHS: [],
-        SHS: []
+        JHS: [
+          { id: "fee-jhs-1", name: "Tuition Fee", amount: 15000, required: true },
+          { id: "fee-jhs-2", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
+          { id: "fee-jhs-3", name: "Laboratory & Computer Fees", amount: 1500, required: true },
+          { id: "fee-jhs-4", name: "Development & Energy Fees", amount: 1500, required: true }
+        ],
+        SHS: [
+          { id: "fee-shs-1", name: "Tuition Fee", amount: 18000, required: true },
+          { id: "fee-shs-2", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
+          { id: "fee-shs-3", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
+          { id: "fee-shs-4", name: "Development & Energy Fees", amount: 2000, required: true }
+        ]
       };
 
-      const DEFAULT_VOUCHERS = [];
+      const DEFAULT_VOUCHERS = [
+        { id: "v-esc", name: "ESC Voucher", appliesTo: "JHS", amount: 9000, active: true },
+        { id: "v-shs", name: "SHS Voucher", appliesTo: "SHS", amount: 14000, active: true }
+      ];
 
       const DEFAULT_INSTALLMENT_TEMPLATE = [
         { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
@@ -487,9 +500,9 @@
 
       const state = {
         settings: { schoolName: "Pagbilao Academy Inc.", schoolYear: "2026-2027" },
-        feeStructures: { JHS: [], SHS: [] },
-        vouchers: [],
-        installmentTemplate: [],
+        feeStructures: DEFAULT_FEE_STRUCTURES,
+        vouchers: DEFAULT_VOUCHERS,
+        installmentTemplate: DEFAULT_INSTALLMENT_TEMPLATE,
         students: [],
         accounts: [],
         payments: [],
@@ -508,7 +521,9 @@
               amount: Number(fi.amount),
               required: fi.required
             }));
-          state.feeStructures[fs.education_level] = items;
+          if (items.length > 0) {
+            state.feeStructures[fs.education_level] = items;
+          }
         });
       }
 
@@ -1081,6 +1096,23 @@
     }
   }
 
+  function clearLocalStorageData() {
+    const dataKeys = [
+      "pa_full_admin_v2",
+      "pa_app_fees_v2",
+      "pa_transactions_v2",
+      "pa_students_data",
+      "pa_transactions_cleared",
+      "pa_registered_users"
+    ];
+    dataKeys.forEach(k => localStorage.removeItem(k));
+  }
+
+  // Purge stale local storage cache automatically when Supabase is connected
+  if (isSupabaseReady()) {
+    clearLocalStorageData();
+  }
+
   window.PA_CONFIG = config;
   window.paApi = {
     isSupabaseReady,
@@ -1101,7 +1133,8 @@
     updateOfficeClearance,
     requestCertificate,
     showToast,
-    subscribeRealtime
+    subscribeRealtime,
+    clearLocalStorageData
   };
 
   window.logoutToIndex = function () {
