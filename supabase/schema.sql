@@ -1168,5 +1168,16 @@ create index if not exists idx_teacher_assignments_profile on public.teacher_ass
 create index if not exists idx_clearance_approvals_teacher_assignment on public.clearance_approvals(teacher_assignment_id, status);
 create index if not exists idx_student_installments_student on public.student_installments(student_id, status);
 
+-- CLEANUP NON-STUDENT ACCOUNTS FROM STUDENTS TABLE
+delete from public.students 
+where lower(email) like '%admin%' 
+   or lower(email) like '%accounting%' 
+   or lower(email) like '%principal%' 
+   or lower(email) like '%registrar%' 
+   or lower(email) like '%teacher%' 
+   or lower(email) like '%guidance%' 
+   or lower(email) like '%prefect%' 
+   or lower(email) like '%library%';
+
 
 

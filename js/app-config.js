@@ -792,24 +792,29 @@
     }
 
     if (!student) {
-      const insertNum = String(sNo || `STU-${Date.now()}`);
-      const { data: newS } = await supabase
-        .from("students")
-        .insert({
-          student_number: insertNum,
-          first_name: "Student",
-          last_name: "Account",
-          email: sEmail || `${insertNum.toLowerCase()}@pagbilao.edu.ph`,
-          education_level: "SHS",
-          grade_level: "Grade 11",
-          section_name: "Humility",
-          strand: "GAS",
-          school_year: "2026-2027",
-          status: "active"
-        })
-        .select("id, student_number")
-        .maybeSingle();
-      if (newS) student = newS;
+      const isStaffEmail = sEmail && ['admin', 'accounting', 'accountant', 'teacher', 'guidance', 'prefect', 'library', 'librarian', 'principal', 'registrar'].some(kw => String(sEmail).toLowerCase().includes(kw));
+      const isStaffRole = studentObj && ['accounting_admin', 'teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal', 'registrar', 'super_admin'].includes(String(studentObj.role || '').toLowerCase());
+
+      if (!isStaffEmail && !isStaffRole) {
+        const insertNum = String(sNo || `STU-${Date.now()}`);
+        const { data: newS } = await supabase
+          .from("students")
+          .insert({
+            student_number: insertNum,
+            first_name: studentObj?.firstName || "Student",
+            last_name: studentObj?.lastName || "Account",
+            email: sEmail || `${insertNum.toLowerCase()}@pagbilao.edu.ph`,
+            education_level: "SHS",
+            grade_level: "Grade 11",
+            section_name: "Humility",
+            strand: "GAS",
+            school_year: "2026-2027",
+            status: "active"
+          })
+          .select("id, student_number")
+          .maybeSingle();
+        if (newS) student = newS;
+      }
     }
 
     if (!student) return null;

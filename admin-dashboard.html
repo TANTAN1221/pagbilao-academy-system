@@ -659,6 +659,19 @@
       }
     }
 
+    function isStaffOrAdminEntry(s) {
+      if (!s) return false;
+      const role = String(s.role || '').toLowerCase();
+      const staffRoles = ['accounting_admin', 'teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal', 'registrar', 'super_admin', 'admin', 'accountant'];
+      if (staffRoles.includes(role)) return true;
+      const email = String(s.email || '').toLowerCase().trim();
+      const staffKeywords = ['admin', 'accounting', 'accountant', 'teacher', 'guidance', 'prefect', 'library', 'librarian', 'principal', 'registrar'];
+      if (email && staffKeywords.some(kw => email.includes(kw))) return true;
+      const name = String(s.name || `${s.first_name || ''} ${s.last_name || ''}`).toLowerCase();
+      if (name.includes('admin accountant') || name.includes('teacher head') || name.includes('guidance head') || name.includes('prefect of discipline')) return true;
+      return false;
+    }
+
     function ensurePrototypeData(data = appData) {
       if (!data) data = {};
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
@@ -667,7 +680,7 @@
       data.vouchers = data.vouchers || [];
       data.installmentTemplate = data.installmentTemplate || [];
       data.teacherClearanceRequests = data.teacherClearanceRequests || [];
-      data.students = data.students || [];
+      data.students = (data.students || []).filter(s => !isStaffOrAdminEntry(s));
       data.accounts = data.accounts || [];
       data.payments = data.payments || [];
       data.certificateRequests = data.certificateRequests || [];
