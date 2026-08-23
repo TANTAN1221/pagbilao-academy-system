@@ -724,7 +724,7 @@
         <td class="px-4 py-3"><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${s.id}</p></td>
         <td class="px-4 py-3">${s.level}</td>
         <td class="px-4 py-3">${classLabel(s)}</td>
-        <td class="px-4 py-3">${s.voucher === 'None' ? pill('None', 'gray') : pill(`${s.voucher} - ${money(voucherAmount(s))}`, 'blue')}</td>
+        <td class="px-4 py-3">${s.voucher === 'None' ? pill('None', 'gray') : `<span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap inline-flex items-center gap-1.5"><span class="material-symbols-rounded text-xs">confirmation_number</span>${s.voucher} (${money(voucherAmount(s))})</span>`}</td>
         <td class="px-4 py-3 font-bold">${money(assessedTotal(s))}</td>
         <td class="px-4 py-3 font-bold text-green-700">${money(s.paid)}</td>
         <td class="px-4 py-3 font-bold ${balance(s) > 0 ? 'text-red-600' : 'text-green-600'}">${money(balance(s))}</td>
