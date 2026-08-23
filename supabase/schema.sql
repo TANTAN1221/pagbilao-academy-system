@@ -1165,7 +1165,7 @@ create index if not exists idx_students_auth_user on public.students(auth_user_i
 create index if not exists idx_payments_student_status on public.payments(student_id, status);
 create index if not exists idx_payments_checkout_session on public.payments(checkout_session_id);
 create index if not exists idx_teacher_assignments_profile on public.teacher_assignments(teacher_profile_id, school_year);
-create index if not exists idx_teacher_clearance_req_student on public.teacher_clearance_requests(student_id, status);
+create index if not exists idx_clearance_approvals_teacher_assignment on public.clearance_approvals(teacher_assignment_id, status);
 create index if not exists idx_student_installments_student on public.student_installments(student_id, status);
 
 
