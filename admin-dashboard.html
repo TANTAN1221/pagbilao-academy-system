@@ -834,7 +834,7 @@
       document.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => showPage(btn.dataset.page));
       showPage('dashboardPage');
     }
-    function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } renderAll() }
+    function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } if (typeof renderAll === 'function') renderAll(); }
     function renderDashboard() { totalStudents.textContent = appData.students.length; const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0); const outstanding = appData.students.reduce((s, x) => s + balance(s), 0); const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0); totalCollected.textContent = money(collected); totalOutstanding.textContent = money(outstanding); voucherTotal.textContent = money(vouchers) }
     function renderStudents() {
       const q = (studentSearch?.value || '').toLowerCase();
@@ -1319,6 +1319,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       renderAnalyticsCharts();
     }
     function renderCertificates() { certificateBody.innerHTML = appData.students.map(s => { const complete = clearanceComplete(s); const req = appData.certificateRequests.find(r => r.studentId === s.id); return `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${complete ? pill('Completed', 'green') : pill('Incomplete', 'amber')}</td><td class="px-4 py-3">${req ? pill(req.status, req.status === 'approved' ? 'green' : 'amber') : 'No request'}</td><td class="px-4 py-3"><button ${complete ? '' : 'disabled'} onclick="openCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg ${complete ? 'bg-academy-navy text-white' : 'bg-slate-100 text-slate-400'} font-bold text-xs">Open Certificate</button></td></tr>` }).join('') }
+    function renderAll() { renderDashboard(); renderStudents(); renderFees(); renderDueDates(); renderClearance(); renderAccounts(); renderAnalytics(); renderCertificates(); }
     function openFormModal() {
       const el = document.getElementById('formModal');
       if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
