@@ -14,6 +14,10 @@ truncate table
   student_vouchers,
   teacher_assignments,
   student_registration_requests,
+  fee_structure_items,
+  fee_structures,
+  voucher_types,
+  installment_templates,
   students
 restart identity cascade;
 

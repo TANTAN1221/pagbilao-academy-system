@@ -472,37 +472,19 @@
       ]);
 
       const DEFAULT_FEE_STRUCTURES = {
-        JHS: [
-          { id: "fee-jhs-1", name: "Tuition Fee", amount: 15000, required: true },
-          { id: "fee-jhs-2", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
-          { id: "fee-jhs-3", name: "Laboratory & Computer Fees", amount: 1500, required: true },
-          { id: "fee-jhs-4", name: "Development & Energy Fees", amount: 1500, required: true }
-        ],
-        SHS: [
-          { id: "fee-shs-1", name: "Tuition Fee", amount: 18000, required: true },
-          { id: "fee-shs-2", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
-          { id: "fee-shs-3", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
-          { id: "fee-shs-4", name: "Development & Energy Fees", amount: 2000, required: true }
-        ]
+        JHS: [],
+        SHS: []
       };
 
-      const DEFAULT_VOUCHERS = [
-        { id: "v-esc", name: "ESC Voucher", appliesTo: "JHS", amount: 9000, active: true },
-        { id: "v-shs", name: "SHS Voucher", appliesTo: "SHS", amount: 14000, active: true }
-      ];
+      const DEFAULT_VOUCHERS = [];
 
-      const DEFAULT_INSTALLMENT_TEMPLATE = [
-        { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
-        { id: "inst-2", title: "2nd Quarter Installment", percent: 25, dueDate: "2026-11-15" },
-        { id: "inst-3", title: "3rd Quarter Installment", percent: 25, dueDate: "2027-01-15" },
-        { id: "inst-4", title: "4th Quarter / Final Clearance", percent: 25, dueDate: "2027-03-15" }
-      ];
+      const DEFAULT_INSTALLMENT_TEMPLATE = [];
 
       const state = {
         settings: { schoolName: "Pagbilao Academy Inc.", schoolYear: "2026-2027" },
-        feeStructures: DEFAULT_FEE_STRUCTURES,
-        vouchers: DEFAULT_VOUCHERS,
-        installmentTemplate: DEFAULT_INSTALLMENT_TEMPLATE,
+        feeStructures: { JHS: [], SHS: [] },
+        vouchers: [],
+        installmentTemplate: [],
         students: [],
         accounts: [],
         payments: [],
