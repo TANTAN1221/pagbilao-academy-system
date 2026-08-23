@@ -872,22 +872,25 @@
               <strong class="text-base font-black text-academy-navy">${money(feeTotal(level))}</strong>
             </div>
           </div>
-          ${(appData.feeStructures[level] || []).map(f => `
-            <div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border hover:bg-slate-50 transition">
-              <span class="font-bold text-slate-800">${f.name}</span>
-              <div class="flex items-center gap-3">
-                <span class="font-black text-academy-navy">${money(f.amount)}</span>
-                <div class="flex items-center gap-1.5">
-                  <button onclick="openFeeItemModal('${level}', '${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
-                    <span class="material-symbols-rounded text-xs">edit</span> Edit
-                  </button>
-                  <button onclick="deleteFeeItem('${level}', '${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
-                    <span class="material-symbols-rounded text-xs">delete</span> Delete
-                  </button>
+          ${(appData.feeStructures[level] || []).map((f, i) => {
+            const itemKey = (f.id && String(f.id) !== 'undefined') ? f.id : (f.name || i);
+            return `
+              <div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border hover:bg-slate-50 transition">
+                <span class="font-bold text-slate-800">${f.name}</span>
+                <div class="flex items-center gap-3">
+                  <span class="font-black text-academy-navy">${money(f.amount)}</span>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="openFeeItemModal('${level}', '${String(itemKey).replaceAll("'", "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
+                      <span class="material-symbols-rounded text-xs">edit</span> Edit
+                    </button>
+                    <button onclick="deleteFeeItem('${level}', '${String(itemKey).replaceAll("'", "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
+                      <span class="material-symbols-rounded text-xs">delete</span> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       `).join('');
       voucherList.innerHTML = appData.vouchers.map(v => `
@@ -1819,9 +1822,29 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       openCertificate(id);
     }
     function openCertificate(id) { window.open(`certificate.html?studentId=${encodeURIComponent(id)}&from=admin`, '_blank') }
-    function openFeeItemModal(level = 'JHS', feeId = '') {
+    function findFeeItemIndex(level, feeIdOrKey) {
       const items = appData.feeStructures[level] || [];
-      const fee = items.find(f => f.id === feeId);
+      if (!items.length) return -1;
+
+      // 1. Exact ID match
+      let idx = items.findIndex(f => f && f.id && String(f.id) === String(feeIdOrKey));
+      if (idx >= 0) return idx;
+
+      // 2. Exact Name match
+      idx = items.findIndex(f => f && f.name && String(f.name).toLowerCase() === String(feeIdOrKey).toLowerCase());
+      if (idx >= 0) return idx;
+
+      // 3. Array Index match
+      const num = Number(feeIdOrKey);
+      if (!isNaN(num) && num >= 0 && num < items.length) return num;
+
+      return -1;
+    }
+
+    function openFeeItemModal(level = 'JHS', feeIdOrKey = '') {
+      const items = appData.feeStructures[level] || [];
+      const idx = feeIdOrKey !== '' ? findFeeItemIndex(level, feeIdOrKey) : -1;
+      const fee = idx >= 0 ? items[idx] : null;
 
       formModalLabel.textContent = 'Fee Item';
       formModalTitle.textContent = fee ? `Edit ${level} Fee Item` : `Add New ${level} Fee Item`;
@@ -1857,6 +1880,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         if (fee) {
           fee.name = nameVal;
           fee.amount = amtVal;
+          if (!fee.id) fee.id = 'FEE-' + Date.now();
         } else {
           if (!appData.feeStructures[selectedLevel]) appData.feeStructures[selectedLevel] = [];
           appData.feeStructures[selectedLevel].push({
@@ -1877,11 +1901,12 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       openFormModal();
     }
 
-    function deleteFeeItem(level, feeId) {
+    function deleteFeeItem(level, feeIdOrKey) {
       const items = appData.feeStructures[level] || [];
-      const idx = items.findIndex(f => f.id === feeId);
-      if (idx >= 0) {
-        const name = items[idx].name;
+      const idx = findFeeItemIndex(level, feeIdOrKey);
+
+      if (idx >= 0 && idx < items.length) {
+        const name = items[idx].name || 'Fee Item';
         showConfirmModal({
           title: 'Delete Fee Item',
           message: `Are you sure you want to delete "${name}" from ${level} fee setup? This action cannot be undone.`,
