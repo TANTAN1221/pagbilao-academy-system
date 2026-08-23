@@ -874,25 +874,22 @@
               <strong class="text-base font-black text-academy-navy">${money(feeTotal(level))}</strong>
             </div>
           </div>
-          ${(appData.feeStructures[level] || []).map((f, i) => {
-            const itemKey = (f.id && String(f.id) !== 'undefined') ? f.id : (f.name || i);
-            return `
-              <div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border hover:bg-slate-50 transition">
-                <span class="font-bold text-slate-800">${f.name}</span>
-                <div class="flex items-center gap-3">
-                  <span class="font-black text-academy-navy">${money(f.amount)}</span>
-                  <div class="flex items-center gap-1.5">
-                    <button onclick="openFeeItemModal('${level}', '${String(itemKey).replaceAll("'", "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
-                      <span class="material-symbols-rounded text-xs">edit</span> Edit
-                    </button>
-                    <button onclick="deleteFeeItem('${level}', '${String(itemKey).replaceAll("'", "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
-                      <span class="material-symbols-rounded text-xs">delete</span> Delete
-                    </button>
-                  </div>
+          ${(appData.feeStructures[level] || []).map((f, i) => `
+            <div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border hover:bg-slate-50 transition">
+              <span class="font-bold text-slate-800">${f.name}</span>
+              <div class="flex items-center gap-3">
+                <span class="font-black text-academy-navy">${money(f.amount)}</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openFeeItemModal('${level}', ${i})" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
+                    <span class="material-symbols-rounded text-xs">edit</span> Edit
+                  </button>
+                  <button onclick="deleteFeeItem('${level}', ${i})" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
+                    <span class="material-symbols-rounded text-xs">delete</span> Delete
+                  </button>
                 </div>
               </div>
-            `;
-          }).join('')}
+            </div>
+          `).join('')}
         </div>
       `).join('');
       voucherList.innerHTML = appData.vouchers.map(v => `
@@ -1322,8 +1319,14 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       renderAnalyticsCharts();
     }
     function renderCertificates() { certificateBody.innerHTML = appData.students.map(s => { const complete = clearanceComplete(s); const req = appData.certificateRequests.find(r => r.studentId === s.id); return `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${complete ? pill('Completed', 'green') : pill('Incomplete', 'amber')}</td><td class="px-4 py-3">${req ? pill(req.status, req.status === 'approved' ? 'green' : 'amber') : 'No request'}</td><td class="px-4 py-3"><button ${complete ? '' : 'disabled'} onclick="openCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg ${complete ? 'bg-academy-navy text-white' : 'bg-slate-100 text-slate-400'} font-bold text-xs">Open Certificate</button></td></tr>` }).join('') }
-    function renderAll() { renderDashboard(); renderStudents(); renderFees(); renderDueDates(); renderClearance(); renderAccounts(); renderAnalytics(); renderCertificates() }
-    function openFormModal() { formModal.classList.remove('hidden'); formModal.classList.add('flex') } function closeFormModal() { formModal.classList.add('hidden'); formModal.classList.remove('flex') }
+    function openFormModal() {
+      const el = document.getElementById('formModal');
+      if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+    }
+    function closeFormModal() {
+      const el = document.getElementById('formModal');
+      if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+    }
 
     let currentOtcMode = 'custom';
 
