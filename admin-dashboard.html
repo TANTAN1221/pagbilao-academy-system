@@ -535,6 +535,25 @@
           class="w-10 h-10 rounded-xl bg-slate-50 border border-academy-border text-academy-muted hover:text-red-600">×</button>
       </div>
       <div id="formModalContent"></div>
+  </div>
+
+  <div id="confirmModal"
+    class="fixed inset-0 z-[160] hidden items-center justify-center bg-slate-950/50 backdrop-blur-sm px-4">
+    <div
+      class="w-full max-w-md bg-white rounded-[2rem] border border-academy-border shadow-2xl p-6 text-center animate-in fade-in zoom-in duration-200">
+      <div class="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
+        <span class="material-symbols-rounded text-3xl">warning</span>
+      </div>
+      <h3 id="confirmModalTitle" class="text-xl font-extrabold text-academy-navy mb-2">Confirm Action</h3>
+      <p id="confirmModalMessage" class="text-xs font-semibold text-academy-muted mb-6 leading-relaxed">Are you sure you want to perform this action?</p>
+      <div class="flex items-center gap-3">
+        <button id="confirmModalCancelBtn" class="w-1/2 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
+          Cancel
+        </button>
+        <button id="confirmModalActionBtn" class="w-1/2 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md transition">
+          Confirm Delete
+        </button>
+      </div>
     </div>
   </div>
 
@@ -710,6 +729,35 @@
 
       toast.classList.remove('hidden');
       setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function showConfirmModal({ title, message, confirmText = 'Confirm Delete', confirmClass = 'bg-red-600 hover:bg-red-700 text-white', onConfirm }) {
+      const modal = document.getElementById('confirmModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const msgEl = document.getElementById('confirmModalMessage');
+      const cancelBtn = document.getElementById('confirmModalCancelBtn');
+      const actionBtn = document.getElementById('confirmModalActionBtn');
+      if (!modal || !titleEl || !msgEl || !actionBtn || !cancelBtn) return;
+
+      titleEl.textContent = title || 'Confirm Action';
+      msgEl.textContent = message || 'Are you sure you want to perform this action?';
+      actionBtn.textContent = confirmText;
+      actionBtn.className = `w-1/2 py-3 rounded-xl font-extrabold text-xs shadow-md transition ${confirmClass}`;
+
+      const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+
+      cancelBtn.onclick = closeModal;
+
+      actionBtn.onclick = () => {
+        closeModal();
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
     function money(n) { return currency.format(Math.round(Number(n) || 0)) }
     function pill(text, type = 'blue') { const map = { green: 'bg-green-50 text-green-700', red: 'bg-red-50 text-red-700', amber: 'bg-amber-50 text-amber-700', blue: 'bg-blue-50 text-blue-700', gray: 'bg-slate-100 text-slate-600' }; return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${map[type] || map.blue}">${text}</span>` }
@@ -1834,13 +1882,18 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       const idx = items.findIndex(f => f.id === feeId);
       if (idx >= 0) {
         const name = items[idx].name;
-        if (confirm(`Are you sure you want to delete "${name}" from ${level} fee setup?`)) {
-          items.splice(idx, 1);
-          applyFeeSetup();
-          saveData();
-          renderAll();
-          showToast('Fee Item Deleted', `Removed "${name}" from ${level} fee setup.`, 'info');
-        }
+        showConfirmModal({
+          title: 'Delete Fee Item',
+          message: `Are you sure you want to delete "${name}" from ${level} fee setup? This action cannot be undone.`,
+          confirmText: 'Delete Fee Item',
+          onConfirm: () => {
+            items.splice(idx, 1);
+            applyFeeSetup();
+            saveData();
+            renderAll();
+            showToast('Fee Item Deleted', `Removed "${name}" from ${level} fee setup.`, 'info');
+          }
+        });
       }
     }
     function openVoucherModal(id = '') {
@@ -1922,10 +1975,18 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     function deleteVoucher(id) {
       const v = (appData.vouchers || []).find(x => x.id === id);
       if (!v) return;
-      if (!confirm(`Are you sure you want to delete the voucher "${v.name}"?`)) return;
-      appData.vouchers = (appData.vouchers || []).filter(x => x.id !== id);
-      applyFeeSetup();
-      showToast('Voucher Deleted', `Removed voucher "${v.name}".`);
+      showConfirmModal({
+        title: 'Delete Voucher Discount',
+        message: `Are you sure you want to delete the voucher discount "${v.name}"? This action cannot be undone.`,
+        confirmText: 'Delete Voucher',
+        onConfirm: () => {
+          appData.vouchers = (appData.vouchers || []).filter(x => x.id !== id);
+          applyFeeSetup();
+          saveData();
+          renderAll();
+          showToast('Voucher Deleted', `Removed voucher "${v.name}".`);
+        }
+      });
     }
     function openInstallmentModal(id = '') {
       const t = (appData.installmentTemplate || []).find(x => x.id === id);
@@ -1982,19 +2043,31 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     }
 
     function deleteInstallment(id) {
-      if (!confirm('Are you sure you want to delete this due date schedule?')) return;
-      appData.installmentTemplate = (appData.installmentTemplate || []).filter(x => x.id !== id);
-      saveData();
-      renderAll();
-      showToast('Schedule Deleted', 'Due date schedule removed.');
+      showConfirmModal({
+        title: 'Delete Due Date Schedule',
+        message: 'Are you sure you want to delete this due date schedule? This action cannot be undone.',
+        confirmText: 'Delete Schedule',
+        onConfirm: () => {
+          appData.installmentTemplate = (appData.installmentTemplate || []).filter(x => x.id !== id);
+          saveData();
+          renderAll();
+          showToast('Schedule Deleted', 'Due date schedule removed.');
+        }
+      });
     }
 
     function clearAllDueDates() {
-      if (!confirm('Are you sure you want to remove all due date schedules?')) return;
-      appData.installmentTemplate = [];
-      saveData();
-      renderAll();
-      showToast('Schedules Cleared', 'All due date schedules were removed.');
+      showConfirmModal({
+        title: 'Clear All Due Dates',
+        message: 'Are you sure you want to remove all due date schedules? This action cannot be undone.',
+        confirmText: 'Clear All',
+        onConfirm: () => {
+          appData.installmentTemplate = [];
+          saveData();
+          renderAll();
+          showToast('Schedules Cleared', 'All due date schedules were removed.');
+        }
+      });
     }
 
     function updateAssignmentRowDropdowns(rowEl, selectedSection = '', selectedStrand = '') {
@@ -2261,31 +2334,34 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     async function deleteAccount(id) {
       const a = appData.accounts.find(x => x.id === id);
       if (!a) return;
-      if (!confirm(`Are you sure you want to delete the account for "${a.name}" (${a.email})?`)) return;
+      showConfirmModal({
+        title: 'Delete Account',
+        message: `Are you sure you want to delete the account for "${a.name}" (${a.email})? This action cannot be undone.`,
+        confirmText: 'Delete Account',
+        onConfirm: async () => {
+          appData.accounts = appData.accounts.filter(x => x.id !== id);
 
-      appData.accounts = appData.accounts.filter(x => x.id !== id);
-
-      try {
-        const registered = JSON.parse(localStorage.getItem('pa_registered_users') || '[]');
-        const updated = registered.filter(u => u.id !== id && String(u.email || '').toLowerCase() !== String(a.email || '').toLowerCase());
-        localStorage.setItem('pa_registered_users', JSON.stringify(updated));
-      } catch (err) {}
-
-      if (window.paApi && window.paApi.client) {
-        const client = window.paApi.client();
-        if (client) {
           try {
-            await client.from('profiles').delete().eq('email', a.email);
-            await client.from('staff_accounts').delete().eq('email', a.email);
-          } catch (err) {
-            console.warn('Supabase delete account notice:', err);
-          }
-        }
-      }
+            const registered = JSON.parse(localStorage.getItem('pa_registered_users') || '[]');
+            const updated = registered.filter(u => u.id !== id && String(u.email || '').toLowerCase() !== String(a.email || '').toLowerCase());
+            localStorage.setItem('pa_registered_users', JSON.stringify(updated));
+          } catch (err) {}
 
-      saveData();
-      renderAll();
-      showToast('Account Deleted', `Successfully deleted account for ${a.name}.`);
+          if (window.paApi && window.paApi.client) {
+            const client = window.paApi.client();
+            if (client) {
+              try {
+                await client.from('staff_accounts').delete().eq('profile_id', a.id);
+                await client.from('profiles').delete().eq('id', a.id);
+              } catch (err) {}
+            }
+          }
+
+          saveData();
+          renderAll();
+          showToast('Account Deleted', `Removed account for ${a.name}.`);
+        }
+      });
     }
     function exportCsv(filename, headers, rows) { const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(','))].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href) }
     function exportCollectionReport() { exportCsv('collections-report.csv', ['Student', 'Level', 'Assessed', 'Paid', 'Balance'], appData.students.map(s => [s.name, s.level, assessedTotal(s), s.paid, balance(s)])) }
