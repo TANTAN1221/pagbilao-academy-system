@@ -334,7 +334,7 @@ create table if not exists notifications (
 );
 
 -- ANALYTICS VIEWS
-create or replace view accounting_student_balances as
+create or replace view accounting_student_balances with (security_invoker = true) as
 select
   s.id as student_id,
   s.student_number,
@@ -353,7 +353,7 @@ left join student_assessments a on a.student_id = s.id and a.school_year = s.sch
 left join payments p on p.student_id = s.id
 group by s.id, a.gross_amount, a.voucher_amount, a.net_amount;
 
-create or replace view accounting_collection_summary as
+create or replace view accounting_collection_summary with (security_invoker = true) as
 select
   education_level,
   count(*) as student_count,
@@ -365,7 +365,7 @@ select
 from accounting_student_balances
 group by education_level;
 
-create or replace view overdue_installments_report as
+create or replace view overdue_installments_report with (security_invoker = true) as
 select
   s.student_number,
   concat(s.first_name, ' ', s.last_name) as student_name,
@@ -491,7 +491,7 @@ with check (auth.uid() = auth_user_id);
 -- STUDENT-BASED TEACHER CLEARANCE MATCHING
 -- This view lists every teacher clearance head that should appear on a student's dashboard
 -- based on the student's grade/section for JHS or grade/strand for SHS.
-create or replace view student_assigned_teacher_clearance_heads as
+create or replace view student_assigned_teacher_clearance_heads with (security_invoker = true) as
 select
   s.id as student_id,
   s.student_number,
