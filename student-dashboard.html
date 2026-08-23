@@ -2271,6 +2271,9 @@
             try {
               await window.paApi.recordPayment({
                 studentId: s.id || s.dbId,
+                studentNumber: s.studentNumber || s.student_number || s.id,
+                email: s.email,
+                authUserId: s.authUserId || s.auth_user_id,
                 amount: paidAmt,
                 method: 'QR Ph (PayMongo)',
                 referenceNo: refNo

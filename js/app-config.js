@@ -739,35 +739,80 @@
     return Array.from(map.values());
   }
 
-  async function recordPayment(studentNumber, amount, method = "Manual", referenceNo = null) {
+  async function recordPayment(studentObj, amount, method = "Manual", referenceNo = null) {
     const supabase = client();
     if (!supabase) return null;
 
-    let sNo = studentNumber;
+    let sNo = studentObj;
     let amt = amount;
     let mth = method;
     let refNo = referenceNo;
+    let sEmail = null;
+    let sAuthId = null;
 
-    if (typeof studentNumber === "object" && studentNumber !== null) {
-      sNo = studentNumber.studentId || studentNumber.student_id || studentNumber.studentNumber || studentNumber.id;
-      amt = studentNumber.amount;
-      mth = studentNumber.method || "Manual";
-      refNo = studentNumber.referenceNo || studentNumber.reference_no || studentNumber.provider_reference || null;
+    if (typeof studentObj === "object" && studentObj !== null) {
+      sNo = studentObj.studentId || studentObj.student_id || studentObj.studentNumber || studentObj.student_number || studentObj.id;
+      amt = studentObj.amount;
+      mth = studentObj.method || "Manual";
+      refNo = studentObj.referenceNo || studentObj.reference_no || studentObj.provider_reference || null;
+      sEmail = studentObj.email;
+      sAuthId = studentObj.authUserId || studentObj.auth_user_id;
     }
 
-    if (!sNo) throw new Error("Student ID or Student Number is required to record payment.");
+    if (!sNo && !sEmail) return null;
 
-    const { data: student, error: studentErr } = await supabase
-      .from("students")
-      .select("id, student_number")
-      .or(buildStudentOrFilter(sNo))
-      .maybeSingle();
+    let student = null;
 
-    if (studentErr) {
-      console.error("Error looking up student for payment:", studentErr);
+    if (sNo) {
+      const filter = buildStudentOrFilter(sNo);
+      const { data } = await supabase
+        .from("students")
+        .select("id, student_number, email")
+        .or(filter)
+        .maybeSingle();
+      if (data) student = data;
     }
 
-    if (!student) throw new Error(`Student '${sNo}' not found in database.`);
+    if (!student && sEmail) {
+      const { data } = await supabase
+        .from("students")
+        .select("id, student_number, email")
+        .eq("email", sEmail)
+        .maybeSingle();
+      if (data) student = data;
+    }
+
+    if (!student && sAuthId) {
+      const { data } = await supabase
+        .from("students")
+        .select("id, student_number, email")
+        .eq("auth_user_id", sAuthId)
+        .maybeSingle();
+      if (data) student = data;
+    }
+
+    if (!student) {
+      const insertNum = String(sNo || `STU-${Date.now()}`);
+      const { data: newS } = await supabase
+        .from("students")
+        .insert({
+          student_number: insertNum,
+          first_name: "Student",
+          last_name: "Account",
+          email: sEmail || `${insertNum.toLowerCase()}@pagbilao.edu.ph`,
+          education_level: "SHS",
+          grade_level: "Grade 11",
+          section_name: "Humility",
+          strand: "GAS",
+          school_year: "2026-2027",
+          status: "active"
+        })
+        .select("id, student_number")
+        .maybeSingle();
+      if (newS) student = newS;
+    }
+
+    if (!student) return null;
 
     if (refNo) {
       const { data: existing } = await supabase
@@ -779,7 +824,7 @@
       if (existing) return existing;
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("payments")
       .insert({
         student_id: student.id,
@@ -790,9 +835,8 @@
         paid_at: new Date().toISOString()
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
     return data;
   }
 
