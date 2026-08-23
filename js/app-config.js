@@ -495,13 +495,6 @@
         });
       }
 
-      if (!state.feeStructures.JHS || state.feeStructures.JHS.length === 0) {
-        state.feeStructures.JHS = DEFAULT_FEE_STRUCTURES.JHS;
-      }
-      if (!state.feeStructures.SHS || state.feeStructures.SHS.length === 0) {
-        state.feeStructures.SHS = DEFAULT_FEE_STRUCTURES.SHS;
-      }
-
       // 2. Vouchers
       if (voucherTypes && voucherTypes.length > 0) {
         state.vouchers = voucherTypes.map(v => ({
@@ -511,10 +504,6 @@
           amount: Number(v.amount),
           active: v.active
         }));
-      }
-
-      if (!state.vouchers || state.vouchers.length === 0) {
-        state.vouchers = DEFAULT_VOUCHERS;
       }
 
       // 3. Installment Templates
@@ -527,10 +516,6 @@
             percent: Number(i.percent_of_net),
             dueDate: i.due_date
           }));
-      }
-
-      if (!state.installmentTemplate || state.installmentTemplate.length === 0) {
-        state.installmentTemplate = DEFAULT_INSTALLMENT_TEMPLATE;
       }
 
       // 4. Accounts

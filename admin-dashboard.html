@@ -661,15 +661,11 @@
 
     function ensurePrototypeData(data = appData) {
       if (!data) data = {};
-      if (!data.feeStructures || !data.feeStructures.JHS || data.feeStructures.JHS.length === 0) {
-        data.feeStructures = JSON.parse(JSON.stringify(DEFAULT_FEE_STRUCTURES));
-      }
-      if (!data.vouchers || data.vouchers.length === 0) {
-        data.vouchers = JSON.parse(JSON.stringify(DEFAULT_VOUCHERS));
-      }
-      if (!data.installmentTemplate || data.installmentTemplate.length === 0) {
-        data.installmentTemplate = JSON.parse(JSON.stringify(DEFAULT_INSTALLMENT_TEMPLATE));
-      }
+      data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
+      if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
+      if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
+      data.vouchers = data.vouchers || [];
+      data.installmentTemplate = data.installmentTemplate || [];
       data.teacherClearanceRequests = data.teacherClearanceRequests || [];
       data.students = data.students || [];
       data.accounts = data.accounts || [];
@@ -2399,9 +2395,10 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             const list = appData.installmentTemplate || [];
             if (list.length > 0) {
               const rows = list.map((t, i) => ({
-                id: (t.id && !t.id.startsWith('INS-')) ? t.id : undefined,
+                id: (t.id && !t.id.startsWith('inst-') && !t.id.startsWith('INS-')) ? t.id : undefined,
                 title: t.title,
-                description: t.description || '',
+                school_year: '2026-2027',
+                percent_of_net: (t.percent !== undefined && t.percent !== null) ? Number(t.percent) : 25,
                 due_date: t.dueDate,
                 sort_order: i + 1
               }));
@@ -2419,20 +2416,20 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         const client = window.paApi.client();
         if (client) {
           try {
-            await client.from('vouchers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await client.from('voucher_types').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             const list = appData.vouchers || [];
             if (list.length > 0) {
               const rows = list.map(v => ({
-                id: (v.id && !v.id.startsWith('V-')) ? v.id : undefined,
+                id: (v.id && !v.id.startsWith('vouch-') && !v.id.startsWith('V-')) ? v.id : undefined,
                 voucher_name: v.name,
-                applies_to: v.appliesTo,
-                amount: v.amount,
+                applies_to: v.appliesTo === 'All' ? 'SHS' : v.appliesTo,
+                amount: Number(v.amount || 0),
                 active: v.active !== false
               }));
-              await client.from('vouchers').insert(rows);
+              await client.from('voucher_types').insert(rows);
             }
           } catch (e) {
-            console.warn('Syncing vouchers error:', e);
+            console.warn('Syncing voucher_types error:', e);
           }
         }
       }

@@ -1009,15 +1009,11 @@
 
     function ensureData(data) {
       if (!data) data = {};
-      if (!data.feeStructures || !data.feeStructures.JHS || data.feeStructures.JHS.length === 0) {
-        data.feeStructures = JSON.parse(JSON.stringify(DEFAULT_FEE_STRUCTURES));
-      }
-      if (!data.vouchers || data.vouchers.length === 0) {
-        data.vouchers = JSON.parse(JSON.stringify(DEFAULT_VOUCHERS));
-      }
-      if (!data.installmentTemplate || data.installmentTemplate.length === 0) {
-        data.installmentTemplate = JSON.parse(JSON.stringify(DEFAULT_INSTALLMENT_TEMPLATE));
-      }
+      data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
+      if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
+      if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
+      data.vouchers = data.vouchers || [];
+      data.installmentTemplate = data.installmentTemplate || [];
       data.teacherClearanceRequests = data.teacherClearanceRequests || [];
       data.students = data.students || [];
       data.accounts = data.accounts || [];
