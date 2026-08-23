@@ -804,7 +804,35 @@
       </tr>`).join('')
     }
     function renderFees() {
-      feeStructureList.innerHTML = ['JHS', 'SHS'].map(level => `<div class="border border-academy-border rounded-2xl overflow-hidden shadow-card"><div class="bg-academy-soft px-4 py-3 flex justify-between items-center border-b border-academy-border"><div><strong class="text-academy-navy font-extrabold">${level} Fee Setup</strong></div><strong class="text-base font-black text-academy-navy">${money(feeTotal(level))}</strong></div>${appData.feeStructures[level].map(f => `<div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border"><span>${f.name}</span><span class="font-bold">${money(f.amount)}</span></div>`).join('')}</div>`).join('');
+      feeStructureList.innerHTML = ['JHS', 'SHS'].map(level => `
+        <div class="border border-academy-border rounded-2xl overflow-hidden shadow-card mb-4">
+          <div class="bg-academy-soft px-4 py-3 flex justify-between items-center border-b border-academy-border">
+            <div><strong class="text-academy-navy font-extrabold">${level} Fee Setup</strong></div>
+            <div class="flex items-center gap-3">
+              <button onclick="openFeeItemModal('${level}')" class="px-3 py-1.5 rounded-xl bg-academy-navy text-white text-xs font-bold hover:bg-blue-900 transition flex items-center gap-1">
+                <span class="material-symbols-rounded text-xs">add</span> Add Fee Item
+              </button>
+              <strong class="text-base font-black text-academy-navy">${money(feeTotal(level))}</strong>
+            </div>
+          </div>
+          ${(appData.feeStructures[level] || []).map(f => `
+            <div class="px-4 py-3 flex justify-between items-center text-sm border-t border-academy-border hover:bg-slate-50 transition">
+              <span class="font-bold text-slate-800">${f.name}</span>
+              <div class="flex items-center gap-3">
+                <span class="font-black text-academy-navy">${money(f.amount)}</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openFeeItemModal('${level}', '${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy hover:bg-sky-100 font-extrabold text-xs transition border border-sky-200/60 flex items-center gap-1">
+                    <span class="material-symbols-rounded text-xs">edit</span> Edit
+                  </button>
+                  <button onclick="deleteFeeItem('${level}', '${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-xs transition border border-red-200/60 flex items-center gap-1">
+                    <span class="material-symbols-rounded text-xs">delete</span> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
       voucherList.innerHTML = appData.vouchers.map(v => `
         <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-sm flex items-center justify-between gap-3">
           <div>
@@ -1734,7 +1762,78 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       openCertificate(id);
     }
     function openCertificate(id) { window.open(`certificate.html?studentId=${encodeURIComponent(id)}&from=admin`, '_blank') }
-    function openFeeItemModal() { formModalLabel.textContent = 'Fee Item'; formModalTitle.textContent = 'Add Fee Item'; formModalContent.innerHTML = `<form id="feeForm" class="space-y-4"><div><label class="block text-sm font-bold mb-2">Level</label><select id="feeLevel" class="w-full px-4 py-3 rounded-xl border border-academy-border bg-white"><option>JHS</option><option>SHS</option></select></div><div><label class="block text-sm font-bold mb-2">Fee Name</label><input id="feeName" required class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><div><label class="block text-sm font-bold mb-2">Amount</label><input id="feeAmount" type="number" required class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><button class="w-full py-3 rounded-xl bg-academy-navy text-white font-bold">Save</button></form>`; feeForm.onsubmit = e => { e.preventDefault(); appData.feeStructures[feeLevel.value].push({ id: 'FEE-' + Date.now(), name: feeName.value, amount: Number(feeAmount.value), required: true }); applyFeeSetup(); closeFormModal(); }; openFormModal() }
+    function openFeeItemModal(level = 'JHS', feeId = '') {
+      const items = appData.feeStructures[level] || [];
+      const fee = items.find(f => f.id === feeId);
+
+      formModalLabel.textContent = 'Fee Item';
+      formModalTitle.textContent = fee ? `Edit ${level} Fee Item` : `Add New ${level} Fee Item`;
+      formModalContent.innerHTML = `
+        <form id="feeForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Education Level</label>
+            <select id="feeLevel" class="w-full px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold focus:outline-none">
+              <option value="JHS" ${level === 'JHS' ? 'selected' : ''}>Junior High School (JHS)</option>
+              <option value="SHS" ${level === 'SHS' ? 'selected' : ''}>Senior High School (SHS)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Fee Item Name</label>
+            <input id="feeName" value="${fee?.name || ''}" placeholder="e.g. Tuition Fee / Laboratory Fee" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-academy-navy mb-1">Amount (PHP)</label>
+            <input id="feeAmount" type="number" min="0" step="any" value="${fee?.amount ?? ''}" placeholder="e.g. 15000" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold text-xs shadow-md transition">
+            Save Fee Item
+          </button>
+        </form>
+      `;
+
+      feeForm.onsubmit = e => {
+        e.preventDefault();
+        const selectedLevel = feeLevel.value;
+        const nameVal = feeName.value.trim();
+        const amtVal = Number(feeAmount.value || 0);
+
+        if (fee) {
+          fee.name = nameVal;
+          fee.amount = amtVal;
+        } else {
+          if (!appData.feeStructures[selectedLevel]) appData.feeStructures[selectedLevel] = [];
+          appData.feeStructures[selectedLevel].push({
+            id: 'FEE-' + Date.now(),
+            name: nameVal,
+            amount: amtVal,
+            required: true
+          });
+        }
+
+        applyFeeSetup();
+        saveData();
+        renderAll();
+        closeFormModal();
+        showToast('Fee Updated', `"${nameVal}" set to ${money(amtVal)} for ${selectedLevel}.`, 'success');
+      };
+
+      openFormModal();
+    }
+
+    function deleteFeeItem(level, feeId) {
+      const items = appData.feeStructures[level] || [];
+      const idx = items.findIndex(f => f.id === feeId);
+      if (idx >= 0) {
+        const name = items[idx].name;
+        if (confirm(`Are you sure you want to delete "${name}" from ${level} fee setup?`)) {
+          items.splice(idx, 1);
+          applyFeeSetup();
+          saveData();
+          renderAll();
+          showToast('Fee Item Deleted', `Removed "${name}" from ${level} fee setup.`, 'info');
+        }
+      }
+    }
     function openVoucherModal(id = '') {
       const v = (appData.vouchers || []).find(x => x.id === id);
       formModalLabel.textContent = 'Voucher Discount';
