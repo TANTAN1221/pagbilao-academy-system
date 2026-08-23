@@ -13,12 +13,15 @@
   <!-- Google Material Symbols & Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+    rel="stylesheet" />
 
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
+
     .material-symbols-rounded {
       font-family: 'Material Symbols Rounded';
       font-weight: normal;
@@ -35,10 +38,19 @@
       font-feature-settings: 'liga';
       -webkit-font-smoothing: antialiased;
     }
+
     @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
     }
+
     .animate-float {
       animation: float 4s ease-in-out infinite;
     }
@@ -84,7 +96,8 @@
   </div>
 
   <!-- Header / Navigation Bar -->
-  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-academy-border/80 transition-all duration-300 shadow-xs">
+  <header
+    class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-academy-border/80 transition-all duration-300 shadow-xs">
     <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
 
       <!-- Brand Identity -->
@@ -93,7 +106,8 @@
           class="w-11 h-11 rounded-full object-cover border-2 border-academy-border bg-white shadow-xs group-hover:scale-105 transition-transform" />
 
         <div class="text-left">
-          <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-academy-navy group-hover:text-academy-blue transition-colors">
+          <h1
+            class="text-lg md:text-xl font-extrabold tracking-tight text-academy-navy group-hover:text-academy-blue transition-colors">
             Pagbilao Academy Inc.
           </h1>
           <p class="text-xs text-academy-muted font-medium">
@@ -113,10 +127,12 @@
 
       <!-- Action Buttons in Nav Header -->
       <div class="hidden lg:flex items-center gap-3">
-        <button type="button" onclick="openLoginModal()" class="px-5 py-2 rounded-xl border border-academy-border text-academy-navy font-bold text-xs hover:bg-blue-50 transition">
+        <button type="button" onclick="openLoginModal()"
+          class="px-5 py-2 rounded-xl border border-academy-border text-academy-navy font-bold text-xs hover:bg-blue-50 transition">
           Sign In
         </button>
-        <button type="button" onclick="openRegisterModal()" class="px-5 py-2 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900 transition shadow-sm">
+        <button type="button" onclick="openRegisterModal()"
+          class="px-5 py-2 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900 transition shadow-sm">
           Register
         </button>
       </div>
@@ -130,7 +146,8 @@
     </div>
 
     <!-- Mobile Navigation Drawer -->
-    <div id="mobileMenu" class="hidden md:hidden bg-white/95 backdrop-blur-lg border-t border-academy-border px-6 pb-6 pt-2">
+    <div id="mobileMenu"
+      class="hidden md:hidden bg-white/95 backdrop-blur-lg border-t border-academy-border px-6 pb-6 pt-2">
       <div class="flex flex-col gap-3 text-sm font-semibold pt-2 text-center">
         <a href="#home" class="py-2 border-b border-slate-100 text-academy-text">Home</a>
         <a href="#campus" class="py-2 border-b border-slate-100 text-academy-text">Campus</a>
@@ -138,8 +155,11 @@
         <a href="#workflow" class="py-2 border-b border-slate-100 text-academy-text">Workflow</a>
         <a href="#portal" class="py-2 border-b border-slate-100 text-academy-text">Portal</a>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="openLoginModal()" class="flex-1 py-2.5 rounded-xl border border-academy-border text-academy-navy font-bold text-xs">Sign In</button>
-          <button type="button" onclick="openRegisterModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs">Register</button>
+          <button type="button" onclick="openLoginModal()"
+            class="flex-1 py-2.5 rounded-xl border border-academy-border text-academy-navy font-bold text-xs">Sign
+            In</button>
+          <button type="button" onclick="openRegisterModal()"
+            class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs">Register</button>
         </div>
       </div>
     </div>
@@ -147,19 +167,23 @@
 
   <!-- Hero Section with pa.jpg Background Wallpaper & Centered Text -->
   <section id="home" class="relative flex items-center justify-center text-center px-6 py-12 md:py-16 overflow-hidden">
-    
+
     <!-- Background Wallpaper (pa.jpg) with Rich Navy Overlay -->
     <div class="absolute inset-0 -z-10">
-      <img src="pa.jpg" alt="Pagbilao Academy Inc. Campus Background" class="w-full h-full object-cover object-center filter brightness-[0.4] contrast-[1.1] scale-105" />
+      <img src="pa.jpg" alt="Pagbilao Academy Inc. Campus Background"
+        class="w-full h-full object-cover object-center filter brightness-[0.4] contrast-[1.1] scale-105" />
       <div class="absolute inset-0 bg-gradient-to-b from-[#0F2A5F]/85 via-[#1E3A8A]/75 to-[#0F2A5F]/95"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent"></div>
+      <div
+        class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent">
+      </div>
     </div>
 
     <div class="max-w-4xl mx-auto space-y-6 reveal text-white">
-      
+
       <!-- Top Centered Badge -->
       <div class="flex justify-center">
-        <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-extrabold tracking-wider uppercase shadow-glow">
+        <span
+          class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-extrabold tracking-wider uppercase shadow-glow">
           <span class="material-symbols-rounded text-[18px] text-sky-300">verified</span>
           Official Portal · Pagbilao Academy Inc.
         </span>
@@ -171,8 +195,10 @@
           Student Payment & Clearance System
         </h2>
 
-        <p class="text-sm sm:text-base lg:text-lg leading-relaxed text-blue-100 max-w-3xl mx-auto font-normal drop-shadow-xs">
-          Welcome to Pagbilao Academy Inc.'s official digital portal for tuition fee monitoring, ESC/SHS voucher calculations, installment tracking, multi-tier clearance approvals, and automated clearance certificates.
+        <p
+          class="text-sm sm:text-base lg:text-lg leading-relaxed text-blue-100 max-w-3xl mx-auto font-normal drop-shadow-xs">
+          Welcome to Pagbilao Academy Inc.'s official digital portal for tuition fee monitoring, ESC/SHS voucher
+          calculations, installment tracking, multi-tier clearance approvals, and automated clearance certificates.
         </p>
       </div>
 
@@ -222,26 +248,30 @@
 
     <!-- Campus & Heritage Spotlight Section -->
     <section id="campus" class="reveal">
-      <div class="bg-gradient-to-br from-white via-academy-soft to-blue-50/50 border border-academy-border rounded-[2.5rem] p-6 md:p-10 shadow-soft">
-        
+      <div
+        class="bg-gradient-to-br from-white via-academy-soft to-blue-50/50 border border-academy-border rounded-[2.5rem] p-6 md:p-10 shadow-soft">
+
         <!-- Section Header Centered -->
         <div class="text-center max-w-3xl mx-auto space-y-2.5 mb-8">
-          <span class="px-3.5 py-1 rounded-full bg-blue-100 text-academy-navy text-xs font-extrabold uppercase tracking-wider inline-block">
+          <span
+            class="px-3.5 py-1 rounded-full bg-blue-100 text-academy-navy text-xs font-extrabold uppercase tracking-wider inline-block">
             About The Institution
           </span>
           <h2 class="text-2xl sm:text-3xl font-extrabold text-academy-navy tracking-tight">
             Fostering Excellence at Pagbilao Academy Inc.
           </h2>
           <p class="text-xs sm:text-sm leading-relaxed text-academy-muted">
-            Pagbilao Academy Inc. bridges tradition and technology, ensuring quality education alongside streamlined administrative services.
+            Pagbilao Academy Inc. bridges tradition and technology, ensuring quality education alongside streamlined
+            administrative services.
           </p>
         </div>
 
         <div class="grid lg:grid-cols-12 gap-10 items-center">
-          
+
           <div class="lg:col-span-6 relative">
             <div class="rounded-3xl overflow-hidden border-4 border-white shadow-soft aspect-[4/3] bg-slate-100 group">
-              <img src="pa.jpg" alt="Pagbilao Academy Building Facade" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+              <img src="pa.jpg" alt="Pagbilao Academy Building Facade"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
               <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
               <div class="absolute bottom-4 left-4 right-4 text-white">
                 <p class="text-xs font-bold uppercase tracking-widest text-sky-300">Pagbilao Academy Inc.</p>
@@ -255,29 +285,38 @@
 
           <div class="lg:col-span-6 space-y-6 text-center lg:text-left">
             <p class="text-base sm:text-lg leading-relaxed text-academy-text font-medium">
-              The Student Payment & Clearance System connects students, parents, teachers, and school administrators on a unified platform for fee assessments, voucher discount computations, installment schedules, and multi-department clearance approvals.
+              The Student Payment & Clearance System connects students, parents, teachers, and school administrators on
+              a unified platform for fee assessments, voucher discount computations, installment schedules, and
+              multi-department clearance approvals.
             </p>
 
             <div class="grid sm:grid-cols-2 gap-4 pt-2 text-left">
-              <div class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
-                <span class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">1</span>
+              <div
+                class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
+                <span
+                  class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">1</span>
                 <div>
                   <h4 class="text-sm font-extrabold text-academy-navy">Junior High School (JHS)</h4>
-                  <p class="text-xs text-academy-muted mt-1">Grades 7–10 with ESC Voucher support and section management.</p>
+                  <p class="text-xs text-academy-muted mt-1">Grades 7–10 with ESC Voucher support and section
+                    management.</p>
                 </div>
               </div>
 
-              <div class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
-                <span class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">2</span>
+              <div
+                class="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-academy-border shadow-xs hover:border-blue-300 transition">
+                <span
+                  class="w-10 h-10 rounded-xl bg-blue-100 text-academy-navy flex items-center justify-center font-bold text-sm shrink-0">2</span>
                 <div>
                   <h4 class="text-sm font-extrabold text-academy-navy">Senior High School (SHS)</h4>
-                  <p class="text-xs text-academy-muted mt-1">Grades 11–12 with HUMSS strand and SHS Voucher application.</p>
+                  <p class="text-xs text-academy-muted mt-1">Grades 11–12 with HUMSS strand and SHS Voucher application.
+                  </p>
                 </div>
               </div>
             </div>
 
             <div class="pt-2 flex justify-center lg:justify-start">
-              <a href="#workflow" class="inline-flex items-center gap-2 font-bold text-academy-blue hover:text-academy-navy transition text-sm">
+              <a href="#workflow"
+                class="inline-flex items-center gap-2 font-bold text-academy-blue hover:text-academy-navy transition text-sm">
                 <span>Explore the System Workflow</span>
                 <span class="material-symbols-rounded text-[18px]">arrow_downward</span>
               </a>
@@ -308,8 +347,10 @@
       <!-- Feature Grid Cards - Centered Text -->
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">payments</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
@@ -321,8 +362,10 @@
           </p>
         </div>
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">lock</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
@@ -334,8 +377,10 @@
           </p>
         </div>
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">notifications_active</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
@@ -346,39 +391,48 @@
           </p>
         </div>
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">assignment</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
             Digital Clearance Requests
           </h3>
           <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
-            Allows digital submission and verification of subject teacher clearance requests with multi-assignment matching.
+            Allows digital submission and verification of subject teacher clearance requests with multi-assignment
+            matching.
           </p>
         </div>
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">verified</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
             Sequential Department Approvals
           </h3>
           <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
-            Enforces strict approval order: Subject Teachers &rarr; Guidance, Prefect & Librarian &rarr; Principal &rarr; Accounting & Registrar.
+            Enforces strict approval order: Subject Teachers &rarr; Guidance, Prefect & Librarian &rarr; Principal
+            &rarr; Accounting & Registrar.
           </p>
         </div>
 
-        <div class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
-          <div class="w-14 h-14 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
+        <div
+          class="bg-white border border-academy-border rounded-3xl p-6 shadow-sm hover:shadow-card hover:border-blue-200 transition-all duration-300 group text-center flex flex-col items-center">
+          <div
+            class="w-14 h-14 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-xs">
             <span class="material-symbols-rounded text-2xl">monitoring</span>
           </div>
           <h3 class="font-extrabold text-lg text-academy-navy">
             Real-time Status & Analytics
           </h3>
           <p class="text-sm text-academy-muted leading-relaxed mt-2.5">
-            Provides real-time clearance progress monitoring and financial collection summaries for school administrators.
+            Provides real-time clearance progress monitoring and financial collection summaries for school
+            administrators.
           </p>
         </div>
 
@@ -388,7 +442,7 @@
     <!-- Workflow Section - Centered -->
     <section id="workflow" class="reveal">
       <div class="bg-white border border-academy-border rounded-[2.5rem] shadow-soft p-6 md:p-10 text-center">
-        
+
         <div class="max-w-3xl mx-auto space-y-3 mb-8">
           <p class="text-xs font-extrabold text-academy-blue uppercase tracking-widest">
             Simple Step-by-Step Process
@@ -406,9 +460,10 @@
 
         <!-- 4 Step Process Cards - Centered Layout -->
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-          
+
           <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
-            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+            <span
+              class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
               1
             </span>
             <h3 class="font-extrabold text-academy-navy text-base mb-2">
@@ -420,7 +475,8 @@
           </div>
 
           <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
-            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+            <span
+              class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
               2
             </span>
             <h3 class="font-extrabold text-academy-navy text-base mb-2">
@@ -432,7 +488,8 @@
           </div>
 
           <div class="p-6 rounded-3xl bg-academy-soft border border-blue-100 flex flex-col items-center">
-            <span class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+            <span
+              class="w-12 h-12 rounded-2xl bg-academy-navy text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
               3
             </span>
             <h3 class="font-extrabold text-academy-navy text-base mb-2">
@@ -444,7 +501,8 @@
           </div>
 
           <div class="p-6 rounded-3xl bg-emerald-50 border border-emerald-200 flex flex-col items-center">
-            <span class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
+            <span
+              class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-4 shadow-sm font-bold text-lg">
               4
             </span>
             <h3 class="font-extrabold text-academy-navy text-base mb-2">
@@ -462,17 +520,22 @@
 
     <!-- Portal Call to Action Banner - Centered -->
     <section id="portal" class="reveal">
-      <div class="relative overflow-hidden bg-gradient-to-br from-academy-navy via-blue-900 to-blue-800 rounded-[2.5rem] p-6 md:p-10 text-white shadow-soft text-center">
-        
+      <div
+        class="relative overflow-hidden bg-gradient-to-br from-academy-navy via-blue-900 to-blue-800 rounded-[2.5rem] p-6 md:p-10 text-white shadow-soft text-center">
+
         <!-- Ambient Decorative Background -->
         <div class="absolute inset-0 opacity-20 pointer-events-none">
-          <img src="pa.jpg" alt="Background Texture" class="w-full h-full object-cover filter blur-xs mix-blend-overlay">
+          <img src="pa.jpg" alt="Background Texture"
+            class="w-full h-full object-cover filter blur-xs mix-blend-overlay">
         </div>
-        <div class="absolute -right-20 -top-20 w-80 h-80 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="absolute -left-24 -bottom-24 w-96 h-96 bg-sky-400/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-blue-500/20 rounded-full blur-2xl pointer-events-none">
+        </div>
+        <div class="absolute -left-24 -bottom-24 w-96 h-96 bg-sky-400/15 rounded-full blur-3xl pointer-events-none">
+        </div>
 
         <div class="relative z-10 max-w-3xl mx-auto space-y-6">
-          <span class="px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-blue-200 border border-white/20 text-xs font-extrabold uppercase tracking-wider inline-block">
+          <span
+            class="px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-blue-200 border border-white/20 text-xs font-extrabold uppercase tracking-wider inline-block">
             24/7 Student Portal Access
           </span>
 
@@ -481,7 +544,8 @@
           </h2>
 
           <p class="text-base sm:text-lg text-blue-100 leading-relaxed font-normal">
-            Students and parents can securely monitor account balances, due dates, payment updates, clearance requests, and department approval progress in real-time.
+            Students and parents can securely monitor account balances, due dates, payment updates, clearance requests,
+            and department approval progress in real-time.
           </p>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -600,7 +664,8 @@
           </div>
 
           <p id="loginError"
-            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center"></p>
+            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center">
+          </p>
 
           <button type="submit"
             class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition">
@@ -807,7 +872,8 @@
           </div>
 
           <p id="registerError"
-            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center"></p>
+            class="hidden text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center">
+          </p>
 
           <button type="submit"
             class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition mt-2">
@@ -829,7 +895,8 @@
 
   <!-- Footer -->
   <footer class="border-t border-academy-border bg-white/90 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+    <div
+      class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
       <div class="flex items-center gap-3">
         <img src="assets/logo.png" alt="Logo" class="w-8 h-8 rounded-full border bg-white object-cover">
         <p class="text-xs sm:text-sm text-academy-muted font-medium">
