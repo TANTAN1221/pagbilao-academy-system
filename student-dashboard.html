@@ -930,7 +930,46 @@
   <script>
     const STORAGE_KEY = 'pa_full_admin_v2';
     const currency = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
-    const fallbackData = { settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' }, feeStructures: { JHS: [], SHS: [] }, vouchers: [], installmentTemplate: [], students: [], accounts: [], teacherClearanceRequests: [], payments: [] };
+    const DEFAULT_FEE_STRUCTURES = {
+      JHS: [
+        { id: "jhs-tui", name: "Tuition Fee", amount: 15000, required: true },
+        { id: "jhs-misc", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
+        { id: "jhs-lab", name: "Laboratory & Computer Fees", amount: 1500, required: true },
+        { id: "jhs-dev", name: "Development & Energy Fees", amount: 1500, required: true }
+      ],
+      SHS: [
+        { id: "shs-tui", name: "Tuition Fee", amount: 18000, required: true },
+        { id: "shs-misc", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
+        { id: "shs-lab", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
+        { id: "shs-dev", name: "Development & Energy Fees", amount: 2000, required: true }
+      ]
+    };
+
+    const DEFAULT_VOUCHERS = [
+      { id: "vouch-esc", name: "ESC Voucher (JHS)", appliesTo: "JHS", amount: 9000, active: true },
+      { id: "vouch-shs-priv", name: "SHS Voucher (Private)", appliesTo: "SHS", amount: 14000, active: true },
+      { id: "vouch-shs-pub", name: "SHS Voucher (Public)", appliesTo: "SHS", amount: 17500, active: true },
+      { id: "vouch-honor", name: "Academic Honors Discount", appliesTo: "ALL", amount: 5000, active: true }
+    ];
+
+    const DEFAULT_INSTALLMENT_TEMPLATE = [
+      { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
+      { id: "inst-2", title: "2nd Quarter Installment", percent: 25, dueDate: "2026-11-15" },
+      { id: "inst-3", title: "3rd Quarter Installment", percent: 25, dueDate: "2027-01-15" },
+      { id: "inst-4", title: "4th Quarter / Final Clearance", percent: 25, dueDate: "2027-03-15" }
+    ];
+
+    const fallbackData = {
+      settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' },
+      feeStructures: DEFAULT_FEE_STRUCTURES,
+      vouchers: DEFAULT_VOUCHERS,
+      installmentTemplate: DEFAULT_INSTALLMENT_TEMPLATE,
+      students: [],
+      accounts: [],
+      payments: [],
+      certificateRequests: [],
+      teacherClearanceRequests: []
+    };
     
     function money(n) { return currency.format(Math.round(Number(n) || 0)) }
     
@@ -964,11 +1003,21 @@
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         const parsed = raw ? JSON.parse(raw) : {};
-        return ensureData({ ...fallbackData, ...parsed, feeStructures: { ...fallbackData.feeStructures, ...(parsed.feeStructures || {}) }, settings: { ...fallbackData.settings, ...(parsed.settings || {}) }, vouchers: parsed.vouchers || [], installmentTemplate: parsed.installmentTemplate || [], students: parsed.students || [], accounts: parsed.accounts || [], payments: parsed.payments || [] });
+        return ensureData({ ...fallbackData, ...parsed, settings: { ...fallbackData.settings, ...(parsed.settings || {}) } });
       } catch { return ensureData(JSON.parse(JSON.stringify(fallbackData))) }
     }
 
     function ensureData(data) {
+      if (!data) data = {};
+      if (!data.feeStructures || !data.feeStructures.JHS || data.feeStructures.JHS.length === 0) {
+        data.feeStructures = JSON.parse(JSON.stringify(DEFAULT_FEE_STRUCTURES));
+      }
+      if (!data.vouchers || data.vouchers.length === 0) {
+        data.vouchers = JSON.parse(JSON.stringify(DEFAULT_VOUCHERS));
+      }
+      if (!data.installmentTemplate || data.installmentTemplate.length === 0) {
+        data.installmentTemplate = JSON.parse(JSON.stringify(DEFAULT_INSTALLMENT_TEMPLATE));
+      }
       data.teacherClearanceRequests = data.teacherClearanceRequests || [];
       data.students = data.students || [];
       data.accounts = data.accounts || [];

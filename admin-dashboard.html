@@ -607,18 +607,80 @@
       'Philippine Politics and Governance',
       'Disciplines and Ideas in the Social Sciences'
     ];
-    const defaultData = { settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' }, feeStructures: { JHS: [], SHS: [] }, vouchers: [], installmentTemplate: [], students: [], accounts: [], payments: [], certificateRequests: [], teacherClearanceRequests: [] };
-    function loadData() { try { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return structuredClone(defaultData); const parsed = JSON.parse(raw); return { ...structuredClone(defaultData), ...parsed }; } catch { return structuredClone(defaultData) } }
-    let appData = loadData();
-    function ensurePrototypeData() {
-      appData.teacherClearanceRequests = appData.teacherClearanceRequests || [];
-      appData.students = appData.students || [];
-      appData.accounts = appData.accounts || [];
-      appData.payments = appData.payments || [];
-      appData.certificateRequests = appData.certificateRequests || [];
+    const DEFAULT_FEE_STRUCTURES = {
+      JHS: [
+        { id: "jhs-tui", name: "Tuition Fee", amount: 15000, required: true },
+        { id: "jhs-misc", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
+        { id: "jhs-lab", name: "Laboratory & Computer Fees", amount: 1500, required: true },
+        { id: "jhs-dev", name: "Development & Energy Fees", amount: 1500, required: true }
+      ],
+      SHS: [
+        { id: "shs-tui", name: "Tuition Fee", amount: 18000, required: true },
+        { id: "shs-misc", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
+        { id: "shs-lab", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
+        { id: "shs-dev", name: "Development & Energy Fees", amount: 2000, required: true }
+      ]
+    };
+
+    const DEFAULT_VOUCHERS = [
+      { id: "vouch-esc", name: "ESC Voucher (JHS)", appliesTo: "JHS", amount: 9000, active: true },
+      { id: "vouch-shs-priv", name: "SHS Voucher (Private)", appliesTo: "SHS", amount: 14000, active: true },
+      { id: "vouch-shs-pub", name: "SHS Voucher (Public)", appliesTo: "SHS", amount: 17500, active: true },
+      { id: "vouch-honor", name: "Academic Honors Discount", appliesTo: "ALL", amount: 5000, active: true }
+    ];
+
+    const DEFAULT_INSTALLMENT_TEMPLATE = [
+      { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
+      { id: "inst-2", title: "2nd Quarter Installment", percent: 25, dueDate: "2026-11-15" },
+      { id: "inst-3", title: "3rd Quarter Installment", percent: 25, dueDate: "2027-01-15" },
+      { id: "inst-4", title: "4th Quarter / Final Clearance", percent: 25, dueDate: "2027-03-15" }
+    ];
+
+    const defaultData = {
+      settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' },
+      feeStructures: DEFAULT_FEE_STRUCTURES,
+      vouchers: DEFAULT_VOUCHERS,
+      installmentTemplate: DEFAULT_INSTALLMENT_TEMPLATE,
+      students: [],
+      accounts: [],
+      payments: [],
+      certificateRequests: [],
+      teacherClearanceRequests: []
+    };
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(defaultData);
+        const parsed = JSON.parse(raw);
+        return ensurePrototypeData({ ...structuredClone(defaultData), ...parsed });
+      } catch {
+        return ensurePrototypeData(structuredClone(defaultData));
+      }
     }
-    ensurePrototypeData();
-    function saveData() { ensurePrototypeData(); localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
+
+    function ensurePrototypeData(data = appData) {
+      if (!data) data = {};
+      if (!data.feeStructures || !data.feeStructures.JHS || data.feeStructures.JHS.length === 0) {
+        data.feeStructures = JSON.parse(JSON.stringify(DEFAULT_FEE_STRUCTURES));
+      }
+      if (!data.vouchers || data.vouchers.length === 0) {
+        data.vouchers = JSON.parse(JSON.stringify(DEFAULT_VOUCHERS));
+      }
+      if (!data.installmentTemplate || data.installmentTemplate.length === 0) {
+        data.installmentTemplate = JSON.parse(JSON.stringify(DEFAULT_INSTALLMENT_TEMPLATE));
+      }
+      data.teacherClearanceRequests = data.teacherClearanceRequests || [];
+      data.students = data.students || [];
+      data.accounts = data.accounts || [];
+      data.payments = data.payments || [];
+      data.certificateRequests = data.certificateRequests || [];
+      return data;
+    }
+
+    let appData = loadData();
+    ensurePrototypeData(appData);
+    function saveData() { ensurePrototypeData(appData); localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
     function showToast(title, message, type = 'info') {
       const toast = document.getElementById('toast');
       const toastTitle = document.getElementById('toastTitle');

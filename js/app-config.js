@@ -439,6 +439,35 @@
         supabase.from("departments").select("*")
       ]);
 
+      const DEFAULT_FEE_STRUCTURES = {
+        JHS: [
+          { id: "jhs-tui", name: "Tuition Fee", amount: 15000, required: true },
+          { id: "jhs-misc", name: "Miscellaneous & Registration Fees", amount: 4000, required: true },
+          { id: "jhs-lab", name: "Laboratory & Computer Fees", amount: 1500, required: true },
+          { id: "jhs-dev", name: "Development & Energy Fees", amount: 1500, required: true }
+        ],
+        SHS: [
+          { id: "shs-tui", name: "Tuition Fee", amount: 18000, required: true },
+          { id: "shs-misc", name: "Miscellaneous & Registration Fees", amount: 4500, required: true },
+          { id: "shs-lab", name: "Laboratory & Specialized Track Fees", amount: 2500, required: true },
+          { id: "shs-dev", name: "Development & Energy Fees", amount: 2000, required: true }
+        ]
+      };
+
+      const DEFAULT_VOUCHERS = [
+        { id: "vouch-esc", name: "ESC Voucher (JHS)", appliesTo: "JHS", amount: 9000, active: true },
+        { id: "vouch-shs-priv", name: "SHS Voucher (Private)", appliesTo: "SHS", amount: 14000, active: true },
+        { id: "vouch-shs-pub", name: "SHS Voucher (Public)", appliesTo: "SHS", amount: 17500, active: true },
+        { id: "vouch-honor", name: "Academic Honors Discount", appliesTo: "ALL", amount: 5000, active: true }
+      ];
+
+      const DEFAULT_INSTALLMENT_TEMPLATE = [
+        { id: "inst-1", title: "Enrollment / 1st Quarter", percent: 25, dueDate: "2026-08-15" },
+        { id: "inst-2", title: "2nd Quarter Installment", percent: 25, dueDate: "2026-11-15" },
+        { id: "inst-3", title: "3rd Quarter Installment", percent: 25, dueDate: "2027-01-15" },
+        { id: "inst-4", title: "4th Quarter / Final Clearance", percent: 25, dueDate: "2027-03-15" }
+      ];
+
       const state = {
         settings: { schoolName: "Pagbilao Academy Inc.", schoolYear: "2026-2027" },
         feeStructures: { JHS: [], SHS: [] },
@@ -452,7 +481,7 @@
       };
 
       // 1. Fee Structures
-      if (feeStrs) {
+      if (feeStrs && feeStrs.length > 0) {
         feeStrs.forEach(fs => {
           const items = (feeItems || [])
             .filter(fi => fi.fee_structure_id === fs.id)
@@ -466,8 +495,15 @@
         });
       }
 
+      if (!state.feeStructures.JHS || state.feeStructures.JHS.length === 0) {
+        state.feeStructures.JHS = DEFAULT_FEE_STRUCTURES.JHS;
+      }
+      if (!state.feeStructures.SHS || state.feeStructures.SHS.length === 0) {
+        state.feeStructures.SHS = DEFAULT_FEE_STRUCTURES.SHS;
+      }
+
       // 2. Vouchers
-      if (voucherTypes) {
+      if (voucherTypes && voucherTypes.length > 0) {
         state.vouchers = voucherTypes.map(v => ({
           id: v.id,
           name: v.voucher_name,
@@ -477,8 +513,12 @@
         }));
       }
 
+      if (!state.vouchers || state.vouchers.length === 0) {
+        state.vouchers = DEFAULT_VOUCHERS;
+      }
+
       // 3. Installment Templates
-      if (instTemplates) {
+      if (instTemplates && instTemplates.length > 0) {
         state.installmentTemplate = instTemplates
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
           .map(i => ({
@@ -487,6 +527,10 @@
             percent: Number(i.percent_of_net),
             dueDate: i.due_date
           }));
+      }
+
+      if (!state.installmentTemplate || state.installmentTemplate.length === 0) {
+        state.installmentTemplate = DEFAULT_INSTALLMENT_TEMPLATE;
       }
 
       // 4. Accounts
