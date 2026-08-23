@@ -1164,10 +1164,12 @@
     function getStudentTotalPaid(s) {
       if (!s) return 0;
       const studentPayments = getStudentPayments(s);
-      const paidFromLedger = studentPayments
-        .filter(p => ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase()))
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      return Math.max(Number(s.paid || 0), paidFromLedger);
+      if (studentPayments && studentPayments.length > 0) {
+        return studentPayments
+          .filter(p => ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase()))
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      }
+      return Number(s.paid || 0);
     }
 
     function balance(s) { return Math.max(0, assessedTotal(s) - getStudentTotalPaid(s)) }
@@ -2027,7 +2029,7 @@
           ? (window.location.origin + window.location.pathname)
           : 'http://localhost:5500/student-dashboard.html';
 
-        const successUrl = `${currentOrigin}?payment=success&studentId=${encodeURIComponent(s.id)}`;
+        const successUrl = `${currentOrigin}?payment=success&amount=${encodeURIComponent(amountInput)}&studentId=${encodeURIComponent(s.id)}`;
         const cancelUrl = `${currentOrigin}?payment=failed&studentId=${encodeURIComponent(s.id)}`;
 
         const pendingData = {
@@ -2227,15 +2229,8 @@
         sessionStorage.removeItem('pa_pending_payment');
         localStorage.removeItem('pa_pending_payment');
 
-        let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : 0;
-
-        // Fallback: If pending payment object was cleared, attempt balance estimate
-        if (paidAmt <= 0 && s) {
-          const totalAssessed = assessedTotal(s);
-          const alreadyPaid = getStudentTotalPaid(s);
-          const remBal = Math.max(0, totalAssessed - alreadyPaid);
-          if (remBal > 0) paidAmt = remBal;
-        }
+        const urlAmt = Number(urlParams.get('amount') || 0);
+        let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : (urlAmt > 0 ? urlAmt : 0);
 
         if (paidAmt > 0 && s) {
           const feeBreakdown = pending?.feeBreakdown || [];

@@ -2312,17 +2312,19 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       const sId = String(s.id || '').toLowerCase();
       const dbId = String(s.dbId || '').toLowerCase();
       const sEmail = String(s.email || '').toLowerCase();
-      const paidFromLedger = allPayments
-        .filter(p => {
-          if (!p) return false;
-          const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase();
-          const pEmail = String(p.email || p.studentEmail || '').toLowerCase();
-          const statusOk = ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase());
-          return statusOk && ((sId && pStudentId === sId) || (dbId && pStudentId === dbId) || (sEmail && pEmail && pEmail === sEmail));
-        })
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const studentPayments = allPayments.filter(p => {
+        if (!p) return false;
+        const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase();
+        const pEmail = String(p.email || p.studentEmail || '').toLowerCase();
+        const statusOk = ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase());
+        return statusOk && ((sId && pStudentId === sId) || (dbId && pStudentId === dbId) || (sEmail && pEmail && pEmail === sEmail));
+      });
 
-      return Math.max(Number(s.paid || 0), paidFromLedger);
+      if (studentPayments.length > 0) {
+        return studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      }
+
+      return Number(s.paid || 0);
     }
 
     function isSameStudent(s1, s2) {
