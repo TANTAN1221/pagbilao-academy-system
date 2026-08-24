@@ -58,21 +58,22 @@ The `create-school-account` function is required so admin-created accounts appea
 
 ## 5. Set PayMongo secrets and deploy Edge Functions
 
-Run these commands in your terminal to set your PayMongo secret key for Live Mode:
+Run these commands in your terminal to set your PayMongo secret keys (note: `PAYMONGO_SUCCESS_URL` and `PAYMONGO_FAILED_URL` are automatically detected from the frontend's current domain, so you don't need to hardcode `localhost:5500`):
 
 ```bash
-# LIVE / TEST MODE:
+# Set your PayMongo secret key:
 supabase secrets set PAYMONGO_SECRET_KEY="sk_live_YOUR_PAYMONGO_SECRET_KEY_HERE"
 supabase secrets set PAYMONGO_WEBHOOK_SECRET_KEY="whsk_YOUR_PAYMONGO_WEBHOOK_SECRET_KEY_HERE"
-supabase secrets set PAYMONGO_SUCCESS_URL="http://localhost:5500/student-dashboard.html?payment=success"
-supabase secrets set PAYMONGO_FAILED_URL="http://localhost:5500/student-dashboard.html?payment=failed"
+
+# Deploy Edge Functions:
+supabase functions deploy create-school-account --no-verify-jwt
+supabase functions deploy create-paymongo-checkout --no-verify-jwt
+supabase functions deploy paymongo-webhook --no-verify-jwt
 ```
 
 Alternatively, set them in **Supabase Dashboard → Project Settings → Edge Functions → Secrets**:
-- `PAYMONGO_SECRET_KEY` = `sk_live_YOUR_PAYMONGO_SECRET_KEY_HERE`
-- `PAYMONGO_WEBHOOK_SECRET_KEY` = `whsk_YOUR_PAYMONGO_WEBHOOK_SECRET_KEY_HERE`
-- `PAYMONGO_SUCCESS_URL` = `http://localhost:5500/student-dashboard.html?payment=success`
-- `PAYMONGO_FAILED_URL` = `http://localhost:5500/student-dashboard.html?payment=failed`
+- `PAYMONGO_SECRET_KEY` = `sk_live_YOUR_PAYMONGO_SECRET_KEY_HERE` (or `sk_test_...`)
+- `PAYMONGO_WEBHOOK_SECRET_KEY` = `whsk_YOUR_PAYMONGO_WEBHOOK_SECRET_KEY_HERE` (optional, for signature verification)
 
 ## 6. Configure Webhook in PayMongo Dashboard
 

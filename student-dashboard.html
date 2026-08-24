@@ -2036,15 +2036,17 @@
       }
 
       try {
-        const currentOrigin = (typeof window !== 'undefined' && window.location.href)
-          ? window.location.href.split('?')[0]
-          : 'http://localhost:5500/student-dashboard.html';
+        const currentOrigin = (typeof window !== 'undefined' && window.location.origin)
+          ? `${window.location.origin}${window.location.pathname}`
+          : (typeof window !== 'undefined' && window.location.href ? window.location.href.split('?')[0].split('#')[0] : 'student-dashboard.html');
 
-        const successUrl = `${currentOrigin}?payment=success&amount=${encodeURIComponent(amountInput)}&studentId=${encodeURIComponent(s.id)}`;
-        const cancelUrl = `${currentOrigin}?payment=failed&studentId=${encodeURIComponent(s.id)}`;
+        const successUrl = `${currentOrigin}?payment=success&amount=${encodeURIComponent(amountInput)}&studentId=${encodeURIComponent(s.id || s.dbId || '')}`;
+        const cancelUrl = `${currentOrigin}?payment=failed&studentId=${encodeURIComponent(s.id || s.dbId || '')}`;
 
         const pendingData = {
-          studentId: s.id,
+          studentId: s.id || s.dbId,
+          studentName: s.name,
+          email: s.email,
           amount: amountInput,
           feeBreakdown: feeBreakdown,
           payMode: currentPayMode,
@@ -2057,7 +2059,10 @@
         await window.paApi.createCheckout({
           amount: Math.max(100, Math.round(amountInput * 100)),
           description: `Payment for ${s.name}`,
-          studentId: s.id,
+          studentId: s.id || s.dbId,
+          studentName: s.name,
+          studentEmail: s.email,
+          email: s.email,
           success_url: successUrl,
           cancel_url: cancelUrl
         });

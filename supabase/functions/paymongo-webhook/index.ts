@@ -95,6 +95,8 @@ Deno.serve(async (req: Request) => {
     const amountInPesos = amountInCentavos > 0 ? amountInCentavos / 100 : 0;
     const paymentSource = paymentAttr.source?.type || "paymongo";
     const studentId = metadata.student_id || metadata.studentId || null;
+    const studentEmail = metadata.student_email || metadata.email || null;
+    const studentName = metadata.student_name || metadata.name || null;
 
     // Log event into database
     await supabaseAdmin.from("payment_gateway_events").insert({
@@ -119,43 +121,83 @@ Deno.serve(async (req: Request) => {
           .eq("checkout_session_id", checkoutId);
       }
 
+      let student = null;
+
       if (studentId) {
-        let studentQuery = supabaseAdmin.from("students").select("id");
+        let studentQuery = supabaseAdmin.from("students").select("id, student_number, email");
         if (isUuid(studentId)) {
-          studentQuery = studentQuery.or(`student_number.eq.${studentId},id.eq.${studentId}`);
+          studentQuery = studentQuery.or(`student_number.eq.${studentId},id.eq.${studentId},auth_user_id.eq.${studentId}`);
         } else {
-          studentQuery = studentQuery.eq("student_number", studentId);
+          studentQuery = studentQuery.or(`student_number.eq.${studentId},id.eq.${studentId}`);
         }
 
-        const { data: student, error: studentLookupErr } = await studentQuery.maybeSingle();
+        const { data: foundStudent } = await studentQuery.maybeSingle();
+        if (foundStudent) student = foundStudent;
+      }
 
-        if (studentLookupErr) {
-          console.error("Student lookup notice in webhook:", studentLookupErr);
+      if (!student && studentEmail) {
+        const { data: foundByEmail } = await supabaseAdmin
+          .from("students")
+          .select("id, student_number, email")
+          .eq("email", studentEmail)
+          .maybeSingle();
+        if (foundByEmail) student = foundByEmail;
+      }
+
+      // If student not found in students table, check student_registration_requests and auto-sync
+      if (!student && (studentId || studentEmail)) {
+        let reqQuery = supabaseAdmin.from("student_registration_requests").select("*");
+        if (studentEmail) {
+          reqQuery = reqQuery.eq("email", studentEmail);
+        } else if (isUuid(studentId)) {
+          reqQuery = reqQuery.or(`student_number.eq.${studentId},auth_user_id.eq.${studentId}`);
+        } else {
+          reqQuery = reqQuery.eq("student_number", studentId);
         }
 
-        if (student) {
-          let existingPayment = null;
-          if (checkoutId) {
-            const { data: foundPayment } = await supabaseAdmin
-              .from("payments")
-              .select("id")
-              .eq("checkout_session_id", checkoutId)
-              .maybeSingle();
-            existingPayment = foundPayment;
-          }
-
-          if (!existingPayment && amountInPesos > 0) {
-            await supabaseAdmin.from("payments").insert({
-              student_id: student.id,
-              amount: amountInPesos,
-              method: paymentSource,
-              provider: "paymongo",
-              checkout_session_id: checkoutId,
-              status: "paid",
-              paid_at: new Date().toISOString()
-            });
-          }
+        const { data: regReq } = await reqQuery.maybeSingle();
+        if (regReq) {
+          const { data: newS } = await supabaseAdmin
+            .from("students")
+            .insert({
+              student_number: regReq.student_number || `STU-${Date.now()}`,
+              auth_user_id: regReq.auth_user_id || null,
+              first_name: regReq.first_name || (studentName ? studentName.split(' ')[0] : 'Student'),
+              last_name: regReq.last_name || (studentName ? studentName.split(' ').slice(1).join(' ') : 'Account'),
+              email: regReq.email || studentEmail || `${regReq.student_number || 'stu'}@pagbilao.edu.ph`,
+              education_level: regReq.education_level || "SHS",
+              grade_level: regReq.grade_level || "Grade 11",
+              section_name: regReq.section_name || "Humility",
+              strand: regReq.strand || "GAS",
+              school_year: "2026-2027",
+              status: "active"
+            })
+            .select("id, student_number, email")
+            .maybeSingle();
+          if (newS) student = newS;
         }
+      }
+
+      let existingPayment = null;
+      if (checkoutId) {
+        const { data: foundPayment } = await supabaseAdmin
+          .from("payments")
+          .select("id")
+          .eq("checkout_session_id", checkoutId)
+          .maybeSingle();
+        existingPayment = foundPayment;
+      }
+
+      if (!existingPayment && amountInPesos > 0) {
+        await supabaseAdmin.from("payments").insert({
+          student_id: student ? student.id : null,
+          amount: amountInPesos,
+          method: paymentSource,
+          provider: "paymongo",
+          checkout_session_id: checkoutId,
+          status: "paid",
+          paid_at: new Date().toISOString()
+        });
       }
     }
 
