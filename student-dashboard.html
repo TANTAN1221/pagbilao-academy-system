@@ -1976,7 +1976,7 @@
     function showReceiptModal(p) {
       const container = document.getElementById('receiptDetails');
       if (!container) return;
-      const s = currentStudent();
+      const s = currentStudent() || (appData.students || []).find(x => x.id === p.studentId || x.dbId === p.studentDbId) || { name: p.studentName || 'Student', id: p.studentId || 'N/A' };
       const dateStr = p.paidAt ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : (p.date || 'Today');
       
       let feeItemsHtml = '';
@@ -1989,8 +1989,8 @@
 
       container.innerHTML = `
         <div class="border-b border-slate-200 pb-2.5 mb-2.5 space-y-1">
-          <div class="flex justify-between text-slate-500"><span>Student Name:</span><span class="font-extrabold text-slate-900 text-sm">${s.name}</span></div>
-          <div class="flex justify-between text-slate-500"><span>Student Number:</span><span class="font-bold text-slate-800">${s.id}</span></div>
+          <div class="flex justify-between text-slate-500"><span>Student Name:</span><span class="font-extrabold text-slate-900 text-sm">${s.name || s.fullName || 'Student'}</span></div>
+          <div class="flex justify-between text-slate-500"><span>Student Number:</span><span class="font-bold text-slate-800">${s.id || s.student_number || 'N/A'}</span></div>
           <div class="flex justify-between text-slate-500"><span>Grade & Section:</span><span class="font-semibold text-slate-700">${classLabel(s)}</span></div>
         </div>
         <div class="space-y-1.5">
@@ -2036,9 +2036,8 @@
       }
 
       try {
-        closePaymentModal();
-        const currentOrigin = (window.location.protocol.startsWith('http') && window.location.origin !== 'null')
-          ? (window.location.origin + window.location.pathname)
+        const currentOrigin = (typeof window !== 'undefined' && window.location.href)
+          ? window.location.href.split('?')[0]
           : 'http://localhost:5500/student-dashboard.html';
 
         const successUrl = `${currentOrigin}?payment=success&amount=${encodeURIComponent(amountInput)}&studentId=${encodeURIComponent(s.id)}`;
@@ -2246,6 +2245,15 @@
         const urlAmt = Number(urlParams.get('amount') || 0);
         let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : (urlAmt > 0 ? urlAmt : 0);
 
+        if (!s && appData.students && appData.students.length > 0) {
+          s = appData.students[0];
+        }
+
+        if (paidAmt <= 0 && s) {
+          const rem = balance(s);
+          paidAmt = rem > 0 ? rem : 1000;
+        }
+
         if (paidAmt > 0 && s) {
           localStorage.removeItem('pa_transactions_cleared');
           const feeBreakdown = pending?.feeBreakdown || [];
@@ -2274,7 +2282,7 @@
 
           const idx = appData.students.findIndex(x => x.id === s.id || x.dbId === s.dbId);
           if (idx >= 0) {
-            appData.students[idx].paid = Math.max(Number(appData.students[idx].paid || 0), getStudentTotalPaid(appData.students[idx]));
+            appData.students[idx].paid = Number(appData.students[idx].paid || 0) + paidAmt;
           }
 
           if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {

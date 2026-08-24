@@ -368,6 +368,66 @@
         console.warn("Direct students table insert notice:", e);
       }
     }
+
+    try {
+      const regUsers = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
+      const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+      const existingIdx = regUsers.findIndex(u => String(u.email || "").toLowerCase() === String(profile.email || "").toLowerCase() || u.studentId === profile.studentId);
+      const studentObj = {
+        id: profile.studentId,
+        studentId: profile.studentId,
+        authUserId: data?.user?.id,
+        email: profile.email,
+        password: profile.password,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        fullName: fullName,
+        name: fullName,
+        role: "student",
+        level: profile.educationLevel,
+        grade: profile.gradeLevel,
+        section: profile.section,
+        strand: profile.strand || "N/A"
+      };
+      if (existingIdx >= 0) regUsers[existingIdx] = { ...regUsers[existingIdx], ...studentObj };
+      else regUsers.push(studentObj);
+      localStorage.setItem("pa_registered_users", JSON.stringify(regUsers));
+
+      const rawAdmin = localStorage.getItem("pa_full_admin_v2");
+      if (rawAdmin) {
+        const adminData = JSON.parse(rawAdmin);
+        adminData.students = adminData.students || [];
+        const stdIdx = adminData.students.findIndex(s => s.id === profile.studentId || String(s.email || "").toLowerCase() === String(profile.email || "").toLowerCase());
+        const adminStudent = {
+          id: profile.studentId,
+          dbId: data?.user?.id,
+          authUserId: data?.user?.id,
+          name: fullName,
+          email: profile.email,
+          level: profile.educationLevel,
+          grade: profile.gradeLevel,
+          section: profile.section,
+          strand: profile.strand || "N/A",
+          voucher: "None",
+          paid: 0,
+          clearance: {
+            Teacher: "pending",
+            Guidance: "pending",
+            Prefect: "pending",
+            Library: "pending",
+            Principal: "pending",
+            Accounting: "pending",
+            Registrar: "pending"
+          }
+        };
+        if (stdIdx >= 0) adminData.students[stdIdx] = { ...adminData.students[stdIdx], ...adminStudent };
+        else adminData.students.push(adminStudent);
+        localStorage.setItem("pa_full_admin_v2", JSON.stringify(adminData));
+      }
+    } catch (localErr) {
+      console.warn("Local storage student registration fallback notice:", localErr);
+    }
+
     return data;
   }
 
@@ -637,6 +697,36 @@
           });
         }
       });
+
+      try {
+        const localReg = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
+        localReg.forEach(lr => {
+          if (lr && (lr.role === "student" || lr.studentId)) {
+            const alreadyInCombined = combinedStudents.some(s =>
+              (s.student_number && (lr.studentId || lr.id) && String(s.student_number).toLowerCase() === String(lr.studentId || lr.id).toLowerCase()) ||
+              (s.email && lr.email && String(s.email).toLowerCase() === String(lr.email).toLowerCase())
+            );
+            if (!alreadyInCombined) {
+              combinedStudents.push({
+                id: lr.studentId || lr.id || "STU-" + Date.now(),
+                auth_user_id: lr.authUserId,
+                student_number: lr.studentId || lr.id || "STU-" + Date.now(),
+                first_name: lr.firstName || (lr.fullName ? lr.fullName.split(' ')[0] : 'Student'),
+                last_name: lr.lastName || (lr.fullName ? lr.fullName.split(' ').slice(1).join(' ') : ''),
+                email: lr.email,
+                education_level: lr.level || "JHS",
+                grade_level: lr.grade || "Grade 7",
+                section_name: lr.section || "N/A",
+                strand: lr.strand || "N/A",
+                school_year: "2026-2027",
+                status: "active"
+              });
+            }
+          }
+        });
+      } catch (e) {
+        console.warn("Merging pa_registered_users notice:", e);
+      }
 
       if (combinedStudents.length > 0) {
         state.students = combinedStudents.map(s => {

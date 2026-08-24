@@ -672,6 +672,7 @@
     function isStaffOrAdminEntry(s) {
       if (!s) return false;
       const role = String(s.role || '').toLowerCase();
+      if (role === 'student' || s.student_number || s.studentId) return false;
       const staffRoles = ['accounting_admin', 'teacher_clearance_head', 'guidance_head', 'prefect_head', 'librarian_head', 'principal', 'registrar', 'super_admin', 'admin', 'accountant'];
       if (staffRoles.includes(role)) return true;
       const email = String(s.email || '').toLowerCase().trim();
@@ -2373,6 +2374,34 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         appData.accounts.push(data);
       }
 
+      if (data.role === 'student') {
+        const stdId = data.id.startsWith('ACC-') ? ('STU-' + data.id.replace('ACC-', '')) : data.id;
+        const studentRecord = {
+          id: stdId,
+          dbId: data.id,
+          name: data.name,
+          email: data.email,
+          level: 'JHS',
+          grade: 'Grade 7',
+          section: 'N/A',
+          strand: 'N/A',
+          voucher: 'None',
+          paid: 0,
+          clearance: {
+            Teacher: 'pending',
+            Guidance: 'pending',
+            Prefect: 'pending',
+            Library: 'pending',
+            Principal: 'pending',
+            Accounting: 'pending',
+            Registrar: 'pending'
+          }
+        };
+        const sIdx = appData.students.findIndex(s => s.id === stdId || String(s.email || '').toLowerCase() === String(data.email).toLowerCase());
+        if (sIdx >= 0) appData.students[sIdx] = { ...appData.students[sIdx], ...studentRecord };
+        else appData.students.push(studentRecord);
+      }
+
       saveData();
       closeFormModal();
       renderAll();
@@ -2400,6 +2429,25 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             email: data.email,
             role: data.role
           }, { onConflict: 'email' });
+
+          if (data.role === 'student') {
+            const nameParts = data.name.trim().split(' ');
+            const firstName = nameParts[0] || 'Student';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            const stdNum = data.id.startsWith('ACC-') ? ('STU-' + data.id.replace('ACC-', '')) : data.id;
+            await client.from('students').upsert({
+              student_number: stdNum,
+              first_name: firstName,
+              last_name: lastName,
+              email: data.email,
+              education_level: 'JHS',
+              grade_level: 'Grade 7',
+              section_name: 'N/A',
+              strand: 'N/A',
+              school_year: appData.settings.schoolYear || '2026-2027',
+              status: 'active'
+            }, { onConflict: 'student_number' });
+          }
 
           if (data.role === 'teacher_clearance_head' && data.assignments && data.assignments.length > 0) {
             await client.from('teacher_assignments').delete().eq('teacher_profile_id', profileId);
@@ -2578,9 +2626,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
                 school_year: '2026-2027',
                 percent_of_net: (t.percent !== undefined && t.percent !== null) ? Number(t.percent) : 25,
                 due_date: t.dueDate,
-                sort_order: i + 1
+                sort_order: i + 1,
+                active: true
               }));
-              await client.from('installment_templates').insert(rows);
+              const { error } = await client.from('installment_templates').insert(rows);
+              if (error) console.warn('Syncing installment_templates notice:', error);
             }
           } catch (e) {
             console.warn('Syncing installment_templates error:', e);
@@ -2598,13 +2648,14 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             const list = appData.vouchers || [];
             if (list.length > 0) {
               const rows = list.map(v => ({
-                id: (v.id && !v.id.startsWith('vouch-') && !v.id.startsWith('V-')) ? v.id : undefined,
+                id: (v.id && !v.id.startsWith('vouch-') && !v.id.startsWith('V-') && !v.id.startsWith('v-')) ? v.id : undefined,
                 voucher_name: v.name,
                 applies_to: v.appliesTo === 'All' ? 'SHS' : v.appliesTo,
                 amount: Number(v.amount || 0),
                 active: v.active !== false
               }));
-              await client.from('voucher_types').insert(rows);
+              const { error } = await client.from('voucher_types').insert(rows);
+              if (error) console.warn('Syncing voucher_types notice:', error);
             }
           } catch (e) {
             console.warn('Syncing voucher_types error:', e);
@@ -2618,23 +2669,36 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         const client = window.paApi.client();
         if (client) {
           try {
-            const { data: structures } = await client.from('fee_structures').select('*');
-            if (structures && structures.length > 0) {
-              for (const level of ['JHS', 'SHS']) {
-                const fs = structures.find(s => s.education_level === level);
-                if (fs) {
-                  await client.from('fee_structure_items').delete().eq('fee_structure_id', fs.id);
-                  const items = appData.feeStructures[level] || [];
-                  if (items.length > 0) {
-                    const rows = items.map((f, idx) => ({
-                      fee_structure_id: fs.id,
-                      fee_name: f.name,
-                      amount: Number(f.amount || 0),
-                      required: f.required !== false,
-                      sort_order: idx + 1
-                    }));
-                    await client.from('fee_structure_items').insert(rows);
-                  }
+            const { data: existingStructures } = await client.from('fee_structures').select('*');
+            for (const level of ['JHS', 'SHS']) {
+              let fs = (existingStructures || []).find(s => s.education_level === level);
+              if (!fs) {
+                const { data: created, error: createErr } = await client
+                  .from('fee_structures')
+                  .insert({
+                    name: `${level} Standard Fee Structure`,
+                    education_level: level,
+                    school_year: '2026-2027',
+                    active: true
+                  })
+                  .select()
+                  .maybeSingle();
+                if (created) fs = created;
+                else if (createErr) console.warn(`Creating fee_structures row for ${level} notice:`, createErr);
+              }
+              if (fs && fs.id) {
+                await client.from('fee_structure_items').delete().eq('fee_structure_id', fs.id);
+                const items = appData.feeStructures[level] || [];
+                if (items.length > 0) {
+                  const rows = items.map((f, idx) => ({
+                    fee_structure_id: fs.id,
+                    fee_name: f.name,
+                    amount: Number(f.amount || 0),
+                    required: f.required !== false,
+                    sort_order: idx + 1
+                  }));
+                  const { error: insErr } = await client.from('fee_structure_items').insert(rows);
+                  if (insErr) console.warn(`Inserting fee_structure_items for ${level} notice:`, insErr);
                 }
               }
             }
@@ -2702,8 +2766,13 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             if (state.vouchers && state.vouchers.length > 0) appData.vouchers = state.vouchers;
             if (state.installmentTemplate && state.installmentTemplate.length > 0) appData.installmentTemplate = state.installmentTemplate;
             if (state.feeStructures) {
-              if (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) appData.feeStructures.JHS = state.feeStructures.JHS;
-              if (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) appData.feeStructures.SHS = state.feeStructures.SHS;
+              appData.feeStructures = appData.feeStructures || { JHS: [], SHS: [] };
+              if (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) {
+                appData.feeStructures.JHS = state.feeStructures.JHS;
+              }
+              if (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) {
+                appData.feeStructures.SHS = state.feeStructures.SHS;
+              }
             }
             if (state.settings) appData.settings = { ...appData.settings, ...state.settings };
           }

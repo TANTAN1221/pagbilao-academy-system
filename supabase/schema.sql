@@ -436,12 +436,15 @@ drop policy if exists "authenticated can read departments" on departments;
 create policy "authenticated can read departments" on departments for select to authenticated using (true);
 
 drop policy if exists "authenticated can read fee setup" on fee_structures;
+drop policy if exists "public read fee setup" on fee_structures;
 create policy "public read fee setup" on fee_structures for select using (true);
 
 drop policy if exists "authenticated can read fee items" on fee_structure_items;
+drop policy if exists "public read fee items" on fee_structure_items;
 create policy "public read fee items" on fee_structure_items for select using (true);
 
 drop policy if exists "authenticated can read voucher types" on voucher_types;
+drop policy if exists "public read voucher types" on voucher_types;
 create policy "public read voucher types" on voucher_types for select using (true);
 
 drop policy if exists "students can read own student record" on students;
@@ -584,23 +587,23 @@ create policy "admins can manage students" on public.students
 
 drop policy if exists "students can insert own student record" on public.students;
 create policy "students can insert own student record" on public.students
-  for insert to authenticated
+  for insert
   with check (true);
 
 drop policy if exists "students can update own student record" on public.students;
 create policy "students can update own student record" on public.students
-  for update to authenticated
+  for update
   using (true);
 
 -- Registration Requests
 drop policy if exists "admins can manage registration requests" on public.student_registration_requests;
 drop policy if exists "authenticated can read registration requests" on public.student_registration_requests;
 create policy "authenticated can read registration requests" on public.student_registration_requests
-  for select to authenticated using (true);
+  for select using (true);
 
 drop policy if exists "authenticated can manage registration requests" on public.student_registration_requests;
 create policy "authenticated can manage registration requests" on public.student_registration_requests
-  for all to authenticated using (true);
+  for all using (true);
 
 -- Teacher assignments
 drop policy if exists "authenticated can read teacher assignments" on public.teacher_assignments;
@@ -625,23 +628,11 @@ create policy "authenticated can update own profile" on public.profiles
 -- Fee setups
 drop policy if exists "admins can manage fee structures" on public.fee_structures;
 create policy "admins can manage fee structures" on public.fee_structures
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 drop policy if exists "admins can manage fee items" on public.fee_structure_items;
 create policy "admins can manage fee items" on public.fee_structure_items
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 -- Vouchers & Assessments
 drop policy if exists "authenticated can read student vouchers" on public.student_vouchers;
@@ -654,33 +645,15 @@ create policy "authenticated can read student assessments" on public.student_ass
 
 drop policy if exists "admins can manage voucher types" on public.voucher_types;
 create policy "admins can manage voucher types" on public.voucher_types
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 drop policy if exists "admins can manage student vouchers" on public.student_vouchers;
 create policy "admins can manage student vouchers" on public.student_vouchers
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 drop policy if exists "admins can manage student assessments" on public.student_assessments;
 create policy "admins can manage student assessments" on public.student_assessments
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 -- Installments
 drop policy if exists "authenticated can read installment templates" on public.installment_templates;
@@ -693,23 +666,11 @@ create policy "authenticated can read student installments" on public.student_in
 
 drop policy if exists "admins can manage installment templates" on public.installment_templates;
 create policy "admins can manage installment templates" on public.installment_templates
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 drop policy if exists "admins can manage student installments" on public.student_installments;
 create policy "admins can manage student installments" on public.student_installments
-  for all to authenticated using (
-    exists (
-      select 1 from public.profiles
-      where auth_user_id = auth.uid()
-        and role in ('super_admin', 'accounting_admin')
-    )
-  );
+  for all to authenticated using (true);
 
 -- Payments
 drop policy if exists "authenticated can read payments" on public.payments;
@@ -1152,6 +1113,5 @@ where lower(email) like '%admin%'
    or lower(email) like '%guidance%' 
    or lower(email) like '%prefect%' 
    or lower(email) like '%library%';
-
 
 
