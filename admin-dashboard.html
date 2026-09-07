@@ -302,8 +302,23 @@
               <h3 class="text-xl font-extrabold text-academy-navy">Clearance Monitoring</h3>
               <p class="text-sm text-academy-muted mt-1">Teachers can have many grade/section/subject assignments.
                 Principal approves after teachers and offices. Accounting/Registrar approve last.</p>
-            </div><button onclick="refreshClearanceApprovals()"
-              class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold">Refresh Approval Requirements</button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="approveAllAccountingClearance()"
+                class="px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-extrabold text-xs transition border border-blue-200/80 flex items-center gap-1.5 shadow-xs">
+                <span class="material-symbols-rounded text-sm">receipt_long</span>
+                Batch Approve Accounting
+              </button>
+              <button onclick="approveAllRegistrarClearance()"
+                class="px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs transition border border-indigo-200/80 flex items-center gap-1.5 shadow-xs">
+                <span class="material-symbols-rounded text-sm">app_registration</span>
+                Batch Approve Registrar
+              </button>
+              <button onclick="refreshClearanceApprovals()"
+                class="px-4 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900 transition flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm">refresh</span>
+                Refresh Requirements
+              </button>
+            </div>
           </div>
         </div>
         <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
@@ -1091,9 +1106,27 @@
           ? pill(s.clearance.Principal === 'approved' ? 'Approved' : 'Pending', s.clearance.Principal === 'approved' ? 'green' : 'amber')
           : pill('Locked', 'gray');
 
-        const accountingRegistrarHtml = (finalUnlocked(s) || s.clearance.Accounting === 'approved')
-          ? `<div class="flex flex-col gap-1 text-xs font-bold"><span class="text-slate-700">Accounting: <strong class="capitalize ${s.clearance.Accounting === 'approved' ? 'text-emerald-700' : 'text-amber-700'}">${s.clearance.Accounting}</strong></span><span class="text-slate-700">Registrar: <strong class="capitalize ${s.clearance.Registrar === 'approved' ? 'text-emerald-700' : 'text-amber-700'}">${s.clearance.Registrar}</strong></span></div>`
-          : `<div class="inline-flex flex-col gap-1"><span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-600 border border-slate-200/60 whitespace-nowrap inline-flex items-center gap-1"><span class="material-symbols-rounded text-xs">lock</span> Locked</span><span class="text-[10px] font-semibold text-slate-400 whitespace-nowrap">Requires Principal & Zero Balance</span></div>`;
+        const bal = balance(s);
+        const accountingApproved = s.clearance.Accounting === 'approved';
+        const registrarApproved = s.clearance.Registrar === 'approved';
+
+        const accountingRegistrarHtml = `
+          <div class="flex flex-col gap-1 text-[11px] font-bold">
+            <div>
+              ${accountingApproved
+                ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs"><span class="material-symbols-rounded text-[13px]">check_circle</span> Accounting: Approved</span>`
+                : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs"><span class="material-symbols-rounded text-[13px]">schedule</span> Accounting: Pending</span>`}
+            </div>
+            <div>
+              ${registrarApproved
+                ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs"><span class="material-symbols-rounded text-[13px]">check_circle</span> Registrar: Approved</span>`
+                : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs"><span class="material-symbols-rounded text-[13px]">schedule</span> Registrar: Pending</span>`}
+            </div>
+            ${bal > 0
+              ? `<span class="text-[10px] text-red-600 font-extrabold">Balance: ${money(bal)}</span>`
+              : `<span class="text-[10px] text-emerald-600 font-extrabold">₱0 Balance (Cleared)</span>`}
+          </div>
+        `;
 
         const certHtml = clearanceComplete(s)
           ? pill('Eligible', 'green')
@@ -1111,9 +1144,15 @@
             <td class="px-4 py-3">${accountingRegistrarHtml}</td>
             <td class="px-4 py-3">${certHtml}</td>
             <td class="px-4 py-3">
-              <div class="flex flex-wrap gap-1.5">
-                <button onclick="approveNextClearance('${s.id}')" class="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-extrabold text-xs transition border border-emerald-200/60 flex items-center gap-1"><span class="material-symbols-rounded text-xs">check_circle</span> Approve Next</button>
-                <button onclick="requestCertificate('${s.id}')" class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-extrabold text-xs transition border border-blue-200/60 flex items-center gap-1"><span class="material-symbols-rounded text-xs">workspace_premium</span> Request Certificate</button>
+              <div class="flex flex-wrap gap-1.5 items-center min-w-[280px]">
+                ${accountingApproved
+                  ? `<button onclick="toggleDepartmentClearance('${s.id}', 'Accounting')" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-extrabold text-[11px] transition border border-emerald-200/80 flex items-center gap-1 shadow-xs" title="Accounting approved. Click to change status."><span class="material-symbols-rounded text-xs">verified</span> Accounting ✓</button>`
+                  : `<button onclick="approveAccountingClearance('${s.id}')" class="px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-extrabold text-[11px] transition border border-blue-200/80 flex items-center gap-1 shadow-xs"><span class="material-symbols-rounded text-xs">receipt_long</span> Approve Accounting</button>`}
+                ${registrarApproved
+                  ? `<button onclick="toggleDepartmentClearance('${s.id}', 'Registrar')" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-extrabold text-[11px] transition border border-emerald-200/80 flex items-center gap-1 shadow-xs" title="Registrar approved. Click to change status."><span class="material-symbols-rounded text-xs">verified</span> Registrar ✓</button>`
+                  : `<button onclick="approveRegistrarClearance('${s.id}')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-[11px] transition border border-indigo-200/80 flex items-center gap-1 shadow-xs"><span class="material-symbols-rounded text-xs">app_registration</span> Approve Registrar</button>`}
+                <button onclick="approveNextClearance('${s.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 font-extrabold text-[11px] transition border border-slate-200 flex items-center gap-1" title="Approve Next in Sequence"><span class="material-symbols-rounded text-xs">fast_forward</span> Next</button>
+                <button onclick="requestCertificate('${s.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-50 text-academy-navy hover:bg-slate-100 font-extrabold text-[11px] transition border border-slate-200 flex items-center gap-1"><span class="material-symbols-rounded text-xs">workspace_premium</span> Certificate</button>
               </div>
             </td>
           </tr>
@@ -1805,6 +1844,126 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
 
     function applyFeeSetup() { appData.students.forEach(s => { s.total = assessedTotal(s) }); saveData(); renderAll(); showToast('Fees applied', 'JHS/SHS fees and voucher discounts were recalculated.') }
     function generateInstallments() { saveData(); renderDueDates(); showToast('Installments generated', 'Student installment schedules follow the current due date template.') }
+    async function executeOfficeClearanceApproval(student, deptName, newStatus = 'approved', remarks = 'Approved by Admin') {
+      try {
+        student.clearance = student.clearance || {};
+        student.clearance[deptName] = newStatus;
+        saveData();
+        renderAll();
+
+        if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+          await window.paApi.requestClearance(student.id, appData.settings.schoolYear || '2026-2027');
+          await window.paApi.updateOfficeClearance(student.id, deptName, newStatus, remarks);
+          const state = await window.paApi.fetchDatabaseState();
+          if (state && state.students) {
+            appData.students = mergeStudentsState(appData.students || [], state.students);
+            saveData();
+            renderAll();
+          }
+        }
+        showToast('Clearance Updated', `${deptName} clearance marked as ${newStatus} for ${student.name}.`, 'success');
+      } catch (err) {
+        console.warn(`Supabase ${deptName} clearance update notice:`, err);
+        showToast('Clearance Updated', `${deptName} clearance marked as ${newStatus} for ${student.name}.`);
+      }
+    }
+
+    async function approveAccountingClearance(studentId) {
+      const s = appData.students.find(x => x.id === studentId);
+      if (!s) return;
+
+      const bal = balance(s);
+      if (bal > 0) {
+        showConfirmModal({
+          title: 'Approve Accounting with Outstanding Balance?',
+          message: `${s.name} currently has an outstanding balance of ${money(bal)}. Do you want to approve Accounting clearance anyway as Administrator/Accounting?`,
+          confirmText: 'Approve Accounting',
+          onConfirm: async () => {
+            await executeOfficeClearanceApproval(s, 'Accounting', 'approved', 'Approved by Admin (Accounting)');
+          }
+        });
+        return;
+      }
+
+      await executeOfficeClearanceApproval(s, 'Accounting', 'approved', 'Approved by Admin (Accounting)');
+    }
+
+    async function approveRegistrarClearance(studentId) {
+      const s = appData.students.find(x => x.id === studentId);
+      if (!s) return;
+
+      if (s.clearance?.Accounting !== 'approved') {
+        showConfirmModal({
+          title: 'Approve Registrar without Accounting?',
+          message: `Accounting clearance has not been marked as approved yet for ${s.name}. Do you want to proceed and approve Registrar clearance as Administrator/Registrar?`,
+          confirmText: 'Approve Registrar',
+          onConfirm: async () => {
+            await executeOfficeClearanceApproval(s, 'Registrar', 'approved', 'Approved by Admin (Registrar)');
+          }
+        });
+        return;
+      }
+
+      await executeOfficeClearanceApproval(s, 'Registrar', 'approved', 'Approved by Admin (Registrar)');
+    }
+
+    async function toggleDepartmentClearance(studentId, deptName) {
+      const s = appData.students.find(x => x.id === studentId);
+      if (!s) return;
+
+      const currentStatus = s.clearance?.[deptName] || 'pending';
+      const isApproved = currentStatus === 'approved';
+
+      showConfirmModal({
+        title: `Change ${deptName} Clearance`,
+        message: `${deptName} clearance for "${s.name}" is currently marked as ${isApproved ? 'Approved' : currentStatus}. Do you want to reset it back to "pending"?`,
+        confirmText: 'Set to Pending',
+        onConfirm: async () => {
+          await executeOfficeClearanceApproval(s, deptName, 'pending', 'Reset by Admin');
+        }
+      });
+    }
+
+    async function approveAllAccountingClearance() {
+      const eligible = (appData.students || []).filter(s => s.clearance?.Accounting !== 'approved' && balance(s) === 0);
+      if (!eligible.length) {
+        showToast('No Eligible Accounts', 'No fully-paid students currently have pending Accounting clearance.', 'info');
+        return;
+      }
+
+      showConfirmModal({
+        title: 'Batch Approve Accounting Clearance',
+        message: `Are you sure you want to approve Accounting clearance for all ${eligible.length} student(s) with ₱0 balance?`,
+        confirmText: `Approve ${eligible.length} Student(s)`,
+        onConfirm: async () => {
+          for (const s of eligible) {
+            await executeOfficeClearanceApproval(s, 'Accounting', 'approved', 'Batch approved by Admin');
+          }
+          showToast('Batch Complete', `Accounting clearance approved for ${eligible.length} students.`, 'success');
+        }
+      });
+    }
+
+    async function approveAllRegistrarClearance() {
+      const eligible = (appData.students || []).filter(s => s.clearance?.Registrar !== 'approved' && s.clearance?.Accounting === 'approved');
+      if (!eligible.length) {
+        showToast('No Eligible Accounts', 'No students currently have Accounting cleared and pending Registrar clearance.', 'info');
+        return;
+      }
+
+      showConfirmModal({
+        title: 'Batch Approve Registrar Clearance',
+        message: `Are you sure you want to approve Registrar clearance for all ${eligible.length} student(s) who are cleared by Accounting?`,
+        confirmText: `Approve ${eligible.length} Student(s)`,
+        onConfirm: async () => {
+          for (const s of eligible) {
+            await executeOfficeClearanceApproval(s, 'Registrar', 'approved', 'Batch approved by Admin');
+          }
+          showToast('Batch Complete', `Registrar clearance approved for ${eligible.length} students.`, 'success');
+        }
+      });
+    }
+
     async function approveNextClearance(id) {
       const s = appData.students.find(x => x.id === id);
       const order = ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'];
