@@ -690,11 +690,21 @@
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
       ['JHS', 'SHS'].forEach(level => {
         if (Array.isArray(data.feeStructures[level])) {
+          const seen = new Set();
+          const deduped = [];
           data.feeStructures[level].forEach((f, idx) => {
-            if (f && typeof f === 'object' && !f.id) {
-              f.id = `fee-${level.toLowerCase()}-${idx}-${Date.now()}`;
+            if (f && typeof f === 'object' && f.name) {
+              const clean = String(f.name).trim().toLowerCase();
+              if (!seen.has(clean)) {
+                seen.add(clean);
+                if (!f.id) {
+                  f.id = `fee-${level.toLowerCase()}-${idx}-${Date.now()}`;
+                }
+                deduped.push(f);
+              }
             }
           });
+          data.feeStructures[level] = deduped;
         }
       });
       data.vouchers = data.vouchers || [];
@@ -1893,22 +1903,54 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         const nameVal = feeName.value.trim();
         const amtVal = Number(feeAmount.value || 0);
 
+        if (!appData.feeStructures[selectedLevel]) appData.feeStructures[selectedLevel] = [];
+
         if (fee) {
-          fee.name = nameVal;
-          fee.amount = amtVal;
-          if (!fee.id) fee.id = 'FEE-' + Date.now();
+          // If level was changed, remove from old level
+          if (selectedLevel !== level && appData.feeStructures[level]) {
+            const oldIdx = appData.feeStructures[level].indexOf(fee);
+            if (oldIdx >= 0) appData.feeStructures[level].splice(oldIdx, 1);
+          }
+
+          // Check if target level already has another fee with this name
+          const existingSameName = appData.feeStructures[selectedLevel].find(f =>
+            f && f !== fee && String(f.name || '').trim().toLowerCase() === nameVal.toLowerCase()
+          );
+
+          if (existingSameName) {
+            existingSameName.amount = amtVal;
+            // If fee was in the same level, remove the duplicate reference
+            const feeIdx = appData.feeStructures[selectedLevel].indexOf(fee);
+            if (feeIdx >= 0 && appData.feeStructures[selectedLevel][feeIdx] !== existingSameName) {
+              appData.feeStructures[selectedLevel].splice(feeIdx, 1);
+            }
+          } else {
+            fee.name = nameVal;
+            fee.amount = amtVal;
+            if (!fee.id) fee.id = 'FEE-' + Date.now();
+            if (selectedLevel !== level && !appData.feeStructures[selectedLevel].includes(fee)) {
+              appData.feeStructures[selectedLevel].push(fee);
+            }
+          }
         } else {
-          if (!appData.feeStructures[selectedLevel]) appData.feeStructures[selectedLevel] = [];
-          appData.feeStructures[selectedLevel].push({
-            id: 'FEE-' + Date.now(),
-            name: nameVal,
-            amount: amtVal,
-            required: true
-          });
+          // Check if a fee with this name already exists in target level
+          const existingSameName = appData.feeStructures[selectedLevel].find(f =>
+            f && String(f.name || '').trim().toLowerCase() === nameVal.toLowerCase()
+          );
+
+          if (existingSameName) {
+            existingSameName.amount = amtVal;
+          } else {
+            appData.feeStructures[selectedLevel].push({
+              id: 'FEE-' + Date.now(),
+              name: nameVal,
+              amount: amtVal,
+              required: true
+            });
+          }
         }
 
         applyFeeSetup();
-        saveData();
         renderAll();
         closeFormModal();
         showToast('Fee Updated', `"${nameVal}" set to ${money(amtVal)} for ${selectedLevel}.`, 'success');
@@ -2664,47 +2706,85 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       }
     }
 
+    let _isSyncingFeeStructures = false;
+    let _hasPendingFeeStructureSync = false;
+
     async function syncFeeStructuresToSupabase() {
-      if (window.paApi && window.paApi.client) {
-        const client = window.paApi.client();
-        if (client) {
-          try {
-            const { data: existingStructures } = await client.from('fee_structures').select('*');
-            for (const level of ['JHS', 'SHS']) {
-              let fs = (existingStructures || []).find(s => s.education_level === level);
-              if (!fs) {
-                const { data: created, error: createErr } = await client
-                  .from('fee_structures')
-                  .insert({
-                    name: `${level} Standard Fee Structure`,
-                    education_level: level,
-                    school_year: '2026-2027',
-                    active: true
-                  })
-                  .select()
-                  .maybeSingle();
-                if (created) fs = created;
-                else if (createErr) console.warn(`Creating fee_structures row for ${level} notice:`, createErr);
-              }
-              if (fs && fs.id) {
-                await client.from('fee_structure_items').delete().eq('fee_structure_id', fs.id);
-                const items = appData.feeStructures[level] || [];
-                if (items.length > 0) {
-                  const rows = items.map((f, idx) => ({
-                    fee_structure_id: fs.id,
-                    fee_name: f.name,
-                    amount: Number(f.amount || 0),
-                    required: f.required !== false,
-                    sort_order: idx + 1
-                  }));
-                  const { error: insErr } = await client.from('fee_structure_items').insert(rows);
-                  if (insErr) console.warn(`Inserting fee_structure_items for ${level} notice:`, insErr);
-                }
-              }
-            }
-          } catch (e) {
-            console.warn('Syncing fee_structure_items error:', e);
+      if (!window.paApi || !window.paApi.client) return;
+      const client = window.paApi.client();
+      if (!client) return;
+
+      if (_isSyncingFeeStructures) {
+        _hasPendingFeeStructureSync = true;
+        return;
+      }
+      _isSyncingFeeStructures = true;
+
+      try {
+        const { data: existingStructures } = await client.from('fee_structures').select('*');
+        for (const level of ['JHS', 'SHS']) {
+          const matchingStructures = (existingStructures || []).filter(s => s.education_level === level);
+          let fs = matchingStructures[0];
+          if (!fs) {
+            const { data: created, error: createErr } = await client
+              .from('fee_structures')
+              .insert({
+                name: `${level} Standard Fee Structure`,
+                education_level: level,
+                school_year: '2026-2027',
+                active: true
+              })
+              .select()
+              .maybeSingle();
+            if (created) fs = created;
+            else if (createErr) console.warn(`Creating fee_structures row for ${level} notice:`, createErr);
           }
+
+          if (fs && fs.id) {
+            // Deduplicate items in memory by name before inserting
+            const rawItems = appData.feeStructures[level] || [];
+            const dedupedItems = [];
+            const seenNames = new Set();
+            rawItems.forEach(f => {
+              if (!f || !f.name) return;
+              const cleanName = String(f.name).trim().toLowerCase();
+              if (!seenNames.has(cleanName)) {
+                seenNames.add(cleanName);
+                dedupedItems.push(f);
+              }
+            });
+            appData.feeStructures[level] = dedupedItems;
+
+            await client.from('fee_structure_items').delete().eq('fee_structure_id', fs.id);
+
+            // Also clean any stale duplicate structures for this level
+            for (let i = 1; i < matchingStructures.length; i++) {
+              try {
+                await client.from('fee_structure_items').delete().eq('fee_structure_id', matchingStructures[i].id);
+                await client.from('fee_structures').delete().eq('id', matchingStructures[i].id);
+              } catch (_) {}
+            }
+
+            if (dedupedItems.length > 0) {
+              const rows = dedupedItems.map((f, idx) => ({
+                fee_structure_id: fs.id,
+                fee_name: f.name.trim(),
+                amount: Number(f.amount || 0),
+                required: f.required !== false,
+                sort_order: idx + 1
+              }));
+              const { error: insErr } = await client.from('fee_structure_items').insert(rows);
+              if (insErr) console.warn(`Inserting fee_structure_items for ${level} notice:`, insErr);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Syncing fee_structure_items error:', e);
+      } finally {
+        _isSyncingFeeStructures = false;
+        if (_hasPendingFeeStructureSync) {
+          _hasPendingFeeStructureSync = false;
+          syncFeeStructuresToSupabase();
         }
       }
     }
@@ -2767,12 +2847,20 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             if (state.installmentTemplate && state.installmentTemplate.length > 0) appData.installmentTemplate = state.installmentTemplate;
             if (state.feeStructures) {
               appData.feeStructures = appData.feeStructures || { JHS: [], SHS: [] };
-              if (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) {
-                appData.feeStructures.JHS = state.feeStructures.JHS;
-              }
-              if (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) {
-                appData.feeStructures.SHS = state.feeStructures.SHS;
-              }
+              ['JHS', 'SHS'].forEach(level => {
+                if (state.feeStructures[level] && state.feeStructures[level].length > 0) {
+                  const seen = new Set();
+                  const clean = [];
+                  state.feeStructures[level].forEach(f => {
+                    const key = String(f.name || '').trim().toLowerCase();
+                    if (key && !seen.has(key)) {
+                      seen.add(key);
+                      clean.push(f);
+                    }
+                  });
+                  appData.feeStructures[level] = clean;
+                }
+              });
             }
             if (state.settings) appData.settings = { ...appData.settings, ...state.settings };
           }

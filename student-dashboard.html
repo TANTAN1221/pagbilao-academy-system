@@ -1440,16 +1440,21 @@
       const certBadge = document.getElementById('certificateStatusBadge');
       const certBtn = document.getElementById('openCertificateBtn');
       const c = clearanceCounts(s);
-      const isEligible = c.done === c.total && c.total > 0;
+      const studentBal = balance(s);
+      const clearancesDone = c.done === c.total && c.total > 0;
+      const isEligible = clearancesDone && studentBal <= 0;
 
       if (certBadge) {
         if (isEligible) {
           certBadge.textContent = 'Completed & Approved';
           certBadge.className = 'text-base font-extrabold mt-1 text-emerald-600';
-        } else {
+        } else if (!clearancesDone) {
           const pendingCount = Math.max(1, c.total - c.done);
           certBadge.textContent = `Locked (${pendingCount} clearance approval(s) pending)`;
           certBadge.className = 'text-sm font-extrabold mt-1 text-amber-700';
+        } else {
+          certBadge.textContent = `Locked (Tuition balance of ${money(studentBal)} remaining)`;
+          certBadge.className = 'text-sm font-extrabold mt-1 text-red-600';
         }
       }
 
@@ -1458,10 +1463,14 @@
           certBtn.disabled = false;
           certBtn.className = 'px-8 py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition cursor-pointer flex items-center justify-center gap-2 mx-auto';
           certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">workspace_premium</span>View & Print Official Certificate';
-        } else {
+        } else if (!clearancesDone) {
           certBtn.disabled = true;
           certBtn.className = 'px-8 py-3.5 rounded-2xl bg-slate-200 text-slate-400 font-extrabold cursor-not-allowed flex items-center justify-center gap-2 mx-auto';
           certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">lock</span>Certificate Locked (Clearance Incomplete)';
+        } else {
+          certBtn.disabled = true;
+          certBtn.className = 'px-8 py-3.5 rounded-2xl bg-red-100 text-red-600 font-extrabold cursor-not-allowed flex items-center justify-center gap-2 mx-auto border border-red-200';
+          certBtn.innerHTML = `<span class="material-symbols-rounded text-xl">account_balance_wallet</span>Certificate Locked (Balance: ${money(studentBal)})`;
         }
       }
     }
@@ -1689,10 +1698,15 @@
     function openCertificate() {
       const s = currentStudent();
       const c = clearanceCounts(s);
-      const isEligible = c.done === c.total && c.total > 0;
-      if (!isEligible) {
+      const studentBal = balance(s);
+      const clearancesDone = c.done === c.total && c.total > 0;
+      if (!clearancesDone) {
         const pendingCount = Math.max(1, c.total - c.done);
         showToast('Certificate Locked', `Your clearance certificate is locked because ${pendingCount} clearance head approval(s) are still pending.`, 'warning');
+        return;
+      }
+      if (studentBal > 0) {
+        showToast('Certificate Locked', `Your clearance certificate is locked because you have an outstanding balance of ${money(studentBal)}. Please settle your balance to unlock.`, 'warning');
         return;
       }
       window.open(`certificate.html?studentId=${encodeURIComponent(s.id)}&from=student`, '_blank');

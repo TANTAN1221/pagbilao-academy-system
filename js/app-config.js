@@ -612,7 +612,17 @@
               required: fi.required
             }));
           if (items.length > 0) {
-            state.feeStructures[fs.education_level] = items;
+            const existing = state.feeStructures[fs.education_level] || [];
+            const seen = new Set(existing.map(e => String(e.name || "").trim().toLowerCase()));
+            const deduped = [...existing];
+            items.forEach(it => {
+              const key = String(it.name || "").trim().toLowerCase();
+              if (key && !seen.has(key)) {
+                seen.add(key);
+                deduped.push(it);
+              }
+            });
+            state.feeStructures[fs.education_level] = deduped;
           }
         });
       }
@@ -1130,15 +1140,25 @@
       .maybeSingle();
     if (!dept) throw new Error("Department not found.");
 
-    const { data: approval } = await supabase
-      .from("clearance_approvals")
-      .select("id")
-      .eq("clearance_request_id", req.id)
-      .eq("department_id", dept.id)
-      .is("teacher_assignment_id", null)
-      .maybeSingle();
-
-    if (!approval) throw new Error(`Clearance approval row not found for ${departmentName}.`);
+    let approvalId = approval?.id;
+    if (!approvalId) {
+      const order = departmentName === "Principal" ? 3 :
+                    ["Accounting", "Registrar"].includes(departmentName) ? 4 : 2;
+      const { data: newApproval, error: insErr } = await supabase
+        .from("clearance_approvals")
+        .insert({
+          clearance_request_id: req.id,
+          department_id: dept.id,
+          approval_order: order,
+          status: status,
+          remarks: remarks || null,
+          approved_at: status === "approved" ? new Date().toISOString() : null
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      return newApproval;
+    }
 
     const { data, error } = await supabase
       .from("clearance_approvals")
@@ -1147,7 +1167,7 @@
         remarks: remarks || null,
         approved_at: status === "approved" ? new Date().toISOString() : null
       })
-      .eq("id", approval.id)
+      .eq("id", approvalId)
       .select()
       .single();
 

@@ -226,7 +226,7 @@
     }
 
     function isStudentEligible(s, appData) {
-      if (!s) return false;
+      if (!s) return { eligible: false, officeDone: false, teachersDone: false, balanceZero: false, studentBalance: 0 };
       const officeKeys = ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'];
       const officeDone = officeKeys.every(k => s.clearance?.[k] === 'approved');
 
@@ -234,8 +234,13 @@
       const studentTeacherRequests = teacherApprovals.filter(r => r.studentId === s.id || String(r.key || '').startsWith(s.id));
       const teachersDone = studentTeacherRequests.length > 0 ? studentTeacherRequests.every(r => r.status === 'approved') : (s.clearance?.Teacher === 'approved');
 
-      const allClearancesApproved = officeDone && teachersDone;
-      return { eligible: allClearancesApproved, officeDone, teachersDone };
+      const totalAssessed = assessedTotal(s, appData.feeStructures, appData.vouchers);
+      const totalPaid = calculateStudentPaid(s.id, appData.payments, s);
+      const studentBalance = Math.max(0, totalAssessed - totalPaid);
+      const balanceZero = studentBalance <= 0;
+
+      const allClearancesApproved = officeDone && teachersDone && balanceZero;
+      return { eligible: allClearancesApproved, officeDone, teachersDone, balanceZero, studentBalance };
     }
 
     function showLockedView(reasons) {
@@ -285,6 +290,7 @@
         let reasons = [];
         if (!evalResult.teachersDone) reasons.push('Subject teacher clearance approvals are still pending.');
         if (!evalResult.officeDone) reasons.push('School department office approvals (Guidance, Prefect, Library, Principal, Accounting, or Registrar) are still pending.');
+        if (!evalResult.balanceZero) reasons.push(`Outstanding tuition balance of ₱${Math.round(evalResult.studentBalance).toLocaleString()} must be fully settled prior to certificate issuance.`);
         if (reasons.length === 0) reasons.push('Clearance approvals from all department clearance heads are not yet complete.');
         showLockedView(reasons);
         return;
