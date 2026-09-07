@@ -201,3 +201,39 @@ test('unauthorized callers cannot create or modify accounts', async () => {
     assert.equal(result.calls.rpc.length, 0);
   }
 });
+
+test('updateOfficeClearance updates or inserts approval without ReferenceError', async () => {
+  const updates = [];
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: userId } } }) },
+    from: (table) => ({
+      select: () => ({
+        or: () => ({ maybeSingle: async () => ({ data: { id: 'stu-1' } }) }),
+        eq: () => ({
+          maybeSingle: async () => {
+            if (table === 'clearance_requests') return { data: { id: 'req-1' } };
+            if (table === 'departments') return { data: { id: 'dept-1' } };
+            if (table === 'profiles') return { data: { id: profileId } };
+            if (table === 'clearance_approvals') return { data: { id: 'app-1' } };
+            return { data: null };
+          },
+          eq: () => ({
+            maybeSingle: async () => ({ data: { id: 'app-1' } })
+          })
+        })
+      }),
+      update: (payload) => ({
+        eq: (col, id) => ({
+          select: () => ({
+            single: async () => { updates.push({ payload, id }); return { data: { id, ...payload } }; }
+          })
+        })
+      })
+    })
+  };
+  const context = browser(client);
+  const res = await context.window.paApi.updateOfficeClearance('2026-0001', 'Guidance', 'approved', 'Clear');
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].id, 'app-1');
+  assert.equal(updates[0].payload.status, 'approved');
+});

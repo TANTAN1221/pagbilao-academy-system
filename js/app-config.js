@@ -1117,33 +1117,59 @@
       .maybeSingle();
     if (!dept) throw new Error("Department not found.");
 
-    let approvalId = approval?.id;
+    let approverProfileId = null;
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("auth_user_id", authData.user.id)
+          .maybeSingle();
+        if (prof?.id) approverProfileId = prof.id;
+      }
+    } catch (_) {}
+
+    const { data: existingApproval } = await supabase
+      .from("clearance_approvals")
+      .select("id")
+      .eq("clearance_request_id", req.id)
+      .eq("department_id", dept.id)
+      .maybeSingle();
+
+    let approvalId = existingApproval?.id;
     if (!approvalId) {
       const order = departmentName === "Principal" ? 3 :
                     ["Accounting", "Registrar"].includes(departmentName) ? 4 : 2;
+      const insertPayload = {
+        clearance_request_id: req.id,
+        department_id: dept.id,
+        approval_order: order,
+        status: status,
+        remarks: remarks || null,
+        approved_at: status === "approved" ? new Date().toISOString() : null
+      };
+      if (approverProfileId) insertPayload.approver_profile_id = approverProfileId;
+
       const { data: newApproval, error: insErr } = await supabase
         .from("clearance_approvals")
-        .insert({
-          clearance_request_id: req.id,
-          department_id: dept.id,
-          approval_order: order,
-          status: status,
-          remarks: remarks || null,
-          approved_at: status === "approved" ? new Date().toISOString() : null
-        })
+        .insert(insertPayload)
         .select()
         .single();
       if (insErr) throw insErr;
       return newApproval;
     }
 
+    const updatePayload = {
+      status: status,
+      remarks: remarks || null,
+      approved_at: status === "approved" ? new Date().toISOString() : null
+    };
+    if (approverProfileId) updatePayload.approver_profile_id = approverProfileId;
+
     const { data, error } = await supabase
       .from("clearance_approvals")
-      .update({
-        status: status,
-        remarks: remarks || null,
-        approved_at: status === "approved" ? new Date().toISOString() : null
-      })
+      .update(updatePayload)
       .eq("id", approvalId)
       .select()
       .single();
