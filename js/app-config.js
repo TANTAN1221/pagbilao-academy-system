@@ -464,50 +464,19 @@
   }
 
   async function createSchoolAccount(payload) {
-    const supabaseClient = client();
-    if (supabaseClient) {
-      try {
-        const result = await invokeFunction("create-school-account", payload);
-        if (result && !result.error && !result.message?.includes("Failed to fetch")) return result;
-      } catch (edgeError) {
-        console.warn("Edge function create-school-account not available, using client auth signUp fallback:", edgeError);
-      }
-
-      // Direct Supabase Auth & DB profile creation fallback
-      try {
-        const tempPassword = payload.temporary_password || payload.tempPassword || "password123";
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-          email: payload.email,
-          password: tempPassword,
-          options: {
-            data: {
-              full_name: payload.full_name || payload.name,
-              role: payload.role
-            }
-          }
-        });
-
-        if (authError && !authError.message.includes("User already registered")) {
-          console.warn("Supabase auth.signUp notice:", authError.message);
-        }
-
-        const userId = authData?.user?.id;
-        if (userId) {
-          await supabaseClient.from("profiles").upsert({
-            auth_user_id: userId,
-            full_name: payload.full_name || payload.name,
-            email: payload.email,
-            role: payload.role,
-            status: "active"
-          }, { onConflict: "email" });
-        }
-
-        return { success: true, temporary_password: tempPassword, user: authData?.user };
-      } catch (err) {
-        console.warn("Supabase client auth signUp fallback warning:", err);
-      }
+    if (!client()) throw new Error("Supabase is not configured yet.");
+    let result;
+    try {
+      result = await invokeFunction("create-school-account", payload);
+    } catch (error) {
+      const details = await error.context?.json?.().catch(() => null);
+      throw new Error(details?.error || error.message || "Account could not be saved.");
     }
-    return { success: true, message: "Created locally" };
+    if (result?.error) throw new Error(result.error);
+    if (!result?.profile_id || !result?.user_id) {
+      throw new Error("Account was not saved completely. Deploy the updated create-school-account function and retry.");
+    }
+    return result;
   }
 
   async function logout(redirectTo = "index.html") {
@@ -550,9 +519,9 @@
         { data: feeItems },
         { data: voucherTypes },
         { data: instTemplates },
-        { data: profilesList },
-        { data: staffList },
-        { data: assignmentsList },
+        { data: profilesList, error: profilesError },
+        { data: staffList, error: staffError },
+        { data: assignmentsList, error: assignmentsError },
         { data: studentsList },
         { data: stdVouchers },
         { data: dbPayments },
@@ -578,6 +547,10 @@
         safeQuery(supabase.from("departments").select("*")),
         safeQuery(supabase.from("student_registration_requests").select("*"))
       ]);
+
+      if (profilesError || staffError || assignmentsError) {
+        throw profilesError || staffError || assignmentsError;
+      }
 
       const DEFAULT_FEE_STRUCTURES = {
         JHS: [],
@@ -656,15 +629,19 @@
           .filter(p => p.role !== "student")
           .map(p => {
             const staff = (staffList || []).find(s => s.profile_id === p.id);
-            const teacherAssignments = (assignmentsList || []).filter(ta => ta.teacher_profile_id === p.id);
+            const teacherAssignments = (assignmentsList || []).filter(ta =>
+              ta.teacher_profile_id === p.id && ta.school_year === state.settings.schoolYear);
             return {
               id: p.id,
+              authUserId: p.auth_user_id,
               name: p.full_name,
               email: p.email,
               role: p.role,
               department: staff?.department || "Admin",
               active: p.status === "active",
               assignments: teacherAssignments.map(ta => ({
+                id: ta.id,
+                schoolYear: ta.school_year,
                 grade: ta.grade_level,
                 section: ta.section_name,
                 strand: ta.strand || "N/A",

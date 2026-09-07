@@ -2162,7 +2162,7 @@
         const key = String(dbA.email || dbA.id || '').toLowerCase();
         if (key) {
           const local = map.get(key);
-          map.set(key, { ...dbA, ...(local || {}) });
+          map.set(key, { ...(local || {}), ...dbA });
         }
       });
 

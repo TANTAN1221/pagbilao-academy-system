@@ -494,10 +494,10 @@ function mergeAccountsState(localAccounts = [], dbAccounts = []) {
       const localAcc = map.get(key);
       if (localAcc) {
         map.set(key, {
-          ...dbAcc,
           ...localAcc,
+          ...dbAcc,
           tempPassword: localAcc.tempPassword || dbAcc.tempPassword,
-          assignments: (localAcc.assignments && localAcc.assignments.length > 0) ? localAcc.assignments : (dbAcc.assignments || [])
+          assignments: dbAcc.assignments || []
         });
       } else {
         map.set(key, { ...dbAcc });
