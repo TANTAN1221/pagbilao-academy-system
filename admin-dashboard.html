@@ -301,24 +301,12 @@
             <div>
               <h3 class="text-xl font-extrabold text-academy-navy">Clearance Monitoring</h3>
               <p class="text-sm text-academy-muted mt-1">Teachers can have many grade/section/subject assignments.
-                Principal approves after teachers and offices. Accounting/Registrar approve last.</p>
-            <div class="flex flex-wrap items-center gap-2">
-              <button onclick="approveAllAccountingClearance()"
-                class="px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-extrabold text-xs transition border border-blue-200/80 flex items-center gap-1.5 shadow-xs">
-                <span class="material-symbols-rounded text-sm">receipt_long</span>
-                Batch Approve Accounting
-              </button>
-              <button onclick="approveAllRegistrarClearance()"
-                class="px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs transition border border-indigo-200/80 flex items-center gap-1.5 shadow-xs">
-                <span class="material-symbols-rounded text-sm">app_registration</span>
-                Batch Approve Registrar
-              </button>
-              <button onclick="refreshClearanceApprovals()"
-                class="px-4 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900 transition flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm">refresh</span>
-                Refresh Requirements
-              </button>
             </div>
+            <button onclick="refreshClearanceApprovals()"
+              class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold hover:bg-blue-900 transition flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm">refresh</span>
+              Refresh Approval Requirements
+            </button>
           </div>
         </div>
         <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
@@ -1920,46 +1908,6 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         confirmText: 'Set to Pending',
         onConfirm: async () => {
           await executeOfficeClearanceApproval(s, deptName, 'pending', 'Reset by Admin');
-        }
-      });
-    }
-
-    async function approveAllAccountingClearance() {
-      const eligible = (appData.students || []).filter(s => s.clearance?.Accounting !== 'approved' && balance(s) === 0);
-      if (!eligible.length) {
-        showToast('No Eligible Accounts', 'No fully-paid students currently have pending Accounting clearance.', 'info');
-        return;
-      }
-
-      showConfirmModal({
-        title: 'Batch Approve Accounting Clearance',
-        message: `Are you sure you want to approve Accounting clearance for all ${eligible.length} student(s) with ₱0 balance?`,
-        confirmText: `Approve ${eligible.length} Student(s)`,
-        onConfirm: async () => {
-          for (const s of eligible) {
-            await executeOfficeClearanceApproval(s, 'Accounting', 'approved', 'Batch approved by Admin');
-          }
-          showToast('Batch Complete', `Accounting clearance approved for ${eligible.length} students.`, 'success');
-        }
-      });
-    }
-
-    async function approveAllRegistrarClearance() {
-      const eligible = (appData.students || []).filter(s => s.clearance?.Registrar !== 'approved' && s.clearance?.Accounting === 'approved');
-      if (!eligible.length) {
-        showToast('No Eligible Accounts', 'No students currently have Accounting cleared and pending Registrar clearance.', 'info');
-        return;
-      }
-
-      showConfirmModal({
-        title: 'Batch Approve Registrar Clearance',
-        message: `Are you sure you want to approve Registrar clearance for all ${eligible.length} student(s) who are cleared by Accounting?`,
-        confirmText: `Approve ${eligible.length} Student(s)`,
-        onConfirm: async () => {
-          for (const s of eligible) {
-            await executeOfficeClearanceApproval(s, 'Registrar', 'approved', 'Batch approved by Admin');
-          }
-          showToast('Batch Complete', `Registrar clearance approved for ${eligible.length} students.`, 'success');
         }
       });
     }
