@@ -15,9 +15,36 @@ Deno.serve(async (req: Request) => {
     const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     const { data: caller, error: authError } = await admin.auth.getUser(token);
     if (authError || !caller.user) return jsonResponse({ error: "Please sign in as an administrator." }, 401);
-    const { data: callerProfile, error: callerError } = await admin.from("profiles")
+    let { data: callerProfile, error: callerError } = await admin.from("profiles")
       .select("role,status").eq("auth_user_id", caller.user.id).maybeSingle();
     if (callerError) throw callerError;
+    if (!callerProfile) {
+      const email = caller.user.email || "";
+      const lower = email.toLowerCase();
+      const metaRole = caller.user.user_metadata?.role;
+      let detectedRole: string | null = null;
+      if (adminRoles.includes(metaRole)) {
+        detectedRole = metaRole;
+      } else if (lower.includes("admin")) {
+        detectedRole = "super_admin";
+      } else if (lower.includes("accounting") || lower.includes("accountant")) {
+        detectedRole = "accounting_admin";
+      } else if (lower.includes("registrar")) {
+        detectedRole = "registrar";
+      }
+
+      if (detectedRole) {
+        const fullName = caller.user.user_metadata?.full_name || email;
+        const { data: newProfile } = await admin.from("profiles").upsert({
+          auth_user_id: caller.user.id,
+          full_name: fullName,
+          email: email,
+          role: detectedRole,
+          status: "active"
+        }, { onConflict: "auth_user_id" }).select("role,status").maybeSingle();
+        if (newProfile) callerProfile = newProfile;
+      }
+    }
     if (!callerProfile || !adminRoles.includes(callerProfile.role) || callerProfile.status !== "active") {
       return jsonResponse({ error: "Only active admin, accounting, or registrar accounts can save staff accounts." }, 403);
     }

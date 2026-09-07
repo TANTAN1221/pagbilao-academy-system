@@ -131,8 +131,14 @@
           class="hidden sm:inline-flex px-4 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold">
           Backup JSON
         </button>
-        <div class="w-10 h-10 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
-          AD
+        <div id="currentUserBadge" class="flex items-center gap-2.5 pl-2 border-l border-academy-border">
+          <div id="userAvatar" class="w-9 h-9 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
+            AD
+          </div>
+          <div class="hidden md:block text-left text-xs leading-tight">
+            <p id="userNameDisplay" class="font-bold text-academy-navy">Admin Accountant</p>
+            <p id="userEmailDisplay" class="text-[11px] text-academy-muted">admin@pagbilao.edu.ph</p>
+          </div>
         </div>
       </div>
     </header>
@@ -2830,6 +2836,39 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       const savedKey = localStorage.getItem('pa_gemini_api_key') || DEFAULT_GEMINI_API_KEY;
       if (document.getElementById('geminiApiKeyInput')) {
         document.getElementById('geminiApiKeyInput').value = savedKey;
+      }
+
+      if (window.paApi && window.paApi.client) {
+        const client = window.paApi.client();
+        if (client) {
+          try {
+            const { data: authData } = await client.auth.getUser();
+            const user = authData?.user;
+            if (user) {
+              const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin';
+              const email = user.email || '';
+              if (document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').textContent = name;
+              if (document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').textContent = email;
+              if (document.getElementById('userAvatar')) {
+                const initials = (name.split(' ').map(n => n[0]).join('') || 'AD').slice(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+              }
+              const { data: prof } = await client.from('profiles').select('role,status').eq('auth_user_id', user.id).maybeSingle();
+              const role = prof?.role || user.user_metadata?.role;
+              if (role && !['super_admin', 'accounting_admin', 'registrar'].includes(role)) {
+                showToast('Admin Access Notice', `Signed in as ${email} (${role}). Please log out and sign in with an admin account (admin@pagbilao.edu.ph) to create or edit accounts.`, 'error');
+              }
+            } else {
+              const localSession = JSON.parse(localStorage.getItem('pa_user_session') || localStorage.getItem('pa_current_user') || '{}');
+              if (localSession.email) {
+                if (document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').textContent = localSession.fullName || localSession.name || 'Admin';
+                if (document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').textContent = localSession.email;
+              }
+            }
+          } catch (e) {
+            console.warn('Admin auth session inspection skipped:', e);
+          }
+        }
       }
     }
     initAdminDashboard();
