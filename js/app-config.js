@@ -1096,6 +1096,8 @@
     const supabase = client();
     if (!supabase) return null;
 
+    const effectiveRemarks = remarks || (status === "approved" ? "Approved by Admin" : null);
+
     const { data: student } = await supabase
       .from("students")
       .select("id")
@@ -1103,6 +1105,27 @@
       .maybeSingle();
     if (!student) throw new Error("Student not found.");
 
+    // 1. Try atomic RPC function first
+    if (typeof supabase.rpc === "function") {
+      try {
+        const { data: rpcResult, error: rpcErr } = await supabase.rpc("approve_office_clearance", {
+          p_student_id: student.id,
+          p_department_name: departmentName,
+          p_status: status || "approved",
+          p_remarks: effectiveRemarks || "Approved by Admin"
+        });
+        if (!rpcErr && rpcResult?.success) {
+          return rpcResult;
+        }
+        if (rpcErr && rpcErr.message && !rpcErr.message.includes("function") && !rpcErr.message.includes("not found")) {
+          console.warn("approve_office_clearance RPC returned:", rpcErr);
+        }
+      } catch (rpcEx) {
+        console.warn("approve_office_clearance RPC call caught:", rpcEx);
+      }
+    }
+
+    // 2. Direct table fallback
     const { data: req } = await supabase
       .from("clearance_requests")
       .select("id")
@@ -1146,7 +1169,7 @@
         department_id: dept.id,
         approval_order: order,
         status: status,
-        remarks: remarks || null,
+        remarks: effectiveRemarks,
         approved_at: status === "approved" ? new Date().toISOString() : null
       };
       if (approverProfileId) insertPayload.approver_profile_id = approverProfileId;
@@ -1162,7 +1185,7 @@
 
     const updatePayload = {
       status: status,
-      remarks: remarks || null,
+      remarks: effectiveRemarks,
       approved_at: status === "approved" ? new Date().toISOString() : null
     };
     if (approverProfileId) updatePayload.approver_profile_id = approverProfileId;

@@ -1852,7 +1852,12 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         showToast('Clearance Updated', `${deptName} clearance marked as ${newStatus} for ${student.name}.`, 'success');
       } catch (err) {
         console.warn(`Supabase ${deptName} clearance update notice:`, err);
-        showToast('Clearance Updated', `${deptName} clearance marked as ${newStatus} for ${student.name}.`);
+        const isLock = err?.message && (err.message.includes('locked') || err.message.includes('balance') || err.message.includes('Principal'));
+        if (isLock) {
+          showToast('Clearance Lock Notice', err.message, 'warning');
+        } else {
+          showToast('Clearance Updated (Local)', `${deptName} updated locally for ${student.name}.`, 'info');
+        }
       }
     }
 
