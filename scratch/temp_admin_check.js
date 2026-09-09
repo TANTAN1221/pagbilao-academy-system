@@ -1,19 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard | Pagbilao Academy Inc.</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
-    rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="js/app-config.js"></script>
-  <script>
     window.logoutToIndex = window.logoutToIndex || async function () {
       try {
         if (window.paApi && window.paApi.logout) {
@@ -1975,13 +1960,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     }
 
     function applyFeeSetup() { appData.students.forEach(s => { s.total = assessedTotal(s) }); saveData(); renderAll(); showToast('Fees applied', 'JHS/SHS fees and voucher discounts were recalculated.') }
-    function generateInstallments() { saveData(); renderDueDates(); showToast('Due Dates Saved', 'Student payment reminder due dates have been saved and applied.') }
+    function generateInstallments() { saveData(); renderDueDates(); showToast('Installments generated', 'Student installment schedules follow the current due date template.') }
     async function executeOfficeClearanceApproval(student, deptName, newStatus = 'approved', remarks = 'Approved by Admin') {
       try {
         student.clearance = student.clearance || {};
         student.clearance[deptName] = newStatus;
-        student.clearanceRemarks = student.clearanceRemarks || {};
-        student.clearanceRemarks[deptName] = remarks;
         saveData();
         renderAll();
 
@@ -3468,9 +3451,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           };
 
           ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
-            if (dbS.clearance && (dbS.clearance[k] === 'approved' || dbS.clearance[k] === 'on_hold')) {
-              mergedClearance[k] = dbS.clearance[k];
-            } else if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+            if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
               mergedClearance[k] = 'approved';
             }
           });
@@ -3487,8 +3468,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
             paid: effectivePaid,
-            clearance: mergedClearance,
-            clearanceRemarks: { ...(local.clearanceRemarks || {}), ...(dbS.clearanceRemarks || {}) }
+            clearance: mergedClearance
           };
         } else {
           merged.push({ ...dbS });
@@ -3765,7 +3745,4 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       }
     }
     initAdminDashboard();
-  </script>
-</body>
-
-</html>
+  

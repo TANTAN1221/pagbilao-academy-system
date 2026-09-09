@@ -151,6 +151,25 @@
         }
 
         if (found) {
+          if (found.active === false || found.status === "disabled" || found.status === "inactive") {
+            throw new Error("Your account has been disabled. Please contact the school administration.");
+          }
+          try {
+            const rawAdmin = localStorage.getItem("pa_full_admin_v2");
+            if (rawAdmin) {
+              const adminData = JSON.parse(rawAdmin);
+              const admStudent = (adminData.students || []).find(s => 
+                (found.studentId && s.id === found.studentId) || 
+                (found.email && String(s.email).toLowerCase() === String(found.email).toLowerCase())
+              );
+              if (admStudent && (admStudent.status === "disabled" || admStudent.status === "inactive" || admStudent.active === false)) {
+                throw new Error("Your student account has been disabled. Please contact the school administration.");
+              }
+            }
+          } catch (e) {
+            if (e.message && e.message.includes("disabled")) throw e;
+          }
+
           const session = {
             id: found.id || found.studentId || "USER-" + Date.now(),
             email: found.email,
@@ -284,6 +303,27 @@
             };
           }
         }
+      }
+
+      if (status === "disabled" || status === "inactive" || (studentInfo && (studentInfo.studentStatus === "disabled" || studentInfo.studentStatus === "inactive"))) {
+        try { await supabaseClient.auth.signOut(); } catch {}
+        throw new Error("Your account has been disabled. Please contact the school administration.");
+      }
+      try {
+        const rawAdmin = localStorage.getItem("pa_full_admin_v2");
+        if (rawAdmin) {
+          const adminData = JSON.parse(rawAdmin);
+          const admStudent = (adminData.students || []).find(s => 
+            (studentInfo && studentInfo.studentId && s.id === studentInfo.studentId) || 
+            String(s.email).toLowerCase() === String(email).toLowerCase()
+          );
+          if (admStudent && (admStudent.status === "disabled" || admStudent.status === "inactive" || admStudent.active === false)) {
+            try { await supabaseClient.auth.signOut(); } catch {}
+            throw new Error("Your student account has been disabled. Please contact the school administration.");
+          }
+        }
+      } catch (e) {
+        if (e.message && e.message.includes("disabled")) throw e;
       }
 
       const session = {
@@ -612,15 +652,37 @@
       }
 
       // 3. Installment Templates
+      const MOCK_TEMPLATE_IDS = ["ins-downpayment-2026", "ins-q2-2026", "ins-q3-2027", "ins-q4-2027"];
       if (instTemplates && instTemplates.length > 0) {
         state.installmentTemplate = instTemplates
+          .filter(i => !MOCK_TEMPLATE_IDS.includes(i.id))
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
           .map(i => ({
             id: i.id,
             title: i.title,
-            percent: Number(i.percent_of_net),
-            dueDate: i.due_date
+            percent: Number(i.percent_of_net || 0),
+            dueDate: i.due_date,
+            description: i.title
           }));
+      } else {
+        try {
+          const cached = localStorage.getItem("pa_installment_templates");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const clean = parsed.filter(p => !MOCK_TEMPLATE_IDS.includes(p.id));
+              if (clean.length > 0) {
+                state.installmentTemplate = clean;
+              } else {
+                state.installmentTemplate = [];
+                localStorage.setItem("pa_installment_templates", JSON.stringify([]));
+              }
+            }
+          }
+        } catch {}
+        if (!state.installmentTemplate) {
+          state.installmentTemplate = [];
+        }
       }
 
       // 4. Accounts
@@ -758,6 +820,7 @@
             Accounting: "pending",
             Registrar: "pending"
           };
+          const studentClearanceRemarks = {};
 
           if (req) {
             const approvals = (clApprovals || []).filter(ca => ca.clearance_request_id === req.id);
@@ -767,15 +830,24 @@
               const deptName = deptMap[ca.department_id];
               if (deptName && deptName !== "Teacher") {
                 studentClearance[deptName] = ca.status;
+                if (ca.remarks) {
+                  studentClearanceRemarks[deptName] = ca.remarks;
+                }
+              } else if (deptName === "Teacher" || ca.teacher_assignment_id) {
+                const ta = (assignmentsList || []).find(a => a.id === ca.teacher_assignment_id);
+                if (ta?.subject_name && ca.remarks) {
+                  studentClearanceRemarks[ta.subject_name] = ca.remarks;
+                }
               }
             });
 
             // Teacher approvals summary
-            const teacherApprovals = approvals.filter(ca => deptMap[ca.department_id] === "Teacher");
+            const teacherApprovals = approvals.filter(ca => deptMap[ca.department_id] === "Teacher" || ca.teacher_assignment_id);
             if (teacherApprovals.length > 0) {
               const allApproved = teacherApprovals.every(ca => ca.status === "approved");
               const anyRequested = teacherApprovals.some(ca => ca.status === "requested");
-              studentClearance.Teacher = allApproved ? "approved" : (anyRequested ? "requested" : "pending");
+              const anyOnHold = teacherApprovals.some(ca => ca.status === "on_hold");
+              studentClearance.Teacher = allApproved ? "approved" : (anyOnHold ? "on_hold" : (anyRequested ? "requested" : "pending"));
             }
           }
 
@@ -791,7 +863,8 @@
             strand: s.strand || "N/A",
             voucher: voucherName,
             paid: studentPaid,
-            clearance: studentClearance
+            clearance: studentClearance,
+            clearanceRemarks: studentClearanceRemarks
           };
         });
       }
@@ -816,6 +889,7 @@
               section: student?.section_name,
               strand: student?.strand || "N/A",
               status: ca.status,
+              remarks: ca.remarks || "",
               requestedAt: ca.approved_at || ca.created_at
             };
           });
@@ -1299,10 +1373,13 @@
     dataKeys.forEach(k => localStorage.removeItem(k));
   }
 
-  // Purge stale local storage cache automatically when Supabase is connected
+  // Do not purge localStorage cache automatically on page load/logout so admin-configured schedules persist
+  // If manual purge is ever needed for development, invoke window.paApi.clearLocalStorageData()
+  /*
   if (isSupabaseReady()) {
     clearLocalStorageData();
   }
+  */
 
   window.PA_CONFIG = config;
   window.paApi = {

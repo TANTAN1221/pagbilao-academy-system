@@ -1,978 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Student Dashboard | Pagbilao Academy Inc.</title>
-  <link rel="icon" href="assets/logo.png" type="image/png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
-    rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/app-config.js"></script>
-  <script>
-    window.logoutToIndex = window.logoutToIndex || async function () {
-      try { if (window.paApi && window.paApi.logout) return await window.paApi.logout("index.html"); }
-      catch (error) { console.warn("Logout fallback used:", error); }
-      ["pa_current_user", "pa_logged_in_user", "pa_user_role", "pa_user_session", "pa_demo_session", "pa_auth_role"].forEach((key) => localStorage.removeItem(key));
-      window.location.href = "index.html";
-    };
-  </script>
-  <style>
-    .material-symbols-rounded {
-      font-family: 'Material Symbols Rounded';
-      font-weight: normal;
-      font-style: normal;
-      font-size: 22px;
-      line-height: 1;
-      display: inline-block;
-      white-space: nowrap;
-      -webkit-font-smoothing: antialiased
-    }
-
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: #cbd5e1 transparent
-    }
-
-    @media print {
-      body * {
-        visibility: hidden !important;
-      }
-      #printableStatementArea, #printableStatementArea *,
-      #receiptPrintArea, #receiptPrintArea * {
-        visibility: visible !important;
-      }
-      #printableStatementArea, #receiptPrintArea {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 20px !important;
-        background: white !important;
-        color: black !important;
-        box-shadow: none !important;
-        border: none !important;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            academy: {
-              navy: '#1E3A8A',
-              blue: '#2563EB',
-              soft: '#F5F8FF',
-              border: '#DDE8F8',
-              text: '#0F2A5F',
-              muted: '#6B7A90',
-              light: '#EEF5FF'
-            }
-          },
-          boxShadow: {
-            soft: '0 20px 50px rgba(30,58,138,.10)',
-            card: '0 10px 30px rgba(30,58,138,.08)'
-          }
-        }
-      }
-    };
-  </script>
-</head>
-
-<body class="min-h-screen bg-[#F7FAFF] text-academy-text">
-  <!-- Toast Notification -->
-  <div id="toast"
-    class="fixed top-5 right-5 z-[200] hidden max-w-sm w-full rounded-2xl border border-academy-border bg-white/95 backdrop-blur-md shadow-2xl p-4 transition-all duration-300">
-    <div class="flex items-start gap-3">
-      <div id="toastIcon"
-        class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0"><span
-          class="material-symbols-rounded">check_circle</span></div>
-      <div class="flex-1 min-w-0">
-        <p id="toastTitle" class="text-sm font-extrabold text-academy-navy">Success</p>
-        <p id="toastMessage" class="mt-0.5 text-xs text-academy-muted leading-5">Action completed.</p>
-      </div>
-      <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 p-0.5 transition rounded-lg hover:bg-slate-100 shrink-0">
-        <span class="material-symbols-rounded text-lg">close</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Sidebar Navigation Bar -->
-  <aside class="fixed inset-y-0 left-0 z-40 w-[260px] bg-academy-navy text-white hidden lg:flex flex-col border-r border-white/10 shadow-xl">
-    <div class="px-5 py-5 flex items-center gap-3 border-b border-white/10">
-      <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
-        class="w-11 h-11 rounded-full bg-white object-contain border border-white/30 p-0.5 shadow-sm">
-      <div>
-        <h1 class="text-sm font-extrabold leading-tight">Pagbilao Academy</h1>
-        <p class="text-xs text-blue-200">Student Portal</p>
-      </div>
-    </div>
-
-    <!-- Nav Items -->
-    <nav id="sideNav" class="flex-1 px-3 py-5 space-y-1.5 text-sm overflow-y-auto"></nav>
-
-    <!-- Sidebar Footer -->
-    <div class="px-5 py-4 border-t border-white/10 bg-black/10">
-      <div class="flex items-center justify-between text-xs text-blue-200">
-        <span>School Year</span>
-        <span class="font-bold text-white">2026–2027</span>
-      </div>
-      <button onclick="logoutToIndex()"
-        class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-bold transition">
-        <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
-      </button>
-    </div>
-  </aside>
-
-  <!-- Mobile Sidebar Overlay Drawer -->
-  <div id="mobileDrawer" class="fixed inset-0 z-50 hidden lg:hidden">
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleMobileDrawer()"></div>
-    <div class="fixed inset-y-0 left-0 w-[270px] bg-academy-navy text-white flex flex-col shadow-2xl p-4">
-      <div class="flex items-center justify-between pb-4 border-b border-white/10">
-        <div class="flex items-center gap-3">
-          <img src="assets/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white object-contain p-0.5">
-          <div>
-            <h2 class="text-sm font-extrabold">Pagbilao Academy</h2>
-            <p class="text-xs text-blue-200">Student Portal</p>
-          </div>
-        </div>
-        <button onclick="toggleMobileDrawer()" class="p-1 rounded-lg hover:bg-white/10 text-white">
-          <span class="material-symbols-rounded">close</span>
-        </button>
-      </div>
-      <nav id="mobileSideNav" class="flex-1 py-4 space-y-1 text-sm overflow-y-auto"></nav>
-      <div class="pt-3 border-t border-white/10">
-        <button onclick="logoutToIndex()"
-          class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/20 text-red-200 text-xs font-bold">
-          <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content Wrapper -->
-  <div class="lg:pl-[260px] min-h-screen flex flex-col">
-    <!-- Top Header -->
-    <header class="h-16 bg-white border-b border-academy-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
-      <div class="flex items-center gap-3">
-        <button onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light">
-          <span class="material-symbols-rounded">menu</span>
-        </button>
-        <div>
-          <h2 id="pageTitle" class="text-lg sm:text-xl font-extrabold text-academy-navy">Dashboard Overview</h2>
-          <p id="pageSubtitle" class="hidden sm:block text-xs text-academy-muted">Summary of your fees, clearance, and account status</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 sm:gap-3">
-        <!-- Reminders & Notifications Dropdown Trigger & Popover -->
-        <div class="relative">
-          <button id="headerNotificationBtn" onclick="toggleNotificationDropdown()" class="relative p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-blue-50 transition shadow-xs flex items-center justify-center">
-            <span class="material-symbols-rounded text-[20px] text-academy-navy">notifications</span>
-            <span id="headerNotificationBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black items-center justify-center border-2 border-white hidden">0</span>
-          </button>
-
-          <!-- Dropdown Popover Panel -->
-          <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white border border-academy-border shadow-2xl z-50 overflow-hidden transition-all duration-200">
-            <div class="p-4 bg-academy-navy text-white flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-rounded text-[20px] text-amber-400">notifications_active</span>
-                <h3 class="font-extrabold text-sm">Reminders & Notifications</h3>
-              </div>
-              <span id="dropdownNotificationBadge" class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold">0 Active</span>
-            </div>
-            <div id="dropdownNotificationList" class="p-3 max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-slate-100">
-              <!-- Dynamic Notifications populate here -->
-            </div>
-            <div class="p-3 bg-academy-soft border-t border-academy-border text-center">
-              <button onclick="scrollToNotificationsSection()" class="text-xs font-extrabold text-academy-blue hover:underline flex items-center justify-center gap-1 w-full">
-                <span>View Reminders on Dashboard</span>
-                <span class="material-symbols-rounded text-sm">arrow_forward</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <button onclick="startStudentWalkthrough()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-blue-50 transition shadow-xs">
-          <span class="material-symbols-rounded text-[18px] text-academy-blue">help</span>
-          <span class="hidden sm:inline">Portal Tour</span>
-        </button>
-        <button onclick="startPayMongoCheckout()" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
-          <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition
-        </button>
-        <div id="avatarInitials" class="w-10 h-10 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
-          ST
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content Pages -->
-    <main class="p-4 sm:p-6 space-y-6 flex-1">
-      
-      <!-- TAB 1: OVERVIEW PAGE -->
-      <section id="dashboardPage" class="page-section space-y-5">
-        <!-- Welcome Banner -->
-        <div class="rounded-3xl bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-8 shadow-card relative overflow-hidden">
-          <div class="relative z-10">
-            <span class="px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold tracking-wide uppercase">Student Overview</span>
-            <h2 id="welcomeName" class="mt-3 text-2xl sm:text-3xl font-black">Welcome back</h2>
-            <p id="studentMeta" class="mt-1 text-sm text-blue-100/90">Loading student profile...</p>
-          </div>
-          <div class="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
-        </div>
-
-        <!-- Smart Payment Due Reminder Alert Banner -->
-        <div id="dueDateAlertBanner" class="hidden rounded-2xl bg-amber-50 border border-amber-200/80 p-4 text-amber-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-xl bg-amber-100 text-amber-700 shrink-0"><span class="material-symbols-rounded">notifications_active</span></span>
-            <div>
-              <h4 id="dueDateAlertTitle" class="font-extrabold text-sm text-amber-950">Payment Due Reminder</h4>
-              <p id="dueDateAlertMsg" class="text-xs text-amber-800 mt-0.5">Please settle your outstanding balance before the due date.</p>
-            </div>
-          </div>
-          <button onclick="openPaymentModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition shrink-0 flex items-center gap-1 shadow-sm">
-            <span class="material-symbols-rounded text-xs">payments</span> Pay Now
-          </button>
-        </div>
-
-        <!-- Clearance On Hold Alert Banner -->
-        <div id="clearanceHoldAlertBanner" class="hidden rounded-2xl bg-red-50 border border-red-200/80 p-4 text-red-950 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div class="flex items-start sm:items-center gap-3">
-            <span class="p-2.5 rounded-xl bg-red-100 text-red-700 shrink-0"><span class="material-symbols-rounded">error</span></span>
-            <div>
-              <h4 class="font-extrabold text-sm text-red-950">Clearance Requirement On Hold</h4>
-              <p id="clearanceHoldAlertMsg" class="text-xs text-red-800 mt-0.5">One or more of your clearance requirements require attention.</p>
-            </div>
-          </div>
-          <button onclick="showPage('clearancePage')" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition shrink-0 flex items-center gap-1 shadow-sm cursor-pointer">
-            <span class="material-symbols-rounded text-xs">arrow_forward</span> View Clearance
-          </button>
-        </div>
-
-        <!-- 4 Stat Cards -->
-        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Net Balance Due</p>
-              <span class="p-2 rounded-xl bg-red-50 text-red-600"><span class="material-symbols-rounded">account_balance_wallet</span></span>
-            </div>
-            <h3 id="netBalance" class="mt-3 text-2xl font-extrabold text-red-600">₱0</h3>
-            <p id="voucherNote" class="mt-1 text-xs text-academy-muted">After voucher</p>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Voucher Applied</p>
-              <span class="p-2 rounded-xl bg-blue-50 text-academy-navy"><span class="material-symbols-rounded">confirmation_number</span></span>
-            </div>
-            <h3 id="voucherApplied" class="mt-3 text-2xl font-extrabold text-academy-navy">₱0</h3>
-            <p id="voucherName" class="mt-1 text-xs text-academy-muted">Voucher</p>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Clearance Progress</p>
-              <span class="p-2 rounded-xl bg-green-50 text-green-600"><span class="material-symbols-rounded">fact_check</span></span>
-            </div>
-            <h3 id="clearanceProgress" class="mt-3 text-2xl font-extrabold text-green-600">0/0</h3>
-            <p class="mt-1 text-xs text-academy-muted">Approvals completed</p>
-          </div>
-
-          <div onclick="scrollToNotificationsSection()" class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition cursor-pointer group">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Reminders & Alerts</p>
-              <span class="p-2 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition"><span class="material-symbols-rounded">notifications_active</span></span>
-            </div>
-            <h3 id="overviewNotificationCount" class="mt-3 text-2xl font-extrabold text-amber-600">0 Active</h3>
-            <p id="overviewNotificationNote" class="mt-1 text-xs text-academy-muted">Due dates & clearance alerts</p>
-          </div>
-        </div>
-
-        <!-- Quick Action Grid -->
-        <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <button onclick="showPage('paymentsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
-            <span class="w-10 h-10 rounded-xl bg-blue-50 text-academy-blue flex items-center justify-center font-bold mb-3 group-hover:bg-academy-navy group-hover:text-white transition">
-              <span class="material-symbols-rounded">add_card</span>
-            </span>
-            <p class="font-extrabold text-academy-navy">Make Payment</p>
-            <p class="text-xs text-academy-muted mt-1">Pay via QR Ph, GCash, or Card</p>
-          </button>
-
-          <button onclick="showPage('transactionsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
-            <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
-              <span class="material-symbols-rounded">receipt_long</span>
-            </span>
-            <p class="font-extrabold text-academy-navy">Payment History</p>
-            <p class="text-xs text-academy-muted mt-1">View receipts & transactions</p>
-          </button>
-
-          <button onclick="showPage('clearancePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
-            <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold mb-3 group-hover:bg-indigo-600 group-hover:text-white transition">
-              <span class="material-symbols-rounded">fact_check</span>
-            </span>
-            <p class="font-extrabold text-academy-navy">Clearance Status</p>
-            <p class="text-xs text-academy-muted mt-1">Request teacher approvals</p>
-          </button>
-
-          <button onclick="showPage('certificatePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
-            <span class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold mb-3 group-hover:bg-purple-600 group-hover:text-white transition">
-              <span class="material-symbols-rounded">workspace_premium</span>
-            </span>
-            <p class="font-extrabold text-academy-navy">Clearance Certificate</p>
-            <p class="text-xs text-academy-muted mt-1">View & download certificate</p>
-          </button>
-        </div>
-
-        <!-- Reminders & Notifications Center Widget -->
-        <div id="remindersSection" class="bg-white rounded-2xl border border-academy-border p-5 sm:p-6 shadow-card space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-academy-border">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
-                <span class="material-symbols-rounded text-xl">notifications_active</span>
-              </div>
-              <div>
-                <h3 class="font-extrabold text-base text-academy-navy flex items-center gap-2">
-                  Reminders & Notifications
-                  <span id="centerNotificationBadge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">0 Active</span>
-                </h3>
-                <p class="text-xs text-academy-muted mt-0.5">Real-time alerts for upcoming payment due dates and clearance approval progress</p>
-              </div>
-            </div>
-            <button onclick="renderAll()" class="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light text-xs font-bold flex items-center gap-1.5 transition">
-              <span class="material-symbols-rounded text-base">refresh</span> Refresh Alerts
-            </button>
-          </div>
-
-          <!-- Notifications Cards List -->
-          <div id="overviewNotificationsList" class="grid sm:grid-cols-2 gap-3.5">
-            <!-- Dynamic Reminders render here -->
-          </div>
-        </div>
-
-        <!-- Total Fee Breakdown Card -->
-        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-academy-border">
-            <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center shrink-0 border border-blue-100 shadow-xs">
-                <span class="material-symbols-rounded text-2xl">account_balance</span>
-              </div>
-              <div>
-                <h3 class="text-base sm:text-lg font-extrabold text-academy-navy flex items-center gap-2">
-                  Total Fee Breakdown & Statement of Account
-                </h3>
-                <p class="text-xs text-academy-muted mt-0.5">Itemized assessment of tuition, fees, applied vouchers, payments & balance</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2.5">
-              <button onclick="printFeeBreakdown()" class="px-4 py-2.5 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition flex items-center gap-2 shadow-sm">
-                <span class="material-symbols-rounded text-[18px]">print</span>Print Statement
-              </button>
-              <button onclick="showPage('paymentsPage')" class="px-4 py-2.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold hover:bg-academy-light transition flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-[18px]">payments</span>Pay Tuition
-              </button>
-            </div>
-          </div>
-
-          <!-- Summary Chips -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-academy-soft border border-academy-border text-xs">
-            <div>
-              <p class="text-academy-muted font-bold">Gross Fees Total</p>
-              <p id="overviewGrossFees" class="text-base font-extrabold text-academy-navy mt-1">₱0</p>
-            </div>
-            <div>
-              <p class="text-academy-muted font-bold">Vouchers / Discounts</p>
-              <p id="overviewDiscounts" class="text-base font-extrabold text-blue-700 mt-1">-₱0</p>
-            </div>
-            <div>
-              <p class="text-academy-muted font-bold">Total Amount Paid</p>
-              <p id="overviewTotalPaid" class="text-base font-extrabold text-green-600 mt-1">₱0</p>
-            </div>
-            <div>
-              <p class="text-academy-muted font-bold">Net Balance Due</p>
-              <p id="overviewBalanceDue" class="text-base font-extrabold text-red-600 mt-1">₱0</p>
-            </div>
-          </div>
-
-          <!-- Fee Items Table -->
-          <div class="overflow-x-auto rounded-xl border border-academy-border">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-academy-light text-academy-navy font-bold border-b border-academy-border">
-                <tr>
-                  <th class="p-3">Fee Item / Particulars</th>
-                  <th class="p-3 text-right">Base Amount</th>
-                  <th class="p-3 text-right">Voucher / Discount</th>
-                  <th class="p-3 text-right">Net Amount</th>
-                  <th class="p-3 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody id="overviewFeeBreakdownBody" class="divide-y divide-academy-border bg-white"></tbody>
-              <tfoot id="overviewFeeBreakdownFoot" class="bg-slate-50 font-extrabold border-t-2 border-academy-border"></tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- Recent Activity Preview -->
-        <div class="grid lg:grid-cols-2 gap-5">
-          <!-- Recent Transactions Preview -->
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
-                <span class="material-symbols-rounded text-emerald-600 text-[20px]">history</span>Recent Transactions
-              </h3>
-              <button onclick="showPage('transactionsPage')" class="text-xs font-extrabold text-academy-blue hover:underline">View All →</button>
-            </div>
-            <div id="recentTransactionsList" class="space-y-3"></div>
-          </div>
-
-          <!-- Clearance Quick Summary -->
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
-                <span class="material-symbols-rounded text-academy-blue text-[20px]">fact_check</span>Clearance Overview
-              </h3>
-              <button onclick="showPage('clearancePage')" class="text-xs font-extrabold text-academy-blue hover:underline">Manage Clearance →</button>
-            </div>
-            <div id="clearanceSummaryGrid" class="grid grid-cols-2 gap-3"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 2: TUITION & PAYMENTS PAGE -->
-      <section id="paymentsPage" class="page-section space-y-5 hidden">
-        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
-                <span class="material-symbols-rounded text-[22px] text-academy-blue">account_balance_wallet</span>Tuition & Billing Overview
-              </h3>
-              <p class="text-xs text-academy-muted mt-1">Review your total fees, applied vouchers, and current net balance due.</p>
-            </div>
-            <button onclick="startPayMongoCheckout()" class="px-6 py-3 rounded-xl bg-academy-navy text-white font-extrabold hover:bg-blue-900 transition flex items-center justify-center gap-2 shadow-sm">
-              <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition Now
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 md:grid-cols-4 text-center gap-4 p-5 rounded-2xl bg-academy-soft border border-academy-border mb-5">
-            <div>
-              <p class="text-xs text-academy-muted font-bold">Gross Tuition Fees</p>
-              <p id="grossFees" class="text-lg font-extrabold text-academy-navy mt-1">₱0</p>
-            </div>
-            <div>
-              <p class="text-xs text-academy-muted font-bold">Voucher Discount</p>
-              <p id="paymentVoucher" class="text-lg font-extrabold text-blue-700 mt-1">-₱0</p>
-            </div>
-            <div>
-              <p class="text-xs text-academy-muted font-bold">Total Paid</p>
-              <p id="amountPaid" class="text-lg font-extrabold text-green-600 mt-1">₱0</p>
-            </div>
-            <div>
-              <p class="text-xs text-academy-muted font-bold">Net Balance Due</p>
-              <p id="paymentBalance" class="text-lg font-extrabold text-red-600 mt-1">₱0</p>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="flex justify-between text-xs font-bold text-academy-muted">
-              <span>Payment Progress</span>
-              <span id="paymentPctLabel">0% Paid</span>
-            </div>
-            <div class="h-3 bg-academy-light rounded-full overflow-hidden p-0.5 border border-academy-border">
-              <div id="paymentProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" style="width:0%"></div>
-            </div>
-          </div>
-          <p class="mt-4 text-xs text-academy-muted">Partial payments are accepted. You can make custom partial payments or select specific fee items to pay.</p>
-        </div>
-      </section>
-
-      <!-- TAB 3: PAYMENT HISTORY & TRANSACTIONS PAGE -->
-      <section id="transactionsPage" class="page-section space-y-5 hidden">
-        <!-- Transaction Summary Header -->
-        <div class="grid sm:grid-cols-3 gap-4">
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
-            <p class="text-xs font-bold text-academy-muted">Total Successful Payments</p>
-            <h3 id="txCount" class="mt-2 text-2xl font-extrabold text-academy-navy">0</h3>
-            <p class="text-xs text-academy-muted mt-1">Recorded transactions</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
-            <p class="text-xs font-bold text-academy-muted">Total Amount Paid</p>
-            <h3 id="txTotalPaid" class="mt-2 text-2xl font-extrabold text-green-600">₱0</h3>
-            <p class="text-xs text-academy-muted mt-1">Confirmed payments</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
-            <p class="text-xs font-bold text-academy-muted">Latest Transaction Date</p>
-            <h3 id="txLatestDate" class="mt-2 text-lg font-extrabold text-academy-navy">N/A</h3>
-            <p class="text-xs text-academy-muted mt-1">Most recent payment</p>
-          </div>
-        </div>
-
-        <!-- Payment History Table Card -->
-        <div class="bg-white rounded-2xl border border-academy-border shadow-card overflow-hidden">
-          <div class="p-5 border-b border-academy-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
-                <span class="material-symbols-rounded text-emerald-600 text-[20px]">receipt_long</span>Payment History & Transaction Logs
-              </h3>
-              <p class="text-xs text-academy-muted mt-1">Full breakdown of all payments made to your account.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="text" id="txSearchInput" onkeyup="renderPaymentsHistory()" placeholder="Search reference..." class="px-3 py-2 rounded-xl border border-academy-border text-xs w-44 focus:outline-none focus:border-academy-blue">
-              <select id="txMethodFilter" onchange="renderPaymentsHistory()" class="px-3 py-2 rounded-xl border border-academy-border text-xs bg-white focus:outline-none">
-                <option value="all">All Channels</option>
-                <option value="paymongo">PayMongo / QR Ph</option>
-                <option value="gcash">GCash</option>
-                <option value="maya">Maya</option>
-                <option value="instapay">InstaPay</option>
-                <option value="manual">Cash / OTC</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-academy-light text-academy-navy font-bold">
-                <tr>
-                  <th class="text-left p-4">Reference / ID</th>
-                  <th class="text-left p-4">Date & Time</th>
-                  <th class="text-left p-4">Payment Channel</th>
-                  <th class="text-left p-4">Amount</th>
-                  <th class="text-left p-4">Status</th>
-                  <th class="text-left p-4">Receipt</th>
-                </tr>
-              </thead>
-              <tbody id="paymentHistoryBody" class="divide-y divide-academy-border"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 4: CLEARANCE MONITORING PAGE -->
-      <section id="clearancePage" class="page-section space-y-5 hidden">
-        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-            <div>
-              <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
-                <span class="material-symbols-rounded text-indigo-600 text-[22px]">fact_check</span>Clearance Approval Status
-              </h3>
-              <p class="text-xs text-academy-muted mt-1">Subject teachers are assigned based on your enrolled grade, section, and strand.</p>
-            </div>
-            <button onclick="requestAllTeacherApprovals()" class="px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
-              Request All Teachers →
-            </button>
-          </div>
-
-          <div class="mb-6">
-            <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
-              <span class="material-symbols-rounded text-[18px] text-blue-600">person</span>Assigned Subject Teachers
-            </h4>
-            <div class="grid sm:grid-cols-2 gap-3" id="teacherClearanceCards"></div>
-          </div>
-
-          <div>
-            <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
-              <span class="material-symbols-rounded text-[18px] text-purple-600">domain</span>School Offices & Final Approvals
-            </h4>
-            <div class="grid sm:grid-cols-2 gap-3" id="officeClearanceCards"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 5: CLEARANCE CERTIFICATE PAGE -->
-      <section id="certificatePage" class="page-section space-y-5 hidden">
-        <div class="bg-white rounded-2xl border border-academy-border p-8 shadow-card max-w-3xl mx-auto text-center">
-          <div class="w-16 h-16 rounded-3xl bg-blue-50 text-academy-navy grid place-items-center mx-auto mb-4">
-            <span class="material-symbols-rounded text-[36px]">workspace_premium</span>
-          </div>
-          <h3 class="text-2xl font-black text-academy-navy">Official Clearance Certificate</h3>
-          <p class="text-sm text-academy-muted mt-2 max-w-md mx-auto">
-            Once all assigned subject teachers and school department heads have approved your clearance, your official clearance certificate will be unlocked for viewing and printing.
-          </p>
-
-          <div id="certificateStatusBox" class="my-6 p-5 rounded-2xl border border-academy-border bg-academy-soft max-w-md mx-auto">
-            <p class="text-xs font-bold text-academy-muted">Clearance Status</p>
-            <p id="certificateStatusBadge" class="text-base font-extrabold text-amber-700 mt-1">Pending Approval</p>
-          </div>
-
-          <button id="openCertificateBtn" onclick="openCertificate()" class="px-8 py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition">
-            View & Print Clearance Certificate
-          </button>
-        </div>
-      </section>
-
-      <!-- TAB 6: STUDENT PROFILE PAGE -->
-      <section id="profilePage" class="page-section space-y-5 hidden">
-        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card max-w-3xl mx-auto">
-          <div class="flex items-center gap-4 pb-6 border-b border-academy-border">
-            <div id="profileInitials" class="w-16 h-16 rounded-full bg-academy-navy text-white grid place-items-center text-xl font-black">
-              ST
-            </div>
-            <div>
-              <h3 id="profileName" class="text-xl font-extrabold text-academy-navy">Student Name</h3>
-              <p id="profileMeta" class="text-xs text-academy-muted mt-1">Student ID · Level</p>
-            </div>
-          </div>
-
-          <div class="py-6 space-y-4">
-            <h4 class="text-sm font-extrabold text-academy-navy">Academic & Account Information</h4>
-            <div id="profileDetailsGrid" class="grid sm:grid-cols-2 gap-4"></div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- STUDENT DASHBOARD WALKTHROUGH POP-UP MODAL -->
-  <div id="walkthroughModal" class="fixed inset-0 z-[150] hidden items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm animate-in fade-in duration-200">
-    <div class="relative w-full max-w-lg bg-white rounded-[2.5rem] border border-academy-border shadow-2xl overflow-hidden flex flex-col transition-all">
-      
-      <!-- Top Progress Bar & Header -->
-      <div class="bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-7 relative">
-        <button type="button" onclick="skipWalkthrough()" class="absolute top-5 right-5 text-white/70 hover:text-white p-1 rounded-xl hover:bg-white/10 transition" aria-label="Close walkthrough">
-          <span class="material-symbols-rounded text-xl">close</span>
-        </button>
-
-        <div class="flex items-center justify-between text-xs font-extrabold text-blue-200 uppercase tracking-wider mb-2.5 pr-8">
-          <span class="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-white backdrop-blur-sm">
-            <span class="material-symbols-rounded text-[16px] text-sky-300">explore</span>
-            Portal Walkthrough
-          </span>
-          <span id="wtStepBadge">Step 1 of 5</span>
-        </div>
-
-        <h3 id="wtTitle" class="text-xl sm:text-2xl font-black text-white mt-1">Welcome to your Student Portal</h3>
-        <p id="wtSubtitle" class="text-xs sm:text-sm text-blue-100/90 mt-1">Here is a quick tour to help you navigate your account features.</p>
-
-        <!-- Step Indicator Dots / Bar -->
-        <div class="w-full bg-white/20 h-2 rounded-full mt-4 overflow-hidden">
-          <div id="wtProgressBar" class="bg-sky-400 h-full w-1/5 transition-all duration-300 rounded-full"></div>
-        </div>
-      </div>
-
-      <!-- Step Body Content -->
-      <div class="p-6 sm:p-7 space-y-5 text-academy-text flex-1">
-        
-        <!-- Dynamic Visual Icon & Highlight Box -->
-        <div class="flex items-center gap-4 p-4 rounded-2xl bg-academy-soft border border-academy-border">
-          <div id="wtIconBox" class="w-12 h-12 rounded-2xl bg-blue-100 text-academy-navy flex items-center justify-center shrink-0 shadow-xs">
-            <span id="wtIcon" class="material-symbols-rounded text-2xl">dashboard</span>
-          </div>
-          <div>
-            <h4 id="wtHighlightTitle" class="text-sm font-extrabold text-academy-navy">Dashboard Overview</h4>
-            <p id="wtHighlightText" class="text-xs text-academy-muted mt-0.5">Quickly view your total net fees, vouchers applied, and paid amounts.</p>
-          </div>
-        </div>
-
-        <!-- Main Step Text Description -->
-        <p id="wtDescription" class="text-xs sm:text-sm text-academy-muted leading-relaxed">
-          Your main dashboard presents an instant financial breakdown of your account, including applied ESC/SHS vouchers, remaining net balance due, and overall clearance progress.
-        </p>
-
-        <!-- Useful Tip Pill -->
-        <div id="wtTipBox" class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-950 text-xs">
-          <span class="material-symbols-rounded text-lg text-amber-600 shrink-0 mt-0.5">lightbulb</span>
-          <span id="wtTipText" class="leading-normal font-medium">Tip: You can access specific sections anytime using the navigation sidebar menu.</span>
-        </div>
-
-      </div>
-
-      <!-- Modal Footer Controls -->
-      <div class="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
-        <button type="button" onclick="skipWalkthrough()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold text-xs transition">
-          Skip Tour
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button type="button" id="wtPrevBtn" onclick="prevWalkthroughStep()" class="hidden px-4 py-2 rounded-xl border border-academy-border text-academy-navy font-extrabold text-xs hover:bg-white transition">
-            Back
-          </button>
-
-          <button type="button" id="wtNextBtn" onclick="nextWalkthroughStep()" class="px-6 py-2.5 rounded-xl bg-academy-navy text-white font-extrabold text-xs shadow-md hover:bg-blue-900 transition flex items-center gap-1">
-            <span>Next</span>
-            <span class="material-symbols-rounded text-[18px]">chevron_right</span>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PAYMENT MODAL WITH PARTIAL & ITEMIZED FEE OPTIONS -->
-  <div id="paymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl border border-academy-border max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-        <div>
-          <h3 class="font-extrabold text-lg text-academy-navy">Make Tuition Payment</h3>
-          <p class="text-xs text-academy-muted">Pay custom amount or choose specific fees</p>
-        </div>
-        <button onclick="closePaymentModal()" class="p-1 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100">
-          <span class="material-symbols-rounded">close</span>
-        </button>
-      </div>
-
-      <!-- Payment Option Toggle (Custom Partial vs Itemized Fee Selection) -->
-      <div>
-        <label class="block text-xs font-extrabold text-academy-navy mb-2">Select Payment Option</label>
-        <div class="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-academy-soft border border-academy-border">
-          <button id="modeBtnCustom" type="button" onclick="setPaymentMode('custom')"
-            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs">
-            Custom / Partial Amount
-          </button>
-          <button id="modeBtnItemized" type="button" onclick="setPaymentMode('itemized')"
-            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy">
-            Select Specific Fee Items
-          </button>
-        </div>
-      </div>
-
-      <!-- Custom Partial Payment Controls -->
-      <div id="modeSectionCustom" class="space-y-3">
-        <div>
-          <label class="block text-xs font-extrabold text-academy-navy mb-1">Enter Payment Amount (PHP)</label>
-          <div class="relative">
-            <span class="absolute left-4 top-3 font-extrabold text-slate-400">₱</span>
-            <input type="number" id="payAmountInput" min="1" step="any"
-              class="w-full pl-9 pr-4 py-3 rounded-2xl border-2 border-academy-border font-extrabold text-lg text-slate-900 focus:border-academy-blue focus:outline-none" placeholder="0">
-          </div>
-          <p id="payAmountHint" class="text-xs text-slate-500 mt-1.5">Current outstanding balance: ₱0</p>
-        </div>
-
-        <!-- Quick Preset Buttons -->
-        <div>
-          <p class="text-[11px] font-bold text-academy-muted mb-1.5">Quick Presets</p>
-          <div class="grid grid-cols-4 gap-2 text-xs font-bold">
-            <button type="button" onclick="applyPayPreset('full')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">Full Balance</button>
-            <button type="button" onclick="applyPayPreset('half')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">50% Balance</button>
-            <button type="button" onclick="applyPayPreset(5000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱5,000</button>
-            <button type="button" onclick="applyPayPreset(2000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱2,000</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Itemized Mode Fee Selection Checklist -->
-      <div id="modeSectionItemized" class="hidden space-y-3">
-        <div class="flex justify-between items-center">
-          <label class="block text-xs font-extrabold text-academy-navy">Check Fee Items You Wish to Pay</label>
-          <button type="button" onclick="selectAllFeeItems(true)" class="text-xs font-bold text-academy-blue hover:underline">Select All</button>
-        </div>
-
-        <div id="feeItemsChecklist" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
-
-        <div class="p-3.5 rounded-2xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs font-bold">
-          <span class="text-academy-navy">Selected Fees Total:</span>
-          <span id="itemizedSelectedTotal" class="text-base font-extrabold text-emerald-700">₱0</span>
-        </div>
-      </div>
-
-      <!-- Payment Method (QR Ph via PayMongo) -->
-      <div>
-        <label class="block text-xs font-extrabold text-academy-navy mb-2">Payment Channel</label>
-        <div class="p-3.5 rounded-2xl border-2 border-academy-blue bg-blue-50/70 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-academy-navy text-white flex items-center justify-center shrink-0">
-              <span class="material-symbols-rounded text-xl">qr_code_2</span>
-            </div>
-            <div>
-              <p class="font-extrabold text-xs text-academy-navy">QR Ph (PayMongo)</p>
-              <p class="text-[11px] text-academy-muted mt-0.5">Instant online QR payment via PayMongo</p>
-            </div>
-          </div>
-          <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">Active</span>
-        </div>
-      </div>
-
-      <!-- Channel Details -->
-      <div id="viewPaymongo" class="pay-view space-y-3">
-        <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs text-blue-950 leading-5">
-          <p class="font-bold text-academy-navy flex items-center gap-1.5">
-            <span class="material-symbols-rounded text-base text-blue-600">verified</span>Official PayMongo Gateway
-          </p>
-          <p class="mt-1 text-slate-600">Generates an official QR Ph checkout session. You can scan the QR code using GCash, Maya, ShopeePay, BDO, BPI, UnionBank, or any Philippine bank app supporting QR Ph.</p>
-        </div>
-        <button onclick="triggerPayMongoLiveFromModal()" class="w-full py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2 text-sm">
-          Generate PayMongo QR Ph Checkout →
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RECEIPT MODAL -->
-  <div id="receiptModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div id="receiptPrintArea" class="bg-white rounded-3xl border border-academy-border max-w-md w-full p-6 shadow-2xl text-slate-800 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-        <div class="flex items-center gap-3">
-          <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-10 h-10 object-contain rounded-full border p-0.5 bg-white">
-          <div>
-            <h3 class="font-extrabold text-sm text-academy-navy leading-tight">PAGBILAO ACADEMY INC.</h3>
-            <p class="text-[11px] text-slate-500">Official Student Payment Receipt</p>
-          </div>
-        </div>
-        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wide">Success</span>
-      </div>
-
-      <div id="receiptDetails" class="bg-slate-50 rounded-2xl p-4 text-xs space-y-2 border border-slate-200"></div>
-
-      <div class="flex gap-2 no-print">
-        <button onclick="printReceipt()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 flex items-center justify-center gap-1.5">
-          <span class="material-symbols-rounded text-base">print</span>Print Receipt
-        </button>
-        <button onclick="closeReceiptModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PRINTABLE STATEMENT OF ACCOUNT MODAL -->
-  <div id="statementPrintModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl border border-academy-border max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
-      <!-- Modal Action Bar -->
-      <div class="flex justify-between items-center pb-4 border-b border-slate-200 no-print">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-rounded text-academy-blue text-2xl">description</span>
-          <div>
-            <h3 class="font-extrabold text-base sm:text-lg text-academy-navy">Official Statement of Account</h3>
-            <p class="text-xs text-academy-muted">Printable fee breakdown receipt for Pagbilao Academy Inc.</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition flex items-center gap-2 shadow-sm">
-            <span class="material-symbols-rounded text-[18px]">print</span>Print Now
-          </button>
-          <button onclick="closeStatementPrintModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
-            <span class="material-symbols-rounded">close</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Printable Area Document -->
-      <div id="printableStatementArea" class="bg-white p-2 sm:p-4 text-slate-800 space-y-6">
-        <!-- Letterhead Header -->
-        <div class="flex items-center justify-between border-b-2 border-academy-navy pb-4">
-          <div class="flex items-center gap-3">
-            <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-16 h-16 object-contain rounded-full border p-1 bg-white">
-            <div>
-              <h1 class="text-lg font-black text-academy-navy tracking-tight">PAGBILAO ACADEMY INC.</h1>
-              <p class="text-xs font-semibold text-slate-600">La Purisima Concepcion St., Pagbilao, Quezon</p>
-              <p class="text-[11px] text-slate-500">Tel: (042) 731-2054 · Student Information & Billing System</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="px-3 py-1 rounded-full bg-blue-50 text-academy-navy border border-blue-200 text-xs font-extrabold uppercase tracking-wide">Statement of Account</span>
-            <p id="stmtDateStr" class="text-xs font-semibold text-slate-500 mt-2">Date: July 24, 2026</p>
-          </div>
-        </div>
-
-        <!-- Student Info Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Student Name</p>
-            <p id="stmtStudentName" class="font-black text-slate-900 text-sm mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Student ID Number</p>
-            <p id="stmtStudentId" class="font-extrabold text-slate-900 mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Grade & Section</p>
-            <p id="stmtClass" class="font-extrabold text-slate-900 mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Education Level</p>
-            <p id="stmtLevel" class="font-extrabold text-slate-900 mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">Voucher Applied</p>
-            <p id="stmtVoucher" class="font-extrabold text-blue-700 mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-slate-500 font-bold uppercase text-[10px] tracking-wider">School Year</p>
-            <p id="stmtSY" class="font-extrabold text-slate-900 mt-0.5">2026-2027</p>
-          </div>
-        </div>
-
-        <!-- Fee Itemized Table -->
-        <div>
-          <h4 class="text-xs font-extrabold text-academy-navy uppercase tracking-wider mb-2">Itemized Assessment Breakdown</h4>
-          <table class="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-            <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
-              <tr>
-                <th class="p-2.5">Fee Particulars</th>
-                <th class="p-2.5 text-right">Base Amount</th>
-                <th class="p-2.5 text-right">Voucher / Discount</th>
-                <th class="p-2.5 text-right">Net Assessed</th>
-              </tr>
-            </thead>
-            <tbody id="stmtFeeTableBody" class="divide-y divide-slate-200"></tbody>
-            <tfoot id="stmtFeeTableFoot" class="bg-slate-50 font-bold border-t border-slate-300"></tfoot>
-          </table>
-        </div>
-
-        <!-- Payment History Table on Statement -->
-        <div>
-          <h4 class="text-xs font-extrabold text-academy-navy uppercase tracking-wider mb-2">Payment History Ledger</h4>
-          <table class="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-            <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
-              <tr>
-                <th class="p-2.5">Ref / OR No.</th>
-                <th class="p-2.5">Date Paid</th>
-                <th class="p-2.5">Channel / Method</th>
-                <th class="p-2.5 text-right">Amount Paid</th>
-              </tr>
-            </thead>
-            <tbody id="stmtPaymentsBody" class="divide-y divide-slate-200"></tbody>
-          </table>
-        </div>
-
-        <!-- Financial Summary Card -->
-        <div class="p-4 rounded-xl border-2 border-academy-navy bg-blue-50/50 space-y-2 text-xs">
-          <div class="flex justify-between font-bold text-slate-700">
-            <span>Total Gross Assessed Fees:</span>
-            <span id="stmtGrossTotal">₱0</span>
-          </div>
-          <div class="flex justify-between font-bold text-blue-800">
-            <span>Less Total Vouchers & Discounts:</span>
-            <span id="stmtDeductionsTotal">-₱0</span>
-          </div>
-          <div class="flex justify-between font-extrabold text-slate-900 border-t border-slate-300 pt-1.5">
-            <span>Total Net Assessed Tuition & Fees:</span>
-            <span id="stmtNetAssessedTotal">₱0</span>
-          </div>
-          <div class="flex justify-between font-extrabold text-green-700">
-            <span>Less Total Payments Received:</span>
-            <span id="stmtTotalPaid">-₱0</span>
-          </div>
-          <div class="flex justify-between font-black text-base text-red-600 border-t-2 border-academy-navy pt-2">
-            <span>NET REMAINING BALANCE DUE:</span>
-            <span id="stmtNetBalance">₱0</span>
-          </div>
-        </div>
-
-        <!-- Signatures & Note -->
-        <div class="pt-6 border-t border-slate-300 grid grid-cols-2 gap-8 text-xs text-slate-600">
-          <div>
-            <p class="text-[11px] italic leading-4 text-slate-500">
-              This statement of account serves as an official summary of fees, discounts, and payments recorded in Pagbilao Academy Inc.'s Billing System.
-            </p>
-          </div>
-          <div class="text-center space-y-8">
-            <div class="border-b border-slate-400 pb-1">
-              <p class="font-bold text-slate-800">Accounting Office / Cashier</p>
-            </div>
-            <p class="text-[10px] text-slate-400">Authorized Official Stamp & Signature</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- JAVASCRIPT CONTROLLER -->
-  <script>
     const STORAGE_KEY = 'pa_full_admin_v2';
     const currency = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
     const DEFAULT_FEE_STRUCTURES = {
@@ -1258,40 +284,17 @@
     }
     
     function assignedTeacherRows(s) { return (appData.accounts || []).filter(a => a.role === 'teacher_clearance_head' && a.active !== false).flatMap(t => (t.assignments || []).filter(a => assignmentMatchesStudent(a, s)).map(a => ({ teacher: t, assignment: a, key: `${s.id}|${t.id}|${a.subject || 'Subject'}|${a.grade}|${a.section || 'N/A'}` }))) }
-    function requestFor(row) {
-      if (!appData.teacherClearanceRequests) return null;
-      const direct = appData.teacherClearanceRequests.find(r => r.key === row.key);
-      if (direct) return direct;
-      const s = currentStudent();
-      const sId = String(s?.id || '').toLowerCase();
-      const tId = String(row.teacher?.id || '').toLowerCase();
-      const subj = String(row.assignment?.subject || '').toLowerCase();
-      return appData.teacherClearanceRequests.find(r => {
-        const rKey = String(r.key || '').toLowerCase();
-        const rStudent = String(r.studentId || rKey.split('|')[0] || '').toLowerCase();
-        const rTeacher = String(r.teacherId || rKey.split('|')[1] || '').toLowerCase();
-        const rSubject = String(r.subject || rKey.split('|')[2] || '').toLowerCase();
-        return (rStudent === sId && (rTeacher === tId || rSubject === subj));
-      });
-    }
+    function requestFor(row) { return appData.teacherClearanceRequests.find(r => r.key === row.key) }
     
     function statusBadge(status) {
-      const cls = {
-        approved: 'bg-green-50 text-green-700 border border-green-200/60',
-        paid: 'bg-green-50 text-green-700 border border-green-200/60',
-        requested: 'bg-blue-50 text-blue-700 border border-blue-200/60',
-        pending: 'bg-amber-50 text-amber-700 border border-amber-200/60',
-        on_hold: 'bg-red-50 text-red-700 border border-red-200/80 font-bold',
-        not_requested: 'bg-slate-100 text-slate-600 border border-slate-200/60'
-      }[status] || 'bg-slate-100 text-slate-600 border border-slate-200/60';
-      const label = status === 'on_hold' ? 'On Hold' : status.replace('_', ' ');
-      return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${cls}">${label}</span>`;
+      const cls = { approved: 'bg-green-50 text-green-700', paid: 'bg-green-50 text-green-700', requested: 'bg-blue-50 text-blue-700', pending: 'bg-amber-50 text-amber-700', on_hold: 'bg-amber-50 text-amber-700', not_requested: 'bg-slate-100 text-slate-600' }[status] || 'bg-slate-100 text-slate-600';
+      return `<span class="px-3 py-1 rounded-full text-xs font-extrabold ${cls}">${status.replace('_', ' ')}</span>`;
     }
 
     // Navigation & Tabs
     const navItems = [
       ['dashboardPage', 'dashboard', 'Dashboard Overview', 'Summary of your fees, clearance, and account status'],
-      ['paymentsPage', 'account_balance_wallet', 'Tuition & Billing', 'View gross fees, discounts, net balance, and make payments'],
+      ['paymentsPage', 'account_balance_wallet', 'Tuition & Billing', 'View gross fees, discounts, net balance, and pay installments'],
       ['transactionsPage', 'receipt_long', 'Payment History', 'View past transactions, payment receipts, and payment references'],
       ['clearancePage', 'fact_check', 'Clearance Status', 'Track subject teacher and school office clearance approvals'],
       ['certificatePage', 'workspace_premium', 'Clearance Certificate', 'Generate and view your official clearance certificate'],
@@ -1388,6 +391,34 @@
           }
         }
       }
+
+      if (!insts || insts.length === 0) {
+        installmentBody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-academy-muted">
+          <p class="font-extrabold text-sm text-academy-navy">No Due Date Schedules Set</p>
+          <p class="text-xs mt-1">School administration has not set active payment reminder schedules yet.</p>
+        </td></tr>`;
+      } else {
+        installmentBody.innerHTML = insts.map(i => `<tr>
+          <td class="p-4 font-bold text-academy-navy">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${i.status === 'Paid' ? 'bg-emerald-500' : i.status === 'Overdue' ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}"></span>
+              <span class="text-sm font-extrabold text-academy-navy">${i.title}</span>
+            </div>
+            ${i.description ? `<p class="text-xs font-normal text-slate-500 mt-1 pl-4.5">${i.description}</p>` : ''}
+          </td>
+          <td class="p-4 font-bold text-slate-700">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs">
+              <span class="material-symbols-rounded text-sm text-amber-600">event</span>${i.dueDate || 'As scheduled'}
+            </span>
+          </td>
+          <td class="p-4 font-extrabold ${bal > 0 ? 'text-red-600' : 'text-emerald-700'}">${bal > 0 ? money(bal) : '₱0 (Fully Settled)'}</td>
+          <td class="p-4">
+            ${i.status === 'Paid' ? '<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60 inline-flex items-center gap-1"><span class="material-symbols-rounded text-xs">check_circle</span> Settled</span>' :
+              i.status === 'Overdue' ? '<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-red-50 text-red-700 border border-red-200/60 inline-flex items-center gap-1"><span class="material-symbols-rounded text-xs">error</span> Overdue</span>' :
+              '<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200/60 inline-flex items-center gap-1"><span class="material-symbols-rounded text-xs">schedule</span> Upcoming</span>'}
+          </td>
+        </tr>`).join('');
+      }
     }
 
     function renderPaymentsHistory() {
@@ -1469,62 +500,17 @@
       teacherClearanceCards.innerHTML = rows.length ? rows.map(row => {
         const req = requestFor(row);
         const status = req?.status || 'not_requested';
-        const remarkNote = req?.remarks || s.clearanceRemarks?.[row.assignment?.subject];
-        const isOnHold = status === 'on_hold';
-        const isApproved = status === 'approved';
-        const isRequested = status === 'requested';
-        const disabled = isApproved || isRequested;
-        const btnText = status === 'not_requested' ? 'Request Approval' : (isOnHold ? 'Re-submit Request' : (isApproved ? 'Approved' : 'Request Sent'));
-
-        return `<div class="border border-academy-border rounded-xl p-4 bg-white space-y-3">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="font-extrabold text-sm text-academy-navy">${row.teacher.name}</p>
-              <p class="text-xs text-academy-muted mt-1">${row.assignment.subject || 'Subject'} · ${row.assignment.grade} ${row.assignment.section || 'N/A'}</p>
-            </div>
-            ${statusBadge(status)}
-          </div>
-          ${isOnHold ? `
-            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
-              <div class="flex items-center gap-1.5 font-bold text-amber-900 mb-1">
-                <span class="material-symbols-rounded text-base text-amber-600">warning</span>
-                Teacher Clearance Remarks:
-              </div>
-              <p class="text-amber-800 leading-relaxed font-medium">${remarkNote || 'Requirement compliance pending. Please settle outstanding tasks.'}</p>
-            </div>
-          ` : ''}
-          <button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="w-full px-3 py-2 rounded-xl text-xs font-extrabold ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : (isOnHold ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer' : 'bg-academy-navy text-white hover:bg-blue-900 cursor-pointer')} transition shadow-xs">${btnText}</button>
-        </div>`;
+        const disabled = status !== 'not_requested';
+        return `<div class="border border-academy-border rounded-xl p-4 bg-white"><div class="flex items-start justify-between gap-3"><div><p class="font-extrabold text-sm text-academy-navy">${row.teacher.name}</p><p class="text-xs text-academy-muted mt-1">${row.assignment.subject || 'Subject'} · ${row.assignment.grade} ${row.assignment.section || 'N/A'}</p></div>${statusBadge(status)}</div><button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="mt-3 w-full px-3 py-2 rounded-xl text-xs font-extrabold ${disabled ? 'bg-slate-100 text-slate-400' : 'bg-academy-navy text-white hover:bg-blue-900'}">${status === 'not_requested' ? 'Request Approval' : 'Request Sent'}</button></div>`
       }).join('') : `<div class="sm:col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">No teacher assignment found for ${classLabel(s)}. Ask the admin to add teacher clearance heads for this grade/section.</div>`;
 
-      officeClearanceCards.innerHTML = officeKeys().map(k => {
-        const st = s.clearance?.[k] || 'pending';
-        const remark = s.clearanceRemarks?.[k];
-        const isOnHold = st === 'on_hold';
-        return `<div class="border border-academy-border rounded-xl p-4 bg-white space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="font-extrabold text-sm text-academy-navy">${k} Office</span>
-            ${statusBadge(st)}
-          </div>
-          ${isOnHold ? `
-            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
-              <div class="flex items-center gap-1.5 font-bold text-amber-900 mb-1">
-                <span class="material-symbols-rounded text-base text-amber-600">warning</span>
-                Office Clearance Remarks:
-              </div>
-              <p class="text-amber-800 leading-relaxed font-medium">${remark || 'Office compliance pending. Please visit or contact the office.'}</p>
-            </div>
-          ` : ''}
-        </div>`;
-      }).join('');
+      officeClearanceCards.innerHTML = officeKeys().map(k => `<div class="flex items-center justify-between border border-academy-border rounded-xl p-3 bg-white"><span class="font-bold text-sm text-academy-navy">${k}</span>${statusBadge(s.clearance?.[k] || 'pending')}</div>`).join('');
 
       // Render Overview Clearance Summary
       const summaryGrid = document.getElementById('clearanceSummaryGrid');
       if (summaryGrid) {
-        const teacherAnyHold = rows.some(r => requestFor(r)?.status === 'on_hold');
-        const teacherStatus = teacherApprovalsApproved(s) ? 'approved' : (teacherAnyHold ? 'on_hold' : 'pending');
         summaryGrid.innerHTML = [
-          ['Subject Teachers', teacherStatus],
+          ['Subject Teachers', teacherApprovalsApproved(s) ? 'approved' : 'pending'],
           ['Guidance Office', s.clearance?.Guidance || 'pending'],
           ['Prefect of Discipline', s.clearance?.Prefect || 'pending'],
           ['Library Head', s.clearance?.Library || 'pending'],
@@ -1536,33 +522,6 @@
             ${statusBadge(st)}
           </div>
         `).join('');
-      }
-
-      // Render Overview Hold Alert Banner
-      const holdBanner = document.getElementById('clearanceHoldAlertBanner');
-      const holdMsg = document.getElementById('clearanceHoldAlertMsg');
-      if (holdBanner && holdMsg) {
-        const holdTeachers = rows.filter(r => requestFor(r)?.status === 'on_hold');
-        const holdOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold');
-        const totalHolds = holdTeachers.length + holdOffices.length;
-
-        if (totalHolds > 0) {
-          holdBanner.classList.remove('hidden');
-          const details = [
-            ...holdTeachers.map(r => {
-              const req = requestFor(r);
-              const note = req?.remarks || s.clearanceRemarks?.[r.assignment?.subject];
-              return `${r.assignment?.subject || 'Subject'}${note ? ` ("${note}")` : ''}`;
-            }),
-            ...holdOffices.map(k => {
-              const note = s.clearanceRemarks?.[k];
-              return `${k} Office${note ? ` ("${note}")` : ''}`;
-            })
-          ];
-          holdMsg.textContent = `${totalHolds} requirement(s) on hold: ${details.join('; ')}. Please review remarks and comply.`;
-        } else {
-          holdBanner.classList.add('hidden');
-        }
       }
     }
 
@@ -1677,41 +636,6 @@
       if (!s) return [];
       const notifications = [];
 
-      // 0. CLEARANCE ON HOLD HIGH-PRIORITY ALERTS
-      const teacherRows = assignedTeacherRows(s);
-      const onHoldTeachers = teacherRows.filter(row => requestFor(row)?.status === 'on_hold');
-      onHoldTeachers.forEach(row => {
-        const req = requestFor(row);
-        const remarkNote = req?.remarks || s.clearanceRemarks?.[row.assignment?.subject];
-        notifications.push({
-          id: `hold_teacher_${row.assignment?.subject || 'subj'}`,
-          category: 'Clearance On Hold',
-          severity: 'danger',
-          icon: 'report',
-          badgeText: 'Action Required',
-          title: `Clearance On Hold: ${row.assignment?.subject || 'Subject'}`,
-          message: `${row.teacher?.name || 'Teacher'} placed this clearance on hold. Remark: "${remarkNote || 'Compliance required before approval'}".`,
-          actionText: 'View Clearance Details',
-          actionFn: "showPage('clearancePage')"
-        });
-      });
-
-      const onHoldOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold');
-      onHoldOffices.forEach(officeName => {
-        const remarkNote = s.clearanceRemarks?.[officeName];
-        notifications.push({
-          id: `hold_office_${officeName}`,
-          category: 'Clearance On Hold',
-          severity: 'danger',
-          icon: 'report',
-          badgeText: 'Action Required',
-          title: `Clearance On Hold: ${officeName} Office`,
-          message: `${officeName} Office placed your clearance on hold. Remark: "${remarkNote || 'Please visit or contact the office to comply'}".`,
-          actionText: 'View Clearance Details',
-          actionFn: "showPage('clearancePage')"
-        });
-      });
-
       // 1. PAYMENT & DUE DATE REMINDERS
       const bal = balance(s);
       const insts = studentInstallments(s);
@@ -1760,11 +684,9 @@
 
       // 2. CLEARANCE PROGRESS REMINDERS
       const c = clearanceCounts(s);
-      const pendingTeachers = teacherRows.filter(row => {
-        const st = requestFor(row)?.status;
-        return st !== 'approved' && st !== 'on_hold';
-      });
-      const approvedTeachersCount = teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
+      const teacherRows = assignedTeacherRows(s);
+      const pendingTeachers = teacherRows.filter(row => requestFor(row)?.status !== 'approved');
+      const approvedTeachersCount = teacherRows.length - pendingTeachers.length;
       const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
       const totalOffice = officeKeys().length;
 
@@ -1793,7 +715,7 @@
             actionText: 'Request Clearance',
             actionFn: "showPage('clearancePage')"
           });
-        } else if (teacherRows.length > 0 && onHoldTeachers.length === 0) {
+        } else if (teacherRows.length > 0) {
           notifications.push({
             id: 'clearance_teachers_done',
             category: 'Clearance',
@@ -1807,8 +729,8 @@
           });
         }
 
-        const pendingOffices = officeKeys().filter(k => !['approved', 'on_hold'].includes(s.clearance?.[k]));
-        if (officeDone < totalOffice && pendingOffices.length > 0) {
+        if (officeDone < totalOffice) {
+          const pendingOffices = officeKeys().filter(k => s.clearance?.[k] !== 'approved');
           notifications.push({
             id: 'clearance_office_pending',
             category: 'Clearance',
@@ -2730,9 +1652,7 @@
           };
 
           ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
-            if (dbS.clearance && (dbS.clearance[k] === 'approved' || dbS.clearance[k] === 'on_hold')) {
-              mergedClearance[k] = dbS.clearance[k];
-            } else if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+            if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
               mergedClearance[k] = 'approved';
             }
           });
@@ -2749,8 +1669,7 @@
             feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
             paid: effectivePaid,
-            clearance: mergedClearance,
-            clearanceRemarks: { ...(local.clearanceRemarks || {}), ...(dbS.clearanceRemarks || {}) }
+            clearance: mergedClearance
           };
         } else {
           merged.push({ ...dbS });
@@ -2795,12 +1714,7 @@
         const key = String(dbR.id || dbR.key || '').toLowerCase();
         if (key) {
           const local = map.get(key);
-          map.set(key, {
-            ...dbR,
-            ...(local || {}),
-            status: dbR.status || local?.status,
-            remarks: dbR.remarks || local?.remarks || ''
-          });
+          map.set(key, { ...dbR, ...(local || {}) });
         }
       });
 
@@ -3123,7 +2037,4 @@
     }
 
     initStudentDashboard();
-  </script>
-</body>
-
-</html>
+  

@@ -309,7 +309,9 @@ function mergeStudentsState(localStudents = [], dbStudents = []) {
       };
 
       ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
-        if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+        if (dbS.clearance && (dbS.clearance[k] === 'approved' || dbS.clearance[k] === 'on_hold')) {
+          mergedClearance[k] = dbS.clearance[k];
+        } else if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
           mergedClearance[k] = 'approved';
         }
       });
@@ -326,7 +328,8 @@ function mergeStudentsState(localStudents = [], dbStudents = []) {
         feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
         assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
         paid: highestPaid,
-        clearance: mergedClearance
+        clearance: mergedClearance,
+        clearanceRemarks: { ...(local.clearanceRemarks || {}), ...(dbS.clearanceRemarks || {}) }
       };
     } else {
       merged.push({ ...dbS });
@@ -376,10 +379,16 @@ function updateClearanceRequestState(row, status, remarks = '') {
   }
 
   row.student.clearance = row.student.clearance || {};
+  row.student.clearanceRemarks = row.student.clearanceRemarks || {};
+  if (row.assignment?.subject) {
+    row.student.clearanceRemarks[row.assignment.subject] = remarks;
+  }
   if (status === 'approved') {
     if (allTeacherRowsApproved(row.student)) {
       row.student.clearance.Teacher = 'approved';
     }
+  } else if (status === 'on_hold') {
+    row.student.clearance.Teacher = 'on_hold';
   } else {
     row.student.clearance.Teacher = 'pending';
   }
@@ -390,7 +399,7 @@ function updateClearanceRequestState(row, status, remarks = '') {
 async function approve(key, btn){
   const row=teacherRows().find(r=>r.key===key);
   if(!row)return;
-  const remarks = btn ? btn.closest('tr').querySelector('input').value : '';
+  const remarks = btn ? btn.closest('tr').querySelector('input').value.trim() : '';
 
   if (row.field) {
     if (row.field === 'Principal' && !principalUnlocked(row.student)) {
@@ -404,6 +413,8 @@ async function approve(key, btn){
 
     row.student.clearance = row.student.clearance || {};
     row.student.clearance[row.field] = 'approved';
+    row.student.clearanceRemarks = row.student.clearanceRemarks || {};
+    row.student.clearanceRemarks[row.field] = remarks || 'Approved';
     saveData();
 
     if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
@@ -442,7 +453,7 @@ async function hold(key, btn){
   const row=teacherRows().find(r=>r.key===key);
   if(!row)return;
 
-  const remarks = btn ? btn.closest('tr').querySelector('input').value : '';
+  const remarks = btn ? btn.closest('tr').querySelector('input').value.trim() : '';
 
   if (row.field) {
     if (row.student.clearance?.[row.field] === 'approved') {
@@ -451,6 +462,8 @@ async function hold(key, btn){
     }
     row.student.clearance = row.student.clearance || {};
     row.student.clearance[row.field] = 'on_hold';
+    row.student.clearanceRemarks = row.student.clearanceRemarks || {};
+    row.student.clearanceRemarks[row.field] = remarks || 'Clearance requirement on hold';
     saveData();
 
     if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
@@ -476,7 +489,7 @@ async function hold(key, btn){
     return;
   }
 
-  updateClearanceRequestState(row, 'on_hold', remarks);
+  updateClearanceRequestState(row, 'on_hold', remarks || 'Clearance requirement on hold');
 
   if(window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()){
     try {
@@ -739,6 +752,8 @@ function renderTable() {
       `;
     }
 
+    const existingRemarks = isTeacher ? (req?.remarks || r.student?.clearanceRemarks?.[r.assignment?.subject] || '') : (r.student?.clearanceRemarks?.[r.field] || '');
+
     return `<tr class="hover:bg-academy-soft/40 transition">
       <td class="px-4 py-3.5 font-extrabold text-academy-navy">
         ${r.student.name}
@@ -751,7 +766,7 @@ function renderTable() {
       </td>
       <td class="px-4 py-3.5 text-slate-700 font-semibold">${r.assignment.subject || 'Subject'}</td>
       <td class="px-4 py-3.5">${statusBadge(status)}</td>
-      <td class="px-4 py-3.5"><input value="${req?.remarks || ''}" placeholder="Optional remarks" class="px-3 py-1.5 rounded-xl border border-academy-border w-full text-xs bg-white focus:outline-none focus:ring-1 focus:ring-academy-blue" ${isApproved ? 'disabled' : ''}></td>
+      <td class="px-4 py-3.5"><input value="${(existingRemarks || '').replaceAll('"', '&quot;')}" placeholder="Optional remarks" class="px-3 py-1.5 rounded-xl border border-academy-border w-full text-xs bg-white focus:outline-none focus:ring-1 focus:ring-academy-blue" ${isApproved ? 'disabled' : ''}></td>
       <td class="px-4 py-3.5 flex items-center gap-1.5">
         ${actionButtons}
       </td>
