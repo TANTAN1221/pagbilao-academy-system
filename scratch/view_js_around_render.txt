@@ -1,0 +1,275 @@
+1241:       document.getElementById('mobileDrawer').classList.toggle('hidden');
+1242:     }
+1243: 
+1244:     function studentInstallments(s) {
+1245:       let paid = getStudentTotalPaid(s);
+1246:       return (appData.installmentTemplate || []).map(t => {
+1247:         const amount = Math.round(assessedTotal(s) * (Number(t.percent) / 100));
+1248:         const applied = Math.min(paid, amount);
+1249:         paid -= applied;
+1250:         return { ...t, amount, paid: applied, status: applied >= amount ? 'Paid' : applied > 0 ? 'Partial' : 'Unpaid' }
+1251:       });
+1252:     }
+1253: 
+1254:     function renderPayments(s) {
+1255:       const gross = feeTotal(s.level), voucher = voucherAmount(s), net = assessedTotal(s), paid = getStudentTotalPaid(s), bal = balance(s), pct = net ? Math.min(100, Math.round(paid / net * 100)) : 0;
+1256:       
+1257:       netBalance.textContent = money(bal);
+1258:       voucherApplied.textContent = money(voucher);
+1259:       voucherName.textContent = s.voucher || 'No voucher';
+1260:       voucherNote.textContent = s.voucher === 'None' ? 'No voucher applied' : `After ${s.voucher}`;
+1261:       grossFees.textContent = money(gross);
+1262:       paymentVoucher.textContent = '-' + money(voucher);
+1263:       amountPaid.textContent = money(paid);
+1264:       paymentBalance.textContent = money(bal);
+1265:       paymentProgressBar.style.width = pct + '%';
+1266:       paymentPctLabel.textContent = `${pct}% Paid`;
+1267: 
+1268:       const insts = studentInstallments(s);
+1269: 
+1270:       const banner = document.getElementById('dueDateAlertBanner');
+1271:       const titleEl = document.getElementById('dueDateAlertTitle');
+1272:       const msgEl = document.getElementById('dueDateAlertMsg');
+1273: 
+1274:       if (banner && titleEl && msgEl) {
+1275:         if (bal <= 0) {
+1276:           banner.classList.add('hidden');
+1277:         } else {
+1278:           const unpaidInst = (insts || []).find(i => i.status !== 'Paid');
+1279:           if (unpaidInst) {
+1280:             banner.classList.remove('hidden');
+1281:             titleEl.textContent = `Payment Milestone Due: ${unpaidInst.title}`;
+1282:             msgEl.textContent = `Installment balance of ${money(unpaidInst.amount - unpaidInst.paid)} due (${unpaidInst.dueDate || 'As scheduled'}). Settle balance to ensure smooth clearance.`;
+1283:           } else {
+1284:             banner.classList.add('hidden');
+1285:           }
+1286:         }
+1287:       }
+1288: 
+1289:       if (!insts || insts.length === 0) {
+1290:         installmentBody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-academy-muted">
+1291:           <p class="font-extrabold text-sm text-academy-navy">No Due Date Schedules Set</p>
+1292:           <p class="text-xs mt-1">School administration has not set active installment due dates yet.</p>
+1293:         </td></tr>`;
+1294:       } else {
+1295:         installmentBody.innerHTML = insts.map(i => `<tr>
+1296:           <td class="p-4 font-bold text-academy-navy">
+1297:             ${i.title}
+1298:             ${i.description ? `<br><span class="text-xs font-normal text-slate-500">${i.description}</span>` : ''}
+1299:             <br><span class="text-xs font-semibold text-amber-700">Due: ${i.dueDate}</span>
+1300:           </td>
+1301:           <td class="p-4 font-bold">${money(i.amount)}</td>
+1302:           <td class="p-4 font-bold text-green-600">${money(i.paid)}</td>
+1303:           <td class="p-4">${statusBadge(i.status.toLowerCase())}</td>
+1304:         </tr>`).join('');
+1305:       }
+1306:     }
+1307: 
+1308:     function renderPaymentsHistory() {
+1309:       const s = currentStudent();
+1310:       const studentPayments = getStudentPayments(s);
+1311:       const totalPaid = getStudentTotalPaid(s);
+1312:       
+1313:       // Update Summary Cards
+1314:       txCount.textContent = studentPayments.length;
+1315:       txTotalPaid.textContent = money(totalPaid);
+1316:       if (studentPayments.length > 0) {
+1317:         const latest = studentPayments[0];
+1318:         txLatestDate.textContent = latest.date || new Date(latest.paidAt || Date.now()).toLocaleDateString();
+1319:       } else {
+1320:         txLatestDate.textContent = 'None';
+1321:       }
+1322: 
+1323:       // Filter & Search
+1324:       const search = (document.getElementById('txSearchInput')?.value || '').toLowerCase();
+1325:       const channelFilter = (document.getElementById('txMethodFilter')?.value || 'all').toLowerCase();
+1326: 
+1327:       let filtered = studentPayments.filter(p => {
+1328:         const matchesSearch = !search || String(p.referenceNo || p.id || '').toLowerCase().includes(search) || String(p.method || '').toLowerCase().includes(search);
+1329:         const matchesChannel = channelFilter === 'all' || String(p.method || '').toLowerCase().includes(channelFilter);
+1330:         return matchesSearch && matchesChannel;
+1331:       });
+1332: 
+1333:       const body = document.getElementById('paymentHistoryBody');
+1334:       if (!filtered.length) {
+1335:         body.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted">
+1336:           <p class="font-bold">No payment history found</p>
+1337:           <p class="text-xs mt-1">Make a payment using QR Ph, GCash, or Card to see your transaction history.</p>
+1338:         </td></tr>`;
+1339:         return;
+1340:       }
+1341: 
+1342:       body.innerHTML = filtered.map(p => {
+1343:         const ref = p.referenceNo || p.id || 'N/A';
+1344:         const dateStr = p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'Today');
+1345:         const channel = p.method || 'Online';
+1346:         const channelColor = channel.includes('GCash') ? 'bg-emerald-50 text-emerald-700' :
+1347:                              channel.includes('Maya') ? 'bg-sky-50 text-sky-700' :
+1348:                              channel.includes('PayMongo') || channel.includes('QR') ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700';
+1349:         return `<tr class="hover:bg-academy-soft">
+1350:           <td class="p-4 font-extrabold text-academy-navy">${ref}</td>
+1351:           <td class="p-4 text-xs font-semibold text-academy-muted">${dateStr}</td>
+1352:           <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${channelColor}">${channel}</span></td>
+1353:           <td class="p-4 font-extrabold text-green-700">${money(p.amount)}</td>
+1354:           <td class="p-4">${statusBadge('paid')}</td>
+1355:           <td class="p-4">
+1356:             <button onclick='showReceiptModal(${JSON.stringify(p).replaceAll("'", "\\'")})' class="px-3 py-1.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-academy-light">
+1357:               Receipt
+1358:             </button>
+1359:           </td>
+1360:         </tr>`;
+1361:       }).join('');
+1362: 
+1363:       // Recent Preview on Overview Tab
+1364:       const recentList = document.getElementById('recentTransactionsList');
+1365:       if (recentList) {
+1366:         if (!studentPayments.length) {
+1367:           recentList.innerHTML = `<p class="text-xs text-academy-muted py-3">No payments recorded yet.</p>`;
+1368:         } else {
+1369:           recentList.innerHTML = studentPayments.slice(0, 3).map(p => `
+1370:             <div class="p-3 rounded-xl border border-academy-border flex items-center justify-between">
+1371:               <div>
+1372:                 <p class="font-extrabold text-xs text-academy-navy">${p.referenceNo || p.id}</p>
+1373:                 <p class="text-[11px] text-academy-muted">${p.method} · ${p.date || 'Today'}</p>
+1374:               </div>
+1375:               <span class="font-extrabold text-sm text-green-600">${money(p.amount)}</span>
+1376:             </div>
+1377:           `).join('');
+1378:         }
+1379:       }
+1380:     }
+1381: 
+1382:     function renderTeacherClearance(s) {
+1383:       const rows = assignedTeacherRows(s);
+1384:       teacherClearanceCards.innerHTML = rows.length ? rows.map(row => {
+1385:         const req = requestFor(row);
+1386:         const status = req?.status || 'not_requested';
+1387:         const disabled = status !== 'not_requested';
+1388:         return `<div class="border border-academy-border rounded-xl p-4 bg-white"><div class="flex items-start justify-between gap-3"><div><p class="font-extrabold text-sm text-academy-navy">${row.teacher.name}</p><p class="text-xs text-academy-muted mt-1">${row.assignment.subject || 'Subject'} · ${row.assignment.grade} ${row.assignment.section || 'N/A'}</p></div>${statusBadge(status)}</div><button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="mt-3 w-full px-3 py-2 rounded-xl text-xs font-extrabold ${disabled ? 'bg-slate-100 text-slate-400' : 'bg-academy-navy text-white hover:bg-blue-900'}">${status === 'not_requested' ? 'Request Approval' : 'Request Sent'}</button></div>`
+1389:       }).join('') : `<div class="sm:col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">No teacher assignment found for ${classLabel(s)}. Ask the admin to add teacher clearance heads for this grade/section.</div>`;
+1390: 
+1391:       officeClearanceCards.innerHTML = officeKeys().map(k => `<div class="flex items-center justify-between border border-academy-border rounded-xl p-3 bg-white"><span class="font-bold text-sm text-academy-navy">${k}</span>${statusBadge(s.clearance?.[k] || 'pending')}</div>`).join('');
+1392: 
+1393:       // Render Overview Clearance Summary
+1394:       const summaryGrid = document.getElementById('clearanceSummaryGrid');
+1395:       if (summaryGrid) {
+1396:         summaryGrid.innerHTML = [
+1397:           ['Subject Teachers', teacherApprovalsApproved(s) ? 'approved' : 'pending'],
+1398:           ['Guidance Office', s.clearance?.Guidance || 'pending'],
+1399:           ['Prefect of Discipline', s.clearance?.Prefect || 'pending'],
+1400:           ['Library Head', s.clearance?.Library || 'pending'],
+1401:           ['Principal', s.clearance?.Principal || 'pending'],
+1402:           ['Accounting / Final', s.clearance?.Accounting || 'pending']
+1403:         ].map(([title, st]) => `
+1404:           <div class="p-3 rounded-xl border border-academy-border flex items-center justify-between text-xs">
+1405:             <span class="font-bold text-academy-navy">${title}</span>
+1406:             ${statusBadge(st)}
+1407:           </div>
+1408:         `).join('');
+1409:       }
+1410:     }
+1411: 
+1412:     function renderProfile(s) {
+1413:       welcomeName.textContent = `Welcome back, ${s.name.split(' ')[0] || 'Student'}`;
+1414:       studentMeta.textContent = `${classLabel(s)} · Student ID: ${s.id} · SY ${(appData.settings || {}).schoolYear || '2026-2027'}`;
+1415:       profileName.textContent = s.name;
+1416:       profileMeta.innerHTML = `Student ID: <strong>${s.id}</strong><br>${classLabel(s)}`;
+1417:       avatarInitials.textContent = profileInitials.textContent = initials(s.name);
+1418: 
+1419:       const grid = document.getElementById('profileDetailsGrid');
+1420:       if (grid) {
+1421:         grid.innerHTML = [
+1422:           ['Full Name', s.name],
+1423:           ['Student Number', s.id],
+1424:           ['Email Address', s.email || 'N/A'],
+1425:           ['Education Level', s.level],
+1426:           ['Grade Level', s.grade],
+1427:           ['Section Name', s.section || 'N/A'],
+1428:           ['Strand', s.strand || 'N/A'],
+1429:           ['Voucher Status', s.voucher || 'None'],
+1430:           ['School Year', (appData.settings || {}).schoolYear || '2026-2027']
+1431:         ].map(([k, v]) => `
+1432:           <div class="p-3.5 rounded-xl border border-academy-border bg-academy-soft">
+1433:             <p class="text-xs text-academy-muted font-bold">${k}</p>
+1434:             <p class="text-sm font-extrabold text-academy-navy mt-0.5">${v}</p>
+1435:           </div>
+1436:         `).join('');
+1437:       }
+1438: 
+1439:       // Certificate Tab Status
+1440:       const certBadge = document.getElementById('certificateStatusBadge');
+1441:       const certBtn = document.getElementById('openCertificateBtn');
+1442:       const c = clearanceCounts(s);
+1443:       const studentBal = balance(s);
+1444:       const clearancesDone = c.done === c.total && c.total > 0;
+1445:       const isEligible = clearancesDone && studentBal <= 0;
+1446: 
+1447:       if (certBadge) {
+1448:         if (isEligible) {
+1449:           certBadge.textContent = 'Completed & Approved';
+1450:           certBadge.className = 'text-base font-extrabold mt-1 text-emerald-600';
+1451:         } else if (!clearancesDone) {
+1452:           const pendingCount = Math.max(1, c.total - c.done);
+1453:           certBadge.textContent = `Locked (${pendingCount} clearance approval(s) pending)`;
+1454:           certBadge.className = 'text-sm font-extrabold mt-1 text-amber-700';
+1455:         } else {
+1456:           certBadge.textContent = `Locked (Tuition balance of ${money(studentBal)} remaining)`;
+1457:           certBadge.className = 'text-sm font-extrabold mt-1 text-red-600';
+1458:         }
+1459:       }
+1460: 
+1461:       if (certBtn) {
+1462:         if (isEligible) {
+1463:           certBtn.disabled = false;
+1464:           certBtn.className = 'px-8 py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition cursor-pointer flex items-center justify-center gap-2 mx-auto';
+1465:           certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">workspace_premium</span>View & Print Official Certificate';
+1466:         } else if (!clearancesDone) {
+1467:           certBtn.disabled = true;
+1468:           certBtn.className = 'px-8 py-3.5 rounded-2xl bg-slate-200 text-slate-400 font-extrabold cursor-not-allowed flex items-center justify-center gap-2 mx-auto';
+1469:           certBtn.innerHTML = '<span class="material-symbols-rounded text-xl">lock</span>Certificate Locked (Clearance Incomplete)';
+1470:         } else {
+1471:           certBtn.disabled = true;
+1472:           certBtn.className = 'px-8 py-3.5 rounded-2xl bg-red-100 text-red-600 font-extrabold cursor-not-allowed flex items-center justify-center gap-2 mx-auto border border-red-200';
+1473:           certBtn.innerHTML = `<span class="material-symbols-rounded text-xl">account_balance_wallet</span>Certificate Locked (Balance: ${money(studentBal)})`;
+1474:         }
+1475:       }
+1476:     }
+1477: 
+1478:     function officeKeys() { return ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'] }
+1479:     
+1480:     function clearanceCounts(s) {
+1481:       const teacherRows = assignedTeacherRows(s);
+1482:       const teacherDone = teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
+1483:       const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
+1484:       return { done: teacherDone + officeDone, total: teacherRows.length + officeKeys().length }
+1485:     }
+1486: 
+1487:     function teacherApprovalsApproved(s) { const rows = assignedTeacherRows(s); return rows.length > 0 && rows.every(row => requestFor(row)?.status === 'approved') }
+1488: 
+1489:     function renderAll() {
+1490:       appData = ensureData(appData);
+1491:       const s = currentStudent();
+1492:       renderProfile(s);
+1493:       renderPayments(s);
+1494:       renderOverviewFeeBreakdown(s);
+1495:       renderPaymentsHistory();
+1496:       renderTeacherClearance(s);
+1497:       renderSideNav();
+1498:       const c = clearanceCounts(s);
+1499:       clearanceProgress.textContent = `${c.done}/${c.total}`;
+1500:       saveData();
+1501:     }
+1502: 
+1503:     function renderOverviewFeeBreakdown(s) {
+1504:       const feeItems = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
+1505:         ? s.customFees
+1506:         : getFeeItemsForStudent(s);
+1507: 
+1508:       const grossSum = feeItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+1509:       const voucherAmt = voucherAmount(s);
+1510:       const discountAmt = Number(s.feeDiscount || 0);
+1511:       const totalDeductions = voucherAmt + discountAmt;
+1512:       const netAssessed = assessedTotal(s);
+1513:       const paidAmt = getStudentTotalPaid(s);
+1514:       const netBal = balance(s);
+1515: 

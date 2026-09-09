@@ -1,0 +1,115 @@
+2351:       },
+2352:       {
+2353:         step: 2,
+2354:         title: "Fee Assessment & Vouchers",
+2355:         subtitle: "Transparent tuition & fee calculation formula.",
+2356:         icon: "receipt_long",
+2357:         highlightTitle: "Gross Fees vs. Voucher Discount",
+2358:         highlightText: "Net Amount Due = Gross Fees - Voucher Discount",
+2359:         description: "In the Fee Breakdown tab, inspect itemized tuition, computer, and laboratory fees. Eligible students automatically receive ESC Vouchers (JHS) or SHS Vouchers (SHS), reducing gross fees down to the Net Amount Due.",
+2360:         tip: "Partial payments apply directly to your net amount due, not your gross fee assessment."
+2361:       },
+2362:       {
+2363:         step: 3,
+2364:         title: "Installment Due Dates",
+2365:         subtitle: "Smart partial payment allocation.",
+2366:         icon: "calendar_month",
+2367:         highlightTitle: "Quarterly Milestone Schedule",
+2368:         highlightText: "Partial payments auto-allocate to the oldest unpaid installment.",
+2369:         description: "Track installment due dates (Enrollment, 2nd Quarter, 3rd Quarter, 4th Quarter). When you make partial payments, the system automatically satisfies your oldest due schedule first.",
+2370:         tip: "Check installment status badges (Paid, Pending, or Overdue) to stay on top of payment deadlines."
+2371:       },
+2372:       {
+2373:         step: 4,
+2374:         title: "Clearance Approvals Workflow",
+2375:         subtitle: "Sequential clearance tracking for graduation & certificates.",
+2376:         icon: "fact_check",
+2377:         highlightTitle: "Subject Teachers & Department Offices",
+2378:         highlightText: "Request clearance from assigned subject teachers & office heads.",
+2379:         description: "Submit digital clearance requests to your assigned subject teachers. Office sign-offs proceed sequentially: Subject Teachers → Guidance, Prefect & Librarian → Principal → Accounting & Registrar.",
+2380:         tip: "Use the 'Request All Teachers' button on the Clearance tab to submit approval requests in bulk!"
+2381:       },
+2382:       {
+2383:         step: 5,
+2384:         title: "Online Payments & Certificates",
+2385:         subtitle: "PayMongo QR Ph integration & PDF certificate downloads.",
+2386:         icon: "workspace_premium",
+2387:         highlightTitle: "Pay Online & Print Certificate",
+2388:         highlightText: "Pay via GCash/Maya/Cards and view official Certificate when cleared.",
+2389:         description: "Click 'Pay Tuition' to settle fees instantly via PayMongo (QR Ph, GCash, Maya, cards). Once all department clearances are approved and your net balance is zero, your official Certificate of Clearance unlocks for PDF viewing and printing!",
+2390:         tip: "You can re-open this tour anytime by clicking the 'Portal Tour' button in the top menu bar."
+2391:       }
+2392:     ];
+2393: 
+2394:     let currentWalkthroughIndex = 0;
+2395: 
+2396:     function renderWalkthroughStep() {
+2397:       const stepData = walkthroughSteps[currentWalkthroughIndex];
+2398:       if (!stepData) return;
+2399: 
+2400:       document.getElementById("wtStepBadge").textContent = `Step ${stepData.step} of ${walkthroughSteps.length}`;
+2401:       document.getElementById("wtTitle").textContent = stepData.title;
+2402:       document.getElementById("wtSubtitle").textContent = stepData.subtitle;
+2403:       document.getElementById("wtIcon").textContent = stepData.icon;
+2404:       document.getElementById("wtHighlightTitle").textContent = stepData.highlightTitle;
+2405:       document.getElementById("wtHighlightText").textContent = stepData.highlightText;
+2406:       document.getElementById("wtDescription").textContent = stepData.description;
+2407:       document.getElementById("wtTipText").textContent = stepData.tip;
+2408: 
+2409:       const pct = ((currentWalkthroughIndex + 1) / walkthroughSteps.length) * 100;
+2410:       document.getElementById("wtProgressBar").style.width = `${pct}%`;
+2411: 
+2412:       const prevBtn = document.getElementById("wtPrevBtn");
+2413:       const nextBtn = document.getElementById("wtNextBtn");
+2414: 
+2415:       if (currentWalkthroughIndex === 0) {
+2416:         prevBtn.classList.add("hidden");
+2417:       } else {
+2418:         prevBtn.classList.remove("hidden");
+2419:       }
+2420: 
+2421:       if (currentWalkthroughIndex === walkthroughSteps.length - 1) {
+2422:         nextBtn.innerHTML = `<span>Finish</span><span class="material-symbols-rounded text-[18px]">check_circle</span>`;
+2423:         nextBtn.className = "px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-md hover:bg-emerald-700 transition flex items-center gap-1";
+2424:       } else {
+2425:         nextBtn.innerHTML = `<span>Next</span><span class="material-symbols-rounded text-[18px]">chevron_right</span>`;
+2426:         nextBtn.className = "px-6 py-2.5 rounded-xl bg-academy-navy text-white font-extrabold text-xs shadow-md hover:bg-blue-900 transition flex items-center gap-1";
+2427:       }
+2428:     }
+2429: 
+2430:     function startStudentWalkthrough() {
+2431:       currentWalkthroughIndex = 0;
+2432:       renderWalkthroughStep();
+2433:       const modal = document.getElementById("walkthroughModal");
+2434:       modal.classList.remove("hidden");
+2435:       modal.classList.add("flex");
+2436:     }
+2437: 
+2438:     function nextWalkthroughStep() {
+2439:       if (currentWalkthroughIndex < walkthroughSteps.length - 1) {
+2440:         currentWalkthroughIndex++;
+2441:         renderWalkthroughStep();
+2442:       } else {
+2443:         finishWalkthrough();
+2444:       }
+2445:     }
+2446: 
+2447:     function prevWalkthroughStep() {
+2448:       if (currentWalkthroughIndex > 0) {
+2449:         currentWalkthroughIndex--;
+2450:         renderWalkthroughStep();
+2451:       }
+2452:     }
+2453: 
+2454:     function skipWalkthrough() {
+2455:       finishWalkthrough();
+2456:     }
+2457: 
+2458:     function finishWalkthrough() {
+2459:       localStorage.setItem("pa_student_walkthrough_completed", "true");
+2460:       const modal = document.getElementById("walkthroughModal");
+2461:       modal.classList.add("hidden");
+2462:       modal.classList.remove("flex");
+2463:     }
+2464: 
+2465:     function autoTriggerStudentWalkthrough() {

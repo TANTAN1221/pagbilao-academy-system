@@ -1,0 +1,196 @@
+Header & Nav lines:
+1: <!DOCTYPE html>
+2: <html lang="en">
+3: 
+4: <head>
+5:   <meta charset="UTF-8" />
+6:   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+7:   <title>Student Dashboard | Pagbilao Academy Inc.</title>
+8:   <link rel="icon" href="assets/logo.png" type="image/png" />
+9:   <script src="https://cdn.tailwindcss.com"></script>
+10:   <link rel="preconnect" href="https://fonts.googleapis.com">
+11:   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+12:   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+13:     rel="stylesheet" />
+14:   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+15:   <script src="js/app-config.js"></script>
+16:   <script>
+17:     window.logoutToIndex = window.logoutToIndex || async function () {
+18:       try { if (window.paApi && window.paApi.logout) return await window.paApi.logout("index.html"); }
+19:       catch (error) { console.warn("Logout fallback used:", error); }
+20:       ["pa_current_user", "pa_logged_in_user", "pa_user_role", "pa_user_session", "pa_demo_session", "pa_auth_role"].forEach((key) => localStorage.removeItem(key));
+21:       window.location.href = "index.html";
+22:     };
+23:   </script>
+24:   <style>
+25:     .material-symbols-rounded {
+26:       font-family: 'Material Symbols Rounded';
+27:       font-weight: normal;
+28:       font-style: normal;
+29:       font-size: 22px;
+30:       line-height: 1;
+31:       display: inline-block;
+32:       white-space: nowrap;
+33:       -webkit-font-smoothing: antialiased
+34:     }
+35: 
+36:     * {
+37:       scrollbar-width: thin;
+38:       scrollbar-color: #cbd5e1 transparent
+39:     }
+40: 
+41:     @media print {
+42:       body * {
+43:         visibility: hidden !important;
+44:       }
+45:       #printableStatementArea, #printableStatementArea *,
+46:       #receiptPrintArea, #receiptPrintArea * {
+47:         visibility: visible !important;
+48:       }
+49:       #printableStatementArea, #receiptPrintArea {
+50:         position: absolute !important;
+51:         left: 0 !important;
+52:         top: 0 !important;
+53:         width: 100% !important;
+54:         margin: 0 !important;
+55:         padding: 20px !important;
+56:         background: white !important;
+57:         color: black !important;
+58:         box-shadow: none !important;
+59:         border: none !important;
+60:       }
+61:       .no-print {
+62:         display: none !important;
+63:       }
+64:     }
+65:   </style>
+66:   <script>
+67:     tailwind.config = {
+68:       theme: {
+69:         extend: {
+70:           colors: {
+71:             academy: {
+72:               navy: '#1E3A8A',
+73:               blue: '#2563EB',
+74:               soft: '#F5F8FF',
+75:               border: '#DDE8F8',
+76:               text: '#0F2A5F',
+77:               muted: '#6B7A90',
+78:               light: '#EEF5FF'
+79:             }
+80:           },
+81:           boxShadow: {
+82:             soft: '0 20px 50px rgba(30,58,138,.10)',
+83:             card: '0 10px 30px rgba(30,58,138,.08)'
+84:           }
+85:         }
+86:       }
+87:     };
+88:   </script>
+89: </head>
+90: 
+91: <body class="min-h-screen bg-[#F7FAFF] text-academy-text">
+92:   <!-- Toast Notification -->
+93:   <div id="toast"
+94:     class="fixed top-5 right-5 z-[200] hidden max-w-sm w-full rounded-2xl border border-academy-border bg-white/95 backdrop-blur-md shadow-2xl p-4 transition-all duration-300">
+95:     <div class="flex items-start gap-3">
+96:       <div id="toastIcon"
+97:         class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0"><span
+98:           class="material-symbols-rounded">check_circle</span></div>
+99:       <div class="flex-1 min-w-0">
+100:         <p id="toastTitle" class="text-sm font-extrabold text-academy-navy">Success</p>
+101:         <p id="toastMessage" class="mt-0.5 text-xs text-academy-muted leading-5">Action completed.</p>
+102:       </div>
+103:       <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 p-0.5 transition rounded-lg hover:bg-slate-100 shrink-0">
+104:         <span class="material-symbols-rounded text-lg">close</span>
+105:       </button>
+106:     </div>
+107:   </div>
+108: 
+109:   <!-- Sidebar Navigation Bar -->
+110:   <aside class="fixed inset-y-0 left-0 z-40 w-[260px] bg-academy-navy text-white hidden lg:flex flex-col border-r border-white/10 shadow-xl">
+111:     <div class="px-5 py-5 flex items-center gap-3 border-b border-white/10">
+112:       <img src="assets/logo.png" alt="Pagbilao Academy Inc. Logo"
+113:         class="w-11 h-11 rounded-full bg-white object-contain border border-white/30 p-0.5 shadow-sm">
+114:       <div>
+115:         <h1 class="text-sm font-extrabold leading-tight">Pagbilao Academy</h1>
+116:         <p class="text-xs text-blue-200">Student Portal</p>
+117:       </div>
+118:     </div>
+119: 
+120:     <!-- Nav Items -->
+121:     <nav id="sideNav" class="flex-1 px-3 py-5 space-y-1.5 text-sm overflow-y-auto"></nav>
+122: 
+123:     <!-- Sidebar Footer -->
+124:     <div class="px-5 py-4 border-t border-white/10 bg-black/10">
+125:       <div class="flex items-center justify-between text-xs text-blue-200">
+126:         <span>School Year</span>
+127:         <span class="font-bold text-white">2026–2027</span>
+128:       </div>
+129:       <button onclick="logoutToIndex()"
+130:         class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-bold transition">
+131:         <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+132:       </button>
+133:     </div>
+134:   </aside>
+135: 
+136:   <!-- Mobile Sidebar Overlay Drawer -->
+137:   <div id="mobileDrawer" class="fixed inset-0 z-50 hidden lg:hidden">
+138:     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleMobileDrawer()"></div>
+139:     <div class="fixed inset-y-0 left-0 w-[270px] bg-academy-navy text-white flex flex-col shadow-2xl p-4">
+140:       <div class="flex items-center justify-between pb-4 border-b border-white/10">
+141:         <div class="flex items-center gap-3">
+142:           <img src="assets/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white object-contain p-0.5">
+143:           <div>
+144:             <h2 class="text-sm font-extrabold">Pagbilao Academy</h2>
+145:             <p class="text-xs text-blue-200">Student Portal</p>
+146:           </div>
+147:         </div>
+148:         <button onclick="toggleMobileDrawer()" class="p-1 rounded-lg hover:bg-white/10 text-white">
+149:           <span class="material-symbols-rounded">close</span>
+150:         </button>
+151:       </div>
+152:       <nav id="mobileSideNav" class="flex-1 py-4 space-y-1 text-sm overflow-y-auto"></nav>
+153:       <div class="pt-3 border-t border-white/10">
+154:         <button onclick="logoutToIndex()"
+155:           class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/20 text-red-200 text-xs font-bold">
+156:           <span class="material-symbols-rounded text-[18px]">logout</span>Log Out
+157:         </button>
+158:       </div>
+159:     </div>
+160:   </div>
+161: 
+162:   <!-- Main Content Wrapper -->
+163:   <div class="lg:pl-[260px] min-h-screen flex flex-col">
+164:     <!-- Top Header -->
+165:     <header class="h-16 bg-white border-b border-academy-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+166:       <div class="flex items-center gap-3">
+167:         <button onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light">
+168:           <span class="material-symbols-rounded">menu</span>
+169:         </button>
+170:         <div>
+171:           <h2 id="pageTitle" class="text-lg sm:text-xl font-extrabold text-academy-navy">Dashboard Overview</h2>
+172:           <p id="pageSubtitle" class="hidden sm:block text-xs text-academy-muted">Summary of your fees, clearance, and account status</p>
+173:         </div>
+174:       </div>
+175:       <div class="flex items-center gap-2 sm:gap-3">
+176:         <button onclick="startStudentWalkthrough()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-blue-50 transition shadow-xs">
+177:           <span class="material-symbols-rounded text-[18px] text-academy-blue">help</span>
+178:           <span class="hidden sm:inline">Portal Tour</span>
+179:         </button>
+180:         <button onclick="startPayMongoCheckout()" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
+181:           <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition
+182:         </button>
+183:         <div id="avatarInitials" class="w-10 h-10 rounded-full bg-academy-navy text-white grid place-items-center text-xs font-bold border-2 border-blue-100 shadow-xs">
+184:           ST
+185:         </div>
+186:       </div>
+187:     </header>
+188: 
+189:     <!-- Main Content Pages -->
+190:     <main class="p-4 sm:p-6 space-y-6 flex-1">
+191:       
+192:       <!-- TAB 1: OVERVIEW PAGE -->
+193:       <section id="dashboardPage" class="page-section space-y-5">
+194:         <!-- Welcome Banner -->
+195:         <div class="rounded-3xl bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-8 shadow-card relative overflow-hidden">

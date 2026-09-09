@@ -173,6 +173,34 @@
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Reminders & Notifications Dropdown Trigger & Popover -->
+        <div class="relative">
+          <button id="headerNotificationBtn" onclick="toggleNotificationDropdown()" class="relative p-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-blue-50 transition shadow-xs flex items-center justify-center">
+            <span class="material-symbols-rounded text-[20px] text-academy-navy">notifications</span>
+            <span id="headerNotificationBadge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black items-center justify-center border-2 border-white hidden">0</span>
+          </button>
+
+          <!-- Dropdown Popover Panel -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white border border-academy-border shadow-2xl z-50 overflow-hidden transition-all duration-200">
+            <div class="p-4 bg-academy-navy text-white flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded text-[20px] text-amber-400">notifications_active</span>
+                <h3 class="font-extrabold text-sm">Reminders & Notifications</h3>
+              </div>
+              <span id="dropdownNotificationBadge" class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold">0 Active</span>
+            </div>
+            <div id="dropdownNotificationList" class="p-3 max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-slate-100">
+              <!-- Dynamic Notifications populate here -->
+            </div>
+            <div class="p-3 bg-academy-soft border-t border-academy-border text-center">
+              <button onclick="scrollToNotificationsSection()" class="text-xs font-extrabold text-academy-blue hover:underline flex items-center justify-center gap-1 w-full">
+                <span>View Reminders on Dashboard</span>
+                <span class="material-symbols-rounded text-sm">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <button onclick="startStudentWalkthrough()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-blue-50 transition shadow-xs">
           <span class="material-symbols-rounded text-[18px] text-academy-blue">help</span>
           <span class="hidden sm:inline">Portal Tour</span>
@@ -244,13 +272,13 @@
             <p class="mt-1 text-xs text-academy-muted">Approvals completed</p>
           </div>
 
-          <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+          <div onclick="scrollToNotificationsSection()" class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition cursor-pointer group">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Next Installment</p>
-              <span class="p-2 rounded-xl bg-amber-50 text-amber-600"><span class="material-symbols-rounded">calendar_month</span></span>
+              <p class="text-sm font-bold text-academy-muted">Reminders & Alerts</p>
+              <span class="p-2 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition"><span class="material-symbols-rounded">notifications_active</span></span>
             </div>
-            <h3 class="mt-3 text-2xl font-extrabold text-amber-600">Jan 15</h3>
-            <p class="mt-1 text-xs text-academy-muted">Partial payment allowed</p>
+            <h3 id="overviewNotificationCount" class="mt-3 text-2xl font-extrabold text-amber-600">0 Active</h3>
+            <p id="overviewNotificationNote" class="mt-1 text-xs text-academy-muted">Due dates & clearance alerts</p>
           </div>
         </div>
 
@@ -287,6 +315,32 @@
             <p class="font-extrabold text-academy-navy">Clearance Certificate</p>
             <p class="text-xs text-academy-muted mt-1">View & download certificate</p>
           </button>
+        </div>
+
+        <!-- Reminders & Notifications Center Widget -->
+        <div id="remindersSection" class="bg-white rounded-2xl border border-academy-border p-5 sm:p-6 shadow-card space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-academy-border">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
+                <span class="material-symbols-rounded text-xl">notifications_active</span>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-base text-academy-navy flex items-center gap-2">
+                  Reminders & Notifications
+                  <span id="centerNotificationBadge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">0 Active</span>
+                </h3>
+                <p class="text-xs text-academy-muted mt-0.5">Real-time alerts for upcoming payment due dates and clearance approval progress</p>
+              </div>
+            </div>
+            <button onclick="renderAll()" class="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light text-xs font-bold flex items-center gap-1.5 transition">
+              <span class="material-symbols-rounded text-base">refresh</span> Refresh Alerts
+            </button>
+          </div>
+
+          <!-- Notifications Cards List -->
+          <div id="overviewNotificationsList" class="grid sm:grid-cols-2 gap-3.5">
+            <!-- Dynamic Reminders render here -->
+          </div>
         </div>
 
         <!-- Total Fee Breakdown Card -->
@@ -1486,6 +1540,280 @@
 
     function teacherApprovalsApproved(s) { const rows = assignedTeacherRows(s); return rows.length > 0 && rows.every(row => requestFor(row)?.status === 'approved') }
 
+    function toggleNotificationDropdown(forceClose = false) {
+      const dd = document.getElementById('notificationDropdown');
+      if (!dd) return;
+      if (forceClose) {
+        dd.classList.add('hidden');
+      } else {
+        dd.classList.toggle('hidden');
+      }
+    }
+
+    // Close notification dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const btn = document.getElementById('headerNotificationBtn');
+      const dd = document.getElementById('notificationDropdown');
+      if (dd && !dd.classList.contains('hidden') && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+
+    function scrollToNotificationsSection() {
+      toggleNotificationDropdown(true);
+      showPage('dashboardPage');
+      const sec = document.getElementById('remindersSection');
+      if (sec) {
+        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        sec.classList.add('ring-2', 'ring-academy-blue', 'ring-offset-2');
+        setTimeout(() => sec.classList.remove('ring-2', 'ring-academy-blue', 'ring-offset-2'), 2000);
+      }
+    }
+
+    function generateStudentNotifications(s) {
+      if (!s) return [];
+      const notifications = [];
+
+      // 1. PAYMENT & DUE DATE REMINDERS
+      const bal = balance(s);
+      const insts = studentInstallments(s);
+      const unpaidInsts = (insts || []).filter(i => i.status !== 'Paid');
+
+      if (bal <= 0) {
+        notifications.push({
+          id: 'pay_complete',
+          category: 'Payment',
+          severity: 'success',
+          icon: 'check_circle',
+          badgeText: 'Fully Paid',
+          title: 'Tuition Balance Satisfied',
+          message: 'You have no outstanding tuition balance for the current school year.',
+          actionText: 'View SOA',
+          actionFn: "showPage('paymentsPage')"
+        });
+      } else if (unpaidInsts.length > 0) {
+        const nextInst = unpaidInsts[0];
+        const isOverdue = nextInst.dueDate && new Date(nextInst.dueDate) < new Date();
+        const remAmount = nextInst.amount - nextInst.paid;
+
+        notifications.push({
+          id: `pay_due_${nextInst.title}`,
+          category: 'Due Date',
+          severity: isOverdue ? 'danger' : 'warning',
+          icon: isOverdue ? 'error' : 'event_upcoming',
+          badgeText: isOverdue ? 'Overdue' : 'Payment Due',
+          title: isOverdue ? `Overdue Milestone: ${nextInst.title}` : `Upcoming Due Date: ${nextInst.title}`,
+          message: `Installment balance of ${money(remAmount)} due (${nextInst.dueDate || 'As scheduled'}). Total Net Balance: ${money(bal)}.`,
+          actionText: 'Pay Tuition Now',
+          actionFn: "startPayMongoCheckout()"
+        });
+      } else {
+        notifications.push({
+          id: 'pay_bal_notice',
+          category: 'Payment',
+          severity: 'info',
+          icon: 'account_balance_wallet',
+          badgeText: 'Balance Due',
+          title: 'Outstanding Net Balance',
+          message: `You have an unbilled or remaining balance of ${money(bal)}. Partial payments can be made anytime.`,
+          actionText: 'Pay Tuition Now',
+          actionFn: "startPayMongoCheckout()"
+        });
+      }
+
+      // 2. CLEARANCE PROGRESS REMINDERS
+      const c = clearanceCounts(s);
+      const teacherRows = assignedTeacherRows(s);
+      const pendingTeachers = teacherRows.filter(row => requestFor(row)?.status !== 'approved');
+      const approvedTeachersCount = teacherRows.length - pendingTeachers.length;
+      const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
+      const totalOffice = officeKeys().length;
+
+      if (c.done === c.total && c.total > 0) {
+        notifications.push({
+          id: 'clearance_complete',
+          category: 'Clearance',
+          severity: 'success',
+          icon: 'workspace_premium',
+          badgeText: 'Cleared 100%',
+          title: 'Official Clearance Completed!',
+          message: `All ${c.total} subject teacher and department office clearances have been approved. Your Official Certificate of Clearance is ready!`,
+          actionText: 'View & Download Certificate',
+          actionFn: "showPage('certificatePage')"
+        });
+      } else {
+        if (pendingTeachers.length > 0) {
+          notifications.push({
+            id: 'clearance_teachers_pending',
+            category: 'Clearance',
+            severity: 'info',
+            icon: 'fact_check',
+            badgeText: `${approvedTeachersCount}/${teacherRows.length} Teachers`,
+            title: 'Subject Teacher Sign-offs Pending',
+            message: `${pendingTeachers.length} subject teacher approval(s) pending. Submit digital clearance requests to clear your subjects.`,
+            actionText: 'Request Clearance',
+            actionFn: "showPage('clearancePage')"
+          });
+        } else if (teacherRows.length > 0) {
+          notifications.push({
+            id: 'clearance_teachers_done',
+            category: 'Clearance',
+            severity: 'success',
+            icon: 'task_alt',
+            badgeText: 'Teachers Cleared',
+            title: 'All Subject Teachers Cleared',
+            message: 'All your subject teachers have approved your clearance requests.',
+            actionText: 'View Clearance',
+            actionFn: "showPage('clearancePage')"
+          });
+        }
+
+        if (officeDone < totalOffice) {
+          const pendingOffices = officeKeys().filter(k => s.clearance?.[k] !== 'approved');
+          notifications.push({
+            id: 'clearance_office_pending',
+            category: 'Clearance',
+            severity: 'warning',
+            icon: 'domain',
+            badgeText: `${officeDone}/${totalOffice} Offices`,
+            title: 'Administrative Office Clearance Status',
+            message: `${officeDone} of ${totalOffice} offices signed off. Pending: ${pendingOffices.join(', ')}.`,
+            actionText: 'Check Office Status',
+            actionFn: "showPage('clearancePage')"
+          });
+        }
+      }
+
+      return notifications;
+    }
+
+    function renderNotifications(s) {
+      const list = generateStudentNotifications(s);
+      const activeAlerts = list.filter(n => n.severity !== 'success');
+      const activeCount = activeAlerts.length;
+
+      // Update Header Badges
+      const headerBadge = document.getElementById('headerNotificationBadge');
+      const dropdownBadge = document.getElementById('dropdownNotificationBadge');
+      if (headerBadge) {
+        if (activeCount > 0) {
+          headerBadge.textContent = activeCount;
+          headerBadge.classList.remove('hidden');
+        } else {
+          headerBadge.classList.add('hidden');
+        }
+      }
+      if (dropdownBadge) {
+        dropdownBadge.textContent = `${activeCount} Active`;
+      }
+
+      // Update Overview Stat Card
+      const overviewCountEl = document.getElementById('overviewNotificationCount');
+      const overviewNoteEl = document.getElementById('overviewNotificationNote');
+      if (overviewCountEl) {
+        overviewCountEl.textContent = `${activeCount} Active`;
+      }
+      if (overviewNoteEl) {
+        const payCount = list.filter(n => n.category === 'Payment' || n.category === 'Due Date').length;
+        const clrCount = list.filter(n => n.category === 'Clearance').length;
+        overviewNoteEl.textContent = `${payCount} payment, ${clrCount} clearance`;
+      }
+
+      // Update Center Widget Header Badge
+      const centerBadge = document.getElementById('centerNotificationBadge');
+      if (centerBadge) {
+        centerBadge.textContent = `${activeCount} Action Needed`;
+        centerBadge.className = activeCount > 0
+          ? "px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold"
+          : "px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-extrabold";
+      }
+
+      // Render Dropdown List
+      const dropdownListEl = document.getElementById('dropdownNotificationList');
+      if (dropdownListEl) {
+        if (list.length === 0) {
+          dropdownListEl.innerHTML = `<div class="p-4 text-center text-academy-muted">No notifications at this time.</div>`;
+        } else {
+          dropdownListEl.innerHTML = list.map(n => {
+            let colorClasses = "bg-blue-50 text-blue-700 border-blue-100";
+            if (n.severity === 'danger') colorClasses = "bg-red-50 text-red-700 border-red-100";
+            if (n.severity === 'warning') colorClasses = "bg-amber-50 text-amber-800 border-amber-100";
+            if (n.severity === 'success') colorClasses = "bg-emerald-50 text-emerald-700 border-emerald-100";
+
+            return `
+              <div class="py-2.5 first:pt-0 last:pb-0 flex items-start gap-3">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${colorClasses}">
+                  <span class="material-symbols-rounded text-lg">${n.icon}</span>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-1">
+                    <p class="font-extrabold text-academy-navy text-xs truncate">${n.title}</p>
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${colorClasses}">${n.badgeText}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 mt-0.5 leading-tight">${n.message}</p>
+                  <button onclick="toggleNotificationDropdown(true); ${n.actionFn}" class="mt-1 text-[11px] font-extrabold text-academy-blue hover:underline inline-flex items-center gap-0.5">
+                    <span>${n.actionText}</span> →
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Render Dashboard Overview Widget Cards
+      const overviewListEl = document.getElementById('overviewNotificationsList');
+      if (overviewListEl) {
+        if (list.length === 0) {
+          overviewListEl.innerHTML = `<div class="col-span-2 p-6 text-center text-academy-muted bg-academy-soft rounded-xl">No active reminders right now.</div>`;
+        } else {
+          overviewListEl.innerHTML = list.map(n => {
+            let bgBorder = "bg-blue-50/50 border-blue-200/80 text-blue-900";
+            let iconBg = "bg-blue-100 text-blue-700";
+            let btnClass = "bg-academy-navy hover:bg-blue-900 text-white";
+
+            if (n.severity === 'danger') {
+              bgBorder = "bg-red-50/60 border-red-200 text-red-950";
+              iconBg = "bg-red-100 text-red-700";
+              btnClass = "bg-red-600 hover:bg-red-700 text-white";
+            } else if (n.severity === 'warning') {
+              bgBorder = "bg-amber-50/60 border-amber-200 text-amber-950";
+              iconBg = "bg-amber-100 text-amber-700";
+              btnClass = "bg-amber-600 hover:bg-amber-700 text-white";
+            } else if (n.severity === 'success') {
+              bgBorder = "bg-emerald-50/60 border-emerald-200 text-emerald-950";
+              iconBg = "bg-emerald-100 text-emerald-700";
+              btnClass = "bg-emerald-600 hover:bg-emerald-700 text-white";
+            }
+
+            return `
+              <div class="p-4 rounded-xl border ${bgBorder} shadow-xs flex flex-col justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-xs">
+                    <span class="material-symbols-rounded text-xl">${n.icon}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[11px] font-extrabold uppercase tracking-wide opacity-75">${n.category} Alert</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${iconBg}">${n.badgeText}</span>
+                    </div>
+                    <h4 class="font-extrabold text-sm mt-0.5 leading-snug">${n.title}</h4>
+                    <p class="text-xs mt-1 opacity-90 leading-relaxed">${n.message}</p>
+                  </div>
+                </div>
+                <div class="pt-2 border-t border-black/5 flex justify-end">
+                  <button onclick="${n.actionFn}" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold shadow-xs transition flex items-center gap-1 ${btnClass}">
+                    <span>${n.actionText}</span>
+                    <span class="material-symbols-rounded text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
     function renderAll() {
       appData = ensureData(appData);
       const s = currentStudent();
@@ -1494,6 +1822,7 @@
       renderOverviewFeeBreakdown(s);
       renderPaymentsHistory();
       renderTeacherClearance(s);
+      renderNotifications(s);
       renderSideNav();
       const c = clearanceCounts(s);
       clearanceProgress.textContent = `${c.done}/${c.total}`;
@@ -2361,13 +2690,13 @@
       },
       {
         step: 3,
-        title: "Installment Due Dates",
-        subtitle: "Smart partial payment allocation.",
-        icon: "calendar_month",
-        highlightTitle: "Quarterly Milestone Schedule",
-        highlightText: "Partial payments auto-allocate to the oldest unpaid installment.",
-        description: "Track installment due dates (Enrollment, 2nd Quarter, 3rd Quarter, 4th Quarter). When you make partial payments, the system automatically satisfies your oldest due schedule first.",
-        tip: "Check installment status badges (Paid, Pending, or Overdue) to stay on top of payment deadlines."
+        title: "Reminders & Due Date Alerts",
+        subtitle: "Smart payment due date & clearance tracking.",
+        icon: "notifications_active",
+        highlightTitle: "Real-time Reminders Center",
+        highlightText: "Instant alerts for payment due dates & clearance progress.",
+        description: "Stay informed with real-time notifications for upcoming installment due dates, remaining balances, pending teacher sign-offs, and office clearance updates right on your header bell and dashboard.",
+        tip: "Click the Notification Bell in the header anytime to view active reminders!"
       },
       {
         step: 4,

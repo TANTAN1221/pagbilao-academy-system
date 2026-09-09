@@ -1,0 +1,87 @@
+17: window.logoutToIndex = window.logoutToIndex || async function () {
+954: function money(n) { return currency.format(Math.round(Number(n) || 0)) }
+956: function showToast(title, message, type = 'info') {
+982: function loadData() {
+990: function ensureData(data) {
+1007: function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
+1009: function currentSession() {
+1013: function registeredUser() {
+1019: function inferLevelFromGrade(grade) { return ['Grade 11', 'Grade 12'].includes(String(grade || '')) ? 'SHS' : 'JHS' }
+1021: function normalizeStudentRecord(source, session = {}) {
+1042: function upsertCurrentStudent(source) {
+1046: const idx = appData.students.findIndex(s => s.id === student.id || (email && String(s.email || '').toLowerCase() === email) || (student.authUserId && s.authUserId === student.authUserId));
+1062: function isStaffOrAdminSession(session) {
+1071: function currentStudent() {
+1081: async function hydrateCurrentStudentFromSupabase() {
+1122: function classLabel(s) { if (s.level === 'SHS') { const strandStr = s.strand && s.strand !== 'N/A' ? ` (${s.strand})` : ''; return `${s.grade} - ${s.section || 'N/A'}${strandStr}` } return `${s.grade} - ${s.section || 'N/A'}` }
+1123: function feeTotal(level) {
+1127: function voucherAmount(s) { const v = (appData.vouchers || []).find(x => x.name === s.voucher && x.active); return v ? Number(v.amount || 0) : 0 }
+1128: function assessedTotal(s) {
+1141: function getStudentPayments(s) {
+1166: function getStudentTotalPaid(s) {
+1178: function balance(s) { return Math.max(0, assessedTotal(s) - getStudentTotalPaid(s)) }
+1179: function initials(name) { return String(name || 'Student').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase() || 'ST' }
+1181: function assignmentMatchesStudent(a, s) {
+1193: function assignedTeacherRows(s) { return (appData.accounts || []).filter(a => a.role === 'teacher_clearance_head' && a.active !== false).flatMap(t => (t.assignments || []).filter(a => assignmentMatchesStudent(a, s)).map(a => ({ teacher: t, assignment: a, key: `${s.id}|${t.id}|${a.subject || 'Subject'}|${a.grade}|${a.section || 'N/A'}` }))) }
+1194: function requestFor(row) { return appData.teacherClearanceRequests.find(r => r.key === row.key) }
+1196: function statusBadge(status) {
+1211: function renderSideNav() {
+1213: const navHtml = navItems.map(([id, icon, label]) => {
+1226: function showPage(pageId) {
+1231: const item = navItems.find(x => x[0] === pageId);
+1240: function toggleMobileDrawer() {
+1244: function studentInstallments(s) {
+1254: function renderPayments(s) {
+1278: const unpaidInst = (insts || []).find(i => i.status !== 'Paid');
+1308: function renderPaymentsHistory() {
+1382: function renderTeacherClearance(s) {
+1412: function renderProfile(s) {
+1478: function officeKeys() { return ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'] }
+1480: function clearanceCounts(s) {
+1482: const teacherDone = teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
+1483: const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
+1487: function teacherApprovalsApproved(s) { const rows = assignedTeacherRows(s); return rows.length > 0 && rows.every(row => requestFor(row)?.status === 'approved') }
+1489: function renderAll() {
+1503: function renderOverviewFeeBreakdown(s) {
+1508: const grossSum = feeItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+1598: function printFeeBreakdown() {
+1604: const grossSum = feeItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+1694: function closeStatementPrintModal() {
+1698: function openCertificate() {
+1715: async function requestTeacherApproval(key) {
+1717: const row = assignedTeacherRows(student).find(r => r.key === key);
+1753: async function requestAllTeacherApprovals() {
+1794: function getFeeItemsForStudent(s) {
+1816: function setPaymentMode(mode) {
+1837: function renderFeeChecklist() {
+1856: function recalculateItemizedTotal() {
+1865: function selectAllFeeItems(select = true) {
+1870: function applyPayPreset(preset) {
+1880: function startPayMongoCheckout() {
+1893: function closePaymentModal() {
+1897: function switchPayChannel(channel) {
+1918: async function processDirectPayment(method) {
+1959: const idx = appData.students.findIndex(x => x.id === s.id);
+1983: function calculateStudentPaid(studentId, payments = [], student = null) {
+1990: function showReceiptModal(p) {
+1993: const s = currentStudent() || (appData.students || []).find(x => x.id === p.studentId || x.dbId === p.studentDbId) || { name: p.studentName || 'Student', id: p.studentId || 'N/A' };
+2026: function printReceipt() {
+2030: function closeReceiptModal() {
+2034: async function triggerPayMongoLiveFromModal() {
+2091: function isSameStudent(s1, s2) {
+2114: function mergeStudentsState(localStudents = [], dbStudents = []) {
+2118: const merged = (localStudents || []).map(s => ({ ...s }));
+2121: const existingIdx = merged.findIndex(localS => isSameStudent(localS, dbS));
+2151: function mergeAccountsState(localAccounts = [], dbAccounts = []) {
+2172: function mergeClearanceRequestsState(localReqs = [], dbReqs = []) {
+2193: async function initStudentDashboard() {
+2251: const matched = appData.students.find(x => x.id === targetStudentId || x.dbId === targetStudentId || x.studentId === targetStudentId);
+2297: const existingIdx = appData.payments.findIndex(p => p.referenceNo === refNo || p.id === refNo);
+2302: const idx = appData.students.findIndex(x => x.id === s.id || x.dbId === s.dbId);
+2396: function renderWalkthroughStep() {
+2430: function startStudentWalkthrough() {
+2438: function nextWalkthroughStep() {
+2447: function prevWalkthroughStep() {
+2454: function skipWalkthrough() {
+2458: function finishWalkthrough() {
+2465: function autoTriggerStudentWalkthrough() {

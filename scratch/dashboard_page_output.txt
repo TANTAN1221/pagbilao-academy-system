@@ -1,0 +1,352 @@
+Dashboard Page lines:
+dashboardPage starts at line 193
+193:       <section id="dashboardPage" class="page-section space-y-5">
+194:         <!-- Welcome Banner -->
+195:         <div class="rounded-3xl bg-gradient-to-r from-academy-navy via-blue-900 to-indigo-900 text-white p-6 sm:p-8 shadow-card relative overflow-hidden">
+196:           <div class="relative z-10">
+197:             <span class="px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold tracking-wide uppercase">Student Overview</span>
+198:             <h2 id="welcomeName" class="mt-3 text-2xl sm:text-3xl font-black">Welcome back</h2>
+199:             <p id="studentMeta" class="mt-1 text-sm text-blue-100/90">Loading student profile...</p>
+200:           </div>
+201:           <div class="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
+202:         </div>
+203: 
+204:         <!-- Smart Installment Reminder Alert Banner -->
+205:         <div id="dueDateAlertBanner" class="hidden rounded-2xl bg-amber-50 border border-amber-200/80 p-4 text-amber-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+206:           <div class="flex items-center gap-3">
+207:             <span class="p-2.5 rounded-xl bg-amber-100 text-amber-700 shrink-0"><span class="material-symbols-rounded">notifications_active</span></span>
+208:             <div>
+209:               <h4 id="dueDateAlertTitle" class="font-extrabold text-sm text-amber-950">Payment Due Reminder</h4>
+210:               <p id="dueDateAlertMsg" class="text-xs text-amber-800 mt-0.5">Please check your installment schedule.</p>
+211:             </div>
+212:           </div>
+213:           <button onclick="openPaymentModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition shrink-0 flex items-center gap-1 shadow-sm">
+214:             <span class="material-symbols-rounded text-xs">payments</span> Pay Now
+215:           </button>
+216:         </div>
+217: 
+218:         <!-- 4 Stat Cards -->
+219:         <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+220:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+221:             <div class="flex items-center justify-between">
+222:               <p class="text-sm font-bold text-academy-muted">Net Balance Due</p>
+223:               <span class="p-2 rounded-xl bg-red-50 text-red-600"><span class="material-symbols-rounded">account_balance_wallet</span></span>
+224:             </div>
+225:             <h3 id="netBalance" class="mt-3 text-2xl font-extrabold text-red-600">₱0</h3>
+226:             <p id="voucherNote" class="mt-1 text-xs text-academy-muted">After voucher</p>
+227:           </div>
+228: 
+229:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+230:             <div class="flex items-center justify-between">
+231:               <p class="text-sm font-bold text-academy-muted">Voucher Applied</p>
+232:               <span class="p-2 rounded-xl bg-blue-50 text-academy-navy"><span class="material-symbols-rounded">confirmation_number</span></span>
+233:             </div>
+234:             <h3 id="voucherApplied" class="mt-3 text-2xl font-extrabold text-academy-navy">₱0</h3>
+235:             <p id="voucherName" class="mt-1 text-xs text-academy-muted">Voucher</p>
+236:           </div>
+237: 
+238:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+239:             <div class="flex items-center justify-between">
+240:               <p class="text-sm font-bold text-academy-muted">Clearance Progress</p>
+241:               <span class="p-2 rounded-xl bg-green-50 text-green-600"><span class="material-symbols-rounded">fact_check</span></span>
+242:             </div>
+243:             <h3 id="clearanceProgress" class="mt-3 text-2xl font-extrabold text-green-600">0/0</h3>
+244:             <p class="mt-1 text-xs text-academy-muted">Approvals completed</p>
+245:           </div>
+246: 
+247:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
+248:             <div class="flex items-center justify-between">
+249:               <p class="text-sm font-bold text-academy-muted">Next Installment</p>
+250:               <span class="p-2 rounded-xl bg-amber-50 text-amber-600"><span class="material-symbols-rounded">calendar_month</span></span>
+251:             </div>
+252:             <h3 class="mt-3 text-2xl font-extrabold text-amber-600">Jan 15</h3>
+253:             <p class="mt-1 text-xs text-academy-muted">Partial payment allowed</p>
+254:           </div>
+255:         </div>
+256: 
+257:         <!-- Quick Action Grid -->
+258:         <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+259:           <button onclick="showPage('paymentsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+260:             <span class="w-10 h-10 rounded-xl bg-blue-50 text-academy-blue flex items-center justify-center font-bold mb-3 group-hover:bg-academy-navy group-hover:text-white transition">
+261:               <span class="material-symbols-rounded">add_card</span>
+262:             </span>
+263:             <p class="font-extrabold text-academy-navy">Make Payment</p>
+264:             <p class="text-xs text-academy-muted mt-1">Pay via QR Ph, GCash, or Card</p>
+265:           </button>
+266: 
+267:           <button onclick="showPage('transactionsPage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+268:             <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+269:               <span class="material-symbols-rounded">receipt_long</span>
+270:             </span>
+271:             <p class="font-extrabold text-academy-navy">Payment History</p>
+272:             <p class="text-xs text-academy-muted mt-1">View receipts & transactions</p>
+273:           </button>
+274: 
+275:           <button onclick="showPage('clearancePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+276:             <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold mb-3 group-hover:bg-indigo-600 group-hover:text-white transition">
+277:               <span class="material-symbols-rounded">fact_check</span>
+278:             </span>
+279:             <p class="font-extrabold text-academy-navy">Clearance Status</p>
+280:             <p class="text-xs text-academy-muted mt-1">Request teacher approvals</p>
+281:           </button>
+282: 
+283:           <button onclick="showPage('certificatePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
+284:             <span class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold mb-3 group-hover:bg-purple-600 group-hover:text-white transition">
+285:               <span class="material-symbols-rounded">workspace_premium</span>
+286:             </span>
+287:             <p class="font-extrabold text-academy-navy">Clearance Certificate</p>
+288:             <p class="text-xs text-academy-muted mt-1">View & download certificate</p>
+289:           </button>
+290:         </div>
+291: 
+292:         <!-- Total Fee Breakdown Card -->
+293:         <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card space-y-5">
+294:           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-academy-border">
+295:             <div class="flex items-center gap-3">
+296:               <div class="w-11 h-11 rounded-2xl bg-blue-50 text-academy-navy flex items-center justify-center shrink-0 border border-blue-100 shadow-xs">
+297:                 <span class="material-symbols-rounded text-2xl">account_balance</span>
+298:               </div>
+299:               <div>
+300:                 <h3 class="text-base sm:text-lg font-extrabold text-academy-navy flex items-center gap-2">
+301:                   Total Fee Breakdown & Statement of Account
+302:                 </h3>
+303:                 <p class="text-xs text-academy-muted mt-0.5">Itemized assessment of tuition, fees, applied vouchers, payments & balance</p>
+304:               </div>
+305:             </div>
+306:             <div class="flex items-center gap-2.5">
+307:               <button onclick="printFeeBreakdown()" class="px-4 py-2.5 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition flex items-center gap-2 shadow-sm">
+308:                 <span class="material-symbols-rounded text-[18px]">print</span>Print Statement
+309:               </button>
+310:               <button onclick="showPage('paymentsPage')" class="px-4 py-2.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-extrabold hover:bg-academy-light transition flex items-center gap-1.5">
+311:                 <span class="material-symbols-rounded text-[18px]">payments</span>Pay Tuition
+312:               </button>
+313:             </div>
+314:           </div>
+315: 
+316:           <!-- Summary Chips -->
+317:           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-academy-soft border border-academy-border text-xs">
+318:             <div>
+319:               <p class="text-academy-muted font-bold">Gross Fees Total</p>
+320:               <p id="overviewGrossFees" class="text-base font-extrabold text-academy-navy mt-1">₱0</p>
+321:             </div>
+322:             <div>
+323:               <p class="text-academy-muted font-bold">Vouchers / Discounts</p>
+324:               <p id="overviewDiscounts" class="text-base font-extrabold text-blue-700 mt-1">-₱0</p>
+325:             </div>
+326:             <div>
+327:               <p class="text-academy-muted font-bold">Total Amount Paid</p>
+328:               <p id="overviewTotalPaid" class="text-base font-extrabold text-green-600 mt-1">₱0</p>
+329:             </div>
+330:             <div>
+331:               <p class="text-academy-muted font-bold">Net Balance Due</p>
+332:               <p id="overviewBalanceDue" class="text-base font-extrabold text-red-600 mt-1">₱0</p>
+333:             </div>
+334:           </div>
+335: 
+336:           <!-- Fee Items Table -->
+337:           <div class="overflow-x-auto rounded-xl border border-academy-border">
+338:             <table class="w-full text-xs text-left">
+339:               <thead class="bg-academy-light text-academy-navy font-bold border-b border-academy-border">
+340:                 <tr>
+341:                   <th class="p-3">Fee Item / Particulars</th>
+342:                   <th class="p-3 text-right">Base Amount</th>
+343:                   <th class="p-3 text-right">Voucher / Discount</th>
+344:                   <th class="p-3 text-right">Net Amount</th>
+345:                   <th class="p-3 text-center">Status</th>
+346:                 </tr>
+347:               </thead>
+348:               <tbody id="overviewFeeBreakdownBody" class="divide-y divide-academy-border bg-white"></tbody>
+349:               <tfoot id="overviewFeeBreakdownFoot" class="bg-slate-50 font-extrabold border-t-2 border-academy-border"></tfoot>
+350:             </table>
+351:           </div>
+352:         </div>
+353: 
+354:         <!-- Recent Activity Preview -->
+355:         <div class="grid lg:grid-cols-2 gap-5">
+356:           <!-- Recent Transactions Preview -->
+357:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+358:             <div class="flex items-center justify-between mb-4">
+359:               <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+360:                 <span class="material-symbols-rounded text-emerald-600 text-[20px]">history</span>Recent Transactions
+361:               </h3>
+362:               <button onclick="showPage('transactionsPage')" class="text-xs font-extrabold text-academy-blue hover:underline">View All →</button>
+363:             </div>
+364:             <div id="recentTransactionsList" class="space-y-3"></div>
+365:           </div>
+366: 
+367:           <!-- Clearance Quick Summary -->
+368:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+369:             <div class="flex items-center justify-between mb-4">
+370:               <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+371:                 <span class="material-symbols-rounded text-academy-blue text-[20px]">fact_check</span>Clearance Overview
+372:               </h3>
+373:               <button onclick="showPage('clearancePage')" class="text-xs font-extrabold text-academy-blue hover:underline">Manage Clearance →</button>
+374:             </div>
+375:             <div id="clearanceSummaryGrid" class="grid grid-cols-2 gap-3"></div>
+376:           </div>
+377:         </div>
+378:       </section>
+379: 
+380:       <!-- TAB 2: TUITION & PAYMENTS PAGE -->
+381:       <section id="paymentsPage" class="page-section space-y-5 hidden">
+382:         <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
+383:           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+384:             <div>
+385:               <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
+386:                 <span class="material-symbols-rounded text-[22px] text-academy-blue">account_balance_wallet</span>Tuition & Billing Overview
+387:               </h3>
+388:               <p class="text-xs text-academy-muted mt-1">Review your total fees, applied vouchers, and current net balance due.</p>
+389:             </div>
+390:             <button onclick="startPayMongoCheckout()" class="px-6 py-3 rounded-xl bg-academy-navy text-white font-extrabold hover:bg-blue-900 transition flex items-center justify-center gap-2 shadow-sm">
+391:               <span class="material-symbols-rounded text-[18px]">payment</span>Pay Tuition Now
+392:             </button>
+393:           </div>
+394: 
+395:           <div class="grid grid-cols-2 md:grid-cols-4 text-center gap-4 p-5 rounded-2xl bg-academy-soft border border-academy-border mb-5">
+396:             <div>
+397:               <p class="text-xs text-academy-muted font-bold">Gross Tuition Fees</p>
+398:               <p id="grossFees" class="text-lg font-extrabold text-academy-navy mt-1">₱0</p>
+399:             </div>
+400:             <div>
+401:               <p class="text-xs text-academy-muted font-bold">Voucher Discount</p>
+402:               <p id="paymentVoucher" class="text-lg font-extrabold text-blue-700 mt-1">-₱0</p>
+403:             </div>
+404:             <div>
+405:               <p class="text-xs text-academy-muted font-bold">Total Paid</p>
+406:               <p id="amountPaid" class="text-lg font-extrabold text-green-600 mt-1">₱0</p>
+407:             </div>
+408:             <div>
+409:               <p class="text-xs text-academy-muted font-bold">Net Balance Due</p>
+410:               <p id="paymentBalance" class="text-lg font-extrabold text-red-600 mt-1">₱0</p>
+411:             </div>
+412:           </div>
+413: 
+414:           <div class="space-y-2">
+415:             <div class="flex justify-between text-xs font-bold text-academy-muted">
+416:               <span>Payment Progress</span>
+417:               <span id="paymentPctLabel">0% Paid</span>
+418:             </div>
+419:             <div class="h-3 bg-academy-light rounded-full overflow-hidden p-0.5 border border-academy-border">
+420:               <div id="paymentProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" style="width:0%"></div>
+421:             </div>
+422:           </div>
+423:           <p class="mt-4 text-xs text-academy-muted">Partial payments are accepted. You can make custom partial payments or select specific fee items to pay.</p>
+424:         </div>
+425: 
+426:         <!-- Installment Schedule Table -->
+427:         <div class="bg-white rounded-2xl border border-academy-border shadow-card overflow-hidden">
+428:           <div class="p-5 border-b border-academy-border">
+429:             <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+430:               <span class="material-symbols-rounded text-[20px] text-amber-600">calendar_month</span>Installment Schedule
+431:             </h3>
+432:             <p class="text-xs text-academy-muted mt-1">Track upcoming due dates and partial payments.</p>
+433:           </div>
+434:           <div class="overflow-x-auto">
+435:             <table class="w-full text-sm">
+436:               <thead class="bg-academy-light text-academy-navy font-bold">
+437:                 <tr>
+438:                   <th class="text-left p-4">Installment Due</th>
+439:                   <th class="text-left p-4">Amount Due</th>
+440:                   <th class="text-left p-4">Amount Paid</th>
+441:                   <th class="text-left p-4">Payment Status</th>
+442:                 </tr>
+443:               </thead>
+444:               <tbody id="installmentBody" class="divide-y divide-academy-border"></tbody>
+445:             </table>
+446:           </div>
+447:         </div>
+448:       </section>
+449: 
+450:       <!-- TAB 3: PAYMENT HISTORY & TRANSACTIONS PAGE -->
+451:       <section id="transactionsPage" class="page-section space-y-5 hidden">
+452:         <!-- Transaction Summary Header -->
+453:         <div class="grid sm:grid-cols-3 gap-4">
+454:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+455:             <p class="text-xs font-bold text-academy-muted">Total Successful Payments</p>
+456:             <h3 id="txCount" class="mt-2 text-2xl font-extrabold text-academy-navy">0</h3>
+457:             <p class="text-xs text-academy-muted mt-1">Recorded transactions</p>
+458:           </div>
+459:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+460:             <p class="text-xs font-bold text-academy-muted">Total Amount Paid</p>
+461:             <h3 id="txTotalPaid" class="mt-2 text-2xl font-extrabold text-green-600">₱0</h3>
+462:             <p class="text-xs text-academy-muted mt-1">Confirmed payments</p>
+463:           </div>
+464:           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card">
+465:             <p class="text-xs font-bold text-academy-muted">Latest Transaction Date</p>
+466:             <h3 id="txLatestDate" class="mt-2 text-lg font-extrabold text-academy-navy">N/A</h3>
+467:             <p class="text-xs text-academy-muted mt-1">Most recent payment</p>
+468:           </div>
+469:         </div>
+470: 
+471:         <!-- Payment History Table Card -->
+472:         <div class="bg-white rounded-2xl border border-academy-border shadow-card overflow-hidden">
+473:           <div class="p-5 border-b border-academy-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+474:             <div>
+475:               <h3 class="font-extrabold text-academy-navy flex items-center gap-2">
+476:                 <span class="material-symbols-rounded text-emerald-600 text-[20px]">receipt_long</span>Payment History & Transaction Logs
+477:               </h3>
+478:               <p class="text-xs text-academy-muted mt-1">Full breakdown of all payments made to your account.</p>
+479:             </div>
+480:             <div class="flex items-center gap-2">
+481:               <input type="text" id="txSearchInput" onkeyup="renderPaymentsHistory()" placeholder="Search reference..." class="px-3 py-2 rounded-xl border border-academy-border text-xs w-44 focus:outline-none focus:border-academy-blue">
+482:               <select id="txMethodFilter" onchange="renderPaymentsHistory()" class="px-3 py-2 rounded-xl border border-academy-border text-xs bg-white focus:outline-none">
+483:                 <option value="all">All Channels</option>
+484:                 <option value="paymongo">PayMongo / QR Ph</option>
+485:                 <option value="gcash">GCash</option>
+486:                 <option value="maya">Maya</option>
+487:                 <option value="instapay">InstaPay</option>
+488:                 <option value="manual">Cash / OTC</option>
+489:               </select>
+490:             </div>
+491:           </div>
+492: 
+493:           <div class="overflow-x-auto">
+494:             <table class="w-full text-sm">
+495:               <thead class="bg-academy-light text-academy-navy font-bold">
+496:                 <tr>
+497:                   <th class="text-left p-4">Reference / ID</th>
+498:                   <th class="text-left p-4">Date & Time</th>
+499:                   <th class="text-left p-4">Payment Channel</th>
+500:                   <th class="text-left p-4">Amount</th>
+501:                   <th class="text-left p-4">Status</th>
+502:                   <th class="text-left p-4">Receipt</th>
+503:                 </tr>
+504:               </thead>
+505:               <tbody id="paymentHistoryBody" class="divide-y divide-academy-border"></tbody>
+506:             </table>
+507:           </div>
+508:         </div>
+509:       </section>
+510: 
+511:       <!-- TAB 4: CLEARANCE MONITORING PAGE -->
+512:       <section id="clearancePage" class="page-section space-y-5 hidden">
+513:         <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
+514:           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+515:             <div>
+516:               <h3 class="font-extrabold text-xl text-academy-navy flex items-center gap-2">
+517:                 <span class="material-symbols-rounded text-indigo-600 text-[22px]">fact_check</span>Clearance Approval Status
+518:               </h3>
+519:               <p class="text-xs text-academy-muted mt-1">Subject teachers are assigned based on your enrolled grade, section, and strand.</p>
+520:             </div>
+521:             <button onclick="requestAllTeacherApprovals()" class="px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
+522:               Request All Teachers →
+523:             </button>
+524:           </div>
+525: 
+526:           <div class="mb-6">
+527:             <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
+528:               <span class="material-symbols-rounded text-[18px] text-blue-600">person</span>Assigned Subject Teachers
+529:             </h4>
+530:             <div class="grid sm:grid-cols-2 gap-3" id="teacherClearanceCards"></div>
+531:           </div>
+532: 
+533:           <div>
+534:             <h4 class="text-sm font-extrabold text-academy-navy mb-3 flex items-center gap-2">
+535:               <span class="material-symbols-rounded text-[18px] text-purple-600">domain</span>School Offices & Final Approvals
+536:             </h4>
+537:             <div class="grid sm:grid-cols-2 gap-3" id="officeClearanceCards"></div>
+538:           </div>
+539:         </div>
+540:       </section>
+541: 
+542:       <!-- TAB 5: CLEARANCE CERTIFICATE PAGE -->
