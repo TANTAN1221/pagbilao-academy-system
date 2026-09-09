@@ -1,0 +1,101 @@
+app-config.js clearance logic:
+1051:     const { data: student } = await supabase
+1052:       .from("students")
+1053:       .select("id")
+1054:       .or(buildStudentOrFilter(studentNumber))
+1055:       .maybeSingle();
+1056:     if (!student) throw new Error("Student not found.");
+1057: 
+1058:     const { data: req } = await supabase
+1059:       .from("clearance_requests")
+1060:       .select("id")
+1061:       .eq("student_id", student.id)
+1062:       .maybeSingle();
+1063:     if (!req) throw new Error("Clearance request not found.");
+1064: 
+1065:     const { data: approvals, error: fetchErr } = await supabase
+1066:       .from("clearance_approvals")
+1067:       .select("id, teacher_assignment_id, teacher_assignments(subject_name)")
+1068:       .eq("clearance_request_id", req.id)
+1069:       .eq("approver_profile_id", teacherProfileId);
+1070: 
+1071:     if (fetchErr) throw fetchErr;
+1072:     if (!approvals || approvals.length === 0) throw new Error("Clearance approval row not found for this teacher.");
+1073: 
+1074:     let targetApproval = approvals[0];
+1075:     if (approvals.length > 1 && subjectName) {
+1076:       const match = approvals.find(a => a.teacher_assignments?.subject_name === subjectName);
+1077:       if (match) targetApproval = match;
+1078:     }
+1079: 
+1080:     const { data, error } = await supabase
+1081:       .from("clearance_approvals")
+1082:       .update({
+1083:         status: status,
+1084:         remarks: remarks || null,
+1085:         approved_at: status === "approved" ? new Date().toISOString() : null
+1086:       })
+1087:       .eq("id", targetApproval.id)
+1088:       .select()
+1089:       .single();
+1090: 
+1091:     if (error) throw error;
+1092:     return data;
+1093:   }
+1094: 
+1095:   async function updateOfficeClearance(studentNumber, departmentName, status, remarks = "") {
+1096:     const supabase = client();
+1097:     if (!supabase) return null;
+1098: 
+1099:     const effectiveRemarks = remarks || (status === "approved" ? "Approved by Admin" : null);
+1100: 
+1101:     const { data: student } = await supabase
+1102:       .from("students")
+1103:       .select("id")
+1104:       .or(buildStudentOrFilter(studentNumber))
+1105:       .maybeSingle();
+1106:     if (!student) throw new Error("Student not found.");
+1107: 
+1108:     // 1. Try atomic RPC function first
+1109:     if (typeof supabase.rpc === "function") {
+1110:       try {
+1111:         const { data: rpcResult, error: rpcErr } = await supabase.rpc("approve_office_clearance", {
+1112:           p_student_id: student.id,
+1113:           p_department_name: departmentName,
+1114:           p_status: status || "approved",
+1115:           p_remarks: effectiveRemarks || "Approved by Admin"
+1116:         });
+1117:         if (!rpcErr && rpcResult?.success) {
+1118:           return rpcResult;
+1119:         }
+1120:         if (rpcErr && rpcErr.message && !rpcErr.message.includes("function") && !rpcErr.message.includes("not found")) {
+1121:           console.warn("approve_office_clearance RPC returned:", rpcErr);
+1122:         }
+1123:       } catch (rpcEx) {
+1124:         console.warn("approve_office_clearance RPC call caught:", rpcEx);
+1125:       }
+1126:     }
+1127: 
+1128:     // 2. Direct table fallback
+1129:     const { data: req } = await supabase
+1130:       .from("clearance_requests")
+1131:       .select("id")
+1132:       .eq("student_id", student.id)
+1133:       .maybeSingle();
+1134:     if (!req) throw new Error("Clearance request not found.");
+1135: 
+1136:     const { data: dept } = await supabase
+1137:       .from("departments")
+1138:       .select("id")
+1139:       .eq("name", departmentName)
+1140:       .maybeSingle();
+1141:     if (!dept) throw new Error("Department not found.");
+1142: 
+1143:     let approverProfileId = null;
+1144:     try {
+1145:       const { data: authData } = await supabase.auth.getUser();
+1146:       if (authData?.user) {
+1147:         const { data: prof } = await supabase
+1148:           .from("profiles")
+1149:           .select("id")
+1150:           .eq("auth_user_id", authData.user.id)

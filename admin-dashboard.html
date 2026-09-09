@@ -2706,9 +2706,27 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           const calcTotal = Math.max(calcLocal, calcDb);
           const effectivePaid = (calcTotal > 0) ? calcTotal : (local.paid !== undefined ? Number(local.paid || 0) : Number(dbS.paid || 0));
 
+          const mergedClearance = {
+            Teacher: 'pending',
+            Guidance: 'pending',
+            Prefect: 'pending',
+            Library: 'pending',
+            Principal: 'pending',
+            Accounting: 'pending',
+            Registrar: 'pending',
+            ...(local.clearance || {}),
+            ...(dbS.clearance || {})
+          };
+
+          ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
+            if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+              mergedClearance[k] = 'approved';
+            }
+          });
+
           merged[existingIdx] = {
-            ...dbS,
             ...local,
+            ...dbS,
             id: local.id || dbS.id,
             dbId: dbS.dbId || local.dbId || dbS.id,
             authUserId: local.authUserId || dbS.authUserId || dbS.auth_user_id,
@@ -2718,7 +2736,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
             paid: effectivePaid,
-            clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+            clearance: mergedClearance
           };
         } else {
           merged.push({ ...dbS });

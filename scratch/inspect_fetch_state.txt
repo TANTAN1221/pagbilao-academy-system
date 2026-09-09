@@ -1,0 +1,81 @@
+fetchState in app-config.js:
+731:               const pCleanId = pId.replace(/^stu-/, "").trim();
+732:               const pEmail = String(p.email || p.studentEmail || "").toLowerCase().trim();
+733: 
+734:               const sId = String(s.id || "").toLowerCase();
+735:               const sNum = String(s.student_number || "").toLowerCase();
+736:               const sCleanNum = sNum.replace(/^stu-/, "").trim();
+737:               const sAuth = String(s.auth_user_id || "").toLowerCase();
+738:               const sEmail = String(s.email || "").toLowerCase().trim();
+739: 
+740:               return (
+741:                 (sId && pId === sId) ||
+742:                 (sNum && pId === sNum) ||
+743:                 (sCleanNum && pCleanId === sCleanNum) ||
+744:                 (sAuth && pId === sAuth) ||
+745:                 (sEmail && pEmail && pEmail === sEmail)
+746:               );
+747:             })
+748:             .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+749: 
+750:           // Clearance request
+751:           const req = (clRequests || []).find(cr => cr.student_id === s.id);
+752:           const studentClearance = {
+753:             Teacher: "pending",
+754:             Guidance: "pending",
+755:             Prefect: "pending",
+756:             Library: "pending",
+757:             Principal: "pending",
+758:             Accounting: "pending",
+759:             Registrar: "pending"
+760:           };
+761: 
+762:           if (req) {
+763:             const approvals = (clApprovals || []).filter(ca => ca.clearance_request_id === req.id);
+764:             
+765:             // Office approvals
+766:             approvals.forEach(ca => {
+767:               const deptName = deptMap[ca.department_id];
+768:               if (deptName && deptName !== "Teacher") {
+769:                 studentClearance[deptName] = ca.status;
+770:               }
+771:             });
+772: 
+773:             // Teacher approvals summary
+774:             const teacherApprovals = approvals.filter(ca => deptMap[ca.department_id] === "Teacher");
+775:             if (teacherApprovals.length > 0) {
+776:               const allApproved = teacherApprovals.every(ca => ca.status === "approved");
+777:               const anyRequested = teacherApprovals.some(ca => ca.status === "requested");
+778:               studentClearance.Teacher = allApproved ? "approved" : (anyRequested ? "requested" : "pending");
+779:             }
+780:           }
+781: 
+782:           return {
+783:             id: s.student_number,
+784:             dbId: s.id,
+785:             authUserId: s.auth_user_id,
+786:             name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.student_number,
+787:             email: s.email,
+788:             level: s.education_level || "JHS",
+789:             grade: s.grade_level || "Grade 7",
+790:             section: s.section_name || "N/A",
+791:             strand: s.strand || "N/A",
+792:             voucher: voucherName,
+793:             paid: studentPaid,
+794:             clearance: studentClearance
+795:           };
+796:         });
+797:       }
+798: 
+799:       // 6. Teacher Clearance Requests
+800:       if (clApprovals && clRequests && studentsList && profilesList) {
+801:         state.teacherClearanceRequests = (clApprovals || [])
+802:           .filter(ca => ca.teacher_assignment_id !== null)
+803:           .map(ca => {
+804:             const req = (clRequests || []).find(r => r.id === ca.clearance_request_id);
+805:             const student = (studentsList || []).find(s => s.id === req?.student_id);
+806:             const teacher = (profilesList || []).find(p => p.id === ca.approver_profile_id);
+807:             const ta = (assignmentsList || []).find(a => a.id === ca.teacher_assignment_id);
+808: 
+809:             return {
+810:               key: `${student?.student_number}|${teacher?.id}|${ta?.subject_name || "Subject"}|${ta?.grade_level}|${ta?.section_name}`,

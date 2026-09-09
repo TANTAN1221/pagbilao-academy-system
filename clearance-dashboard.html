@@ -19,7 +19,103 @@
     </div>
   </div>
 <header class="h-16 bg-white border-b border-academy-border px-6 flex items-center justify-between"><div class="flex items-center gap-3"><img src="assets/logo.png" class="w-10 h-10 rounded-full object-contain border"><div><h1 class="font-extrabold text-academy-navy">Pagbilao Academy Inc.</h1><p class="text-xs text-academy-muted">Clearance Head Portal</p></div></div><div class="flex items-center gap-3"><div class="text-right"><p id="teacherNameLabel" class="text-sm font-extrabold">Teacher</p><p id="teacherRoleLabel" class="text-xs text-academy-muted">Teacher Clearance Head</p></div><button onclick="logoutToIndex()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-extrabold hover:bg-red-100 transition"><span class="material-symbols-rounded text-[18px]">logout</span>Logout</button></div></header>
-<main class="max-w-7xl mx-auto p-6 space-y-5"><section><h2 class="text-2xl font-extrabold text-academy-navy">Assigned Clearance Requests</h2><p class="text-sm text-academy-muted mt-1">This shows the students who match the teacher's assigned grade/section/subject. Students must request approval before the teacher approves.</p></section><section class="grid md:grid-cols-3 gap-4"><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Requested / Pending</p><h3 id="pendingCount" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Approved</p><h3 id="approvedCount" class="text-3xl font-extrabold text-green-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Assignments</p><h3 id="assignmentCount" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3></div></section><section class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-academy-navy mb-3">My Teaching Assignments</h3><div id="assignmentPills" class="flex flex-wrap gap-2"></div></section><section class="bg-white border border-academy-border rounded-2xl shadow-card overflow-hidden"><div class="overflow-x-auto"><table class="w-full min-w-[900px] text-sm"><thead class="bg-academy-navy text-white"><tr><th class="text-left px-4 py-3">Student</th><th class="text-left px-4 py-3">Grade / Section</th><th class="text-left px-4 py-3">Subject Scope</th><th class="text-left px-4 py-3">Request Status</th><th class="text-left px-4 py-3">Remarks</th><th class="text-left px-4 py-3">Action</th></tr></thead><tbody id="requestBody" class="divide-y divide-slate-100"></tbody></table></div></section></main><script>
+<main class="max-w-7xl mx-auto p-6 space-y-5"><section><h2 class="text-2xl font-extrabold text-academy-navy">Assigned Clearance Requests</h2><p class="text-sm text-academy-muted mt-1">This shows the students who match the teacher's assigned grade/section/subject. Students must request approval before the teacher approves.</p></section><section class="grid md:grid-cols-3 gap-4"><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Requested / Pending</p><h3 id="pendingCount" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Approved</p><h3 id="approvedCount" class="text-3xl font-extrabold text-green-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Assignments</p><h3 id="assignmentCount" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3></div></section><section class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-academy-navy mb-3">My Teaching Assignments</h3><div id="assignmentPills" class="flex flex-wrap gap-2"></div></section><section class="bg-white border border-academy-border rounded-2xl shadow-card overflow-hidden">
+  <!-- Filter & Search Toolbar -->
+  <div class="p-5 border-b border-academy-border bg-academy-soft/40 space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Search Input -->
+      <div class="relative flex-1 max-w-md">
+        <span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted text-xl pointer-events-none">search</span>
+        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search by student name, ID, or subject..."
+          class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-academy-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-academy-blue transition">
+      </div>
+
+      <!-- Controls: Filters & Sorting -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Grade Filter -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
+          <span class="material-symbols-rounded text-academy-muted text-base">filter_alt</span>
+          <label for="gradeFilter" class="text-xs font-bold text-academy-muted">Grade:</label>
+          <select id="gradeFilter" onchange="onGradeFilterChange()" class="text-xs font-bold text-academy-navy bg-transparent focus:outline-none cursor-pointer">
+            <option value="all">All Grades</option>
+            <option value="Grade 7">Grade 7</option>
+            <option value="Grade 8">Grade 8</option>
+            <option value="Grade 9">Grade 9</option>
+            <option value="Grade 10">Grade 10</option>
+            <option value="Grade 11">Grade 11</option>
+            <option value="Grade 12">Grade 12</option>
+          </select>
+        </div>
+
+        <!-- Section Filter -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
+          <label for="sectionFilter" class="text-xs font-bold text-academy-muted">Section:</label>
+          <select id="sectionFilter" onchange="renderTable()" class="text-xs font-bold text-academy-navy bg-transparent focus:outline-none cursor-pointer">
+            <option value="all">All Sections</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
+          <label for="statusFilter" class="text-xs font-bold text-academy-muted">Status:</label>
+          <select id="statusFilter" onchange="renderTable()" class="text-xs font-bold text-academy-navy bg-transparent focus:outline-none cursor-pointer">
+            <option value="all">All Status</option>
+            <option value="pending">Pending / Requested</option>
+            <option value="approved">Approved</option>
+            <option value="on_hold">On Hold</option>
+            <option value="not_requested">Not Requested</option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
+          <span class="material-symbols-rounded text-academy-muted text-base">swap_vert</span>
+          <label for="sortBy" class="text-xs font-bold text-academy-muted">Sort:</label>
+          <select id="sortBy" onchange="renderTable()" class="text-xs font-bold text-academy-navy bg-transparent focus:outline-none cursor-pointer">
+            <option value="grade_section">Grade & Section (Default)</option>
+            <option value="name_asc">Student Name (A → Z)</option>
+            <option value="name_desc">Student Name (Z → A)</option>
+            <option value="status">Status (Pending First)</option>
+          </select>
+        </div>
+
+        <!-- Reset Filter Button -->
+        <button onclick="resetFilters()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-academy-navy font-bold text-xs transition flex items-center gap-1" title="Reset All Filters">
+          <span class="material-symbols-rounded text-base">restart_alt</span> Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Result Stats Summary -->
+    <div class="flex items-center justify-between text-xs text-academy-muted pt-1">
+      <p id="tableStatsText">Showing all clearance records</p>
+      <span class="font-semibold text-academy-navy" id="activeFilterSummary">Sorted by Grade & Section</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[900px] text-sm">
+      <thead class="bg-academy-navy text-white">
+        <tr>
+          <th class="text-left px-4 py-3 cursor-pointer hover:bg-blue-900 transition" onclick="toggleSortColumn('name')" title="Click to sort by student name">
+            <span class="inline-flex items-center gap-1">Student <span class="material-symbols-rounded text-sm">unfold_more</span></span>
+          </th>
+          <th class="text-left px-4 py-3 cursor-pointer hover:bg-blue-900 transition" onclick="toggleSortColumn('grade_section')" title="Click to sort by grade and section">
+            <span class="inline-flex items-center gap-1">Grade / Section <span class="material-symbols-rounded text-sm">unfold_more</span></span>
+          </th>
+          <th class="text-left px-4 py-3">Subject Scope</th>
+          <th class="text-left px-4 py-3 cursor-pointer hover:bg-blue-900 transition" onclick="toggleSortColumn('status')" title="Click to sort by status">
+            <span class="inline-flex items-center gap-1">Request Status <span class="material-symbols-rounded text-sm">unfold_more</span></span>
+          </th>
+          <th class="text-left px-4 py-3">Remarks</th>
+          <th class="text-left px-4 py-3">Action</th>
+        </tr>
+      </thead>
+      <tbody id="requestBody" class="divide-y divide-slate-100"></tbody>
+    </table>
+  </div>
+</section></main><script>
 const STORAGE_KEY='pa_full_admin_v2';
 const fallbackAccounts=[];
 const fallbackStudents=[];
@@ -199,9 +295,28 @@ function mergeStudentsState(localStudents = [], dbStudents = []) {
     if (existingIdx >= 0) {
       const local = merged[existingIdx];
       const highestPaid = Math.max(Number(dbS.paid || 0), Number(local.paid || 0));
+
+      const mergedClearance = {
+        Teacher: 'pending',
+        Guidance: 'pending',
+        Prefect: 'pending',
+        Library: 'pending',
+        Principal: 'pending',
+        Accounting: 'pending',
+        Registrar: 'pending',
+        ...(local.clearance || {}),
+        ...(dbS.clearance || {})
+      };
+
+      ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
+        if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+          mergedClearance[k] = 'approved';
+        }
+      });
+
       merged[existingIdx] = {
-        ...dbS,
         ...local,
+        ...dbS,
         id: local.id || dbS.id,
         dbId: dbS.dbId || local.dbId || dbS.id,
         authUserId: local.authUserId || dbS.authUserId || dbS.auth_user_id,
@@ -211,7 +326,7 @@ function mergeStudentsState(localStudents = [], dbStudents = []) {
         feeDiscount: local.feeDiscount !== undefined ? local.feeDiscount : dbS.feeDiscount,
         assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
         paid: highestPaid,
-        clearance: { ...(dbS.clearance || {}), ...(local.clearance || {}) }
+        clearance: mergedClearance
       };
     } else {
       merged.push({ ...dbS });
@@ -387,36 +502,193 @@ function mergeClearanceRequestsState(localRequests = [], dbRequests = []) {
   });
   return Array.from(map.values());
 }
-function renderAll(){
-  const acc = currentAccount();
-  teacherNameLabel.textContent = acc.name;
-  teacherRoleLabel.textContent = roleLabel(acc.role);
+function extractGradeNumber(gradeStr) {
+  const match = String(gradeStr || '').match(/\d+/);
+  return match ? parseInt(match[0], 10) : 999;
+}
 
-  if (acc.role === 'teacher_clearance_head') {
-    assignmentCount.textContent = (acc.assignments || []).length;
-    assignmentPills.innerHTML = (acc.assignments || []).map(a => `<span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">${a.grade} · ${a.section || 'N/A'} · ${a.subject || 'Subject'}</span>`).join('') || '<span class="text-sm text-academy-muted">No assignments yet.</span>';
-  } else {
-    assignmentCount.textContent = (appData.students || []).length;
-    assignmentPills.innerHTML = `<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">All Students Scope (${roleLabel(acc.role)})</span>`;
+function updateSectionFilterOptions() {
+  const gradeSelect = document.getElementById('gradeFilter');
+  const sectionSelect = document.getElementById('sectionFilter');
+  if (!sectionSelect) return;
+
+  const currentGrade = gradeSelect ? gradeSelect.value : 'all';
+  const currentVal = sectionSelect.value;
+  const rows = teacherRows();
+  let relevantRows = rows;
+  if (currentGrade !== 'all') {
+    relevantRows = rows.filter(r => (r.student?.grade || '') === currentGrade);
   }
 
-  const rows = teacherRows();
-  const pending = rows.filter(r => ['requested', 'on_hold', 'pending'].includes(requestFor(r.key)?.status)).length;
-  const approved = rows.filter(r => requestFor(r.key)?.status === 'approved').length;
-  pendingCount.textContent = pending;
-  approvedCount.textContent = approved;
+  const sections = Array.from(new Set(relevantRows.map(r => r.student?.section).filter(Boolean))).sort();
+  
+  sectionSelect.innerHTML = `<option value="all">All Sections</option>` + sections.map(sec => 
+    `<option value="${sec}">${sec}</option>`
+  ).join('');
 
-  requestBody.innerHTML = rows.length ? rows.map(r => {
-    const isTeacher = !r.field;
-    const req = isTeacher ? requestFor(r.key) : null;
-    let status = 'not_requested';
+  if (sections.includes(currentVal)) {
+    sectionSelect.value = currentVal;
+  } else {
+    sectionSelect.value = 'all';
+  }
+}
 
-    if (isTeacher) {
-      status = req?.status || 'not_requested';
-    } else {
-      status = r.student.clearance?.[r.field] || 'pending';
+function onGradeFilterChange() {
+  updateSectionFilterOptions();
+  renderTable();
+}
+
+function toggleSortColumn(col) {
+  const sortSelect = document.getElementById('sortBy');
+  if (!sortSelect) return;
+  if (col === 'name') {
+    sortSelect.value = sortSelect.value === 'name_asc' ? 'name_desc' : 'name_asc';
+  } else if (col === 'grade_section') {
+    sortSelect.value = 'grade_section';
+  } else if (col === 'status') {
+    sortSelect.value = 'status';
+  }
+  renderTable();
+}
+
+function resetFilters() {
+  const searchInput = document.getElementById('searchInput');
+  const gradeFilter = document.getElementById('gradeFilter');
+  const sectionFilter = document.getElementById('sectionFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const sortBy = document.getElementById('sortBy');
+
+  if (searchInput) searchInput.value = '';
+  if (gradeFilter) gradeFilter.value = 'all';
+  updateSectionFilterOptions();
+  if (sectionFilter) sectionFilter.value = 'all';
+  if (statusFilter) statusFilter.value = 'all';
+  if (sortBy) sortBy.value = 'grade_section';
+
+  renderTable();
+}
+
+function getRowStatus(r) {
+  const isTeacher = !r.field;
+  if (isTeacher) {
+    const req = requestFor(r.key);
+    return req?.status || 'not_requested';
+  }
+  return r.student.clearance?.[r.field] || 'pending';
+}
+
+function renderTable() {
+  const allRows = teacherRows();
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const grade = document.getElementById('gradeFilter')?.value || 'all';
+  const section = document.getElementById('sectionFilter')?.value || 'all';
+  const status = document.getElementById('statusFilter')?.value || 'all';
+  const sortBy = document.getElementById('sortBy')?.value || 'grade_section';
+
+  // 1. Filter rows
+  let filtered = allRows.filter(r => {
+    const rowStatus = getRowStatus(r);
+
+    // Status filter
+    if (status !== 'all') {
+      if (status === 'pending') {
+        if (!['requested', 'pending'].includes(rowStatus)) return false;
+      } else if (rowStatus !== status) {
+        return false;
+      }
     }
 
+    // Grade filter
+    if (grade !== 'all' && (r.student?.grade || '') !== grade) {
+      return false;
+    }
+
+    // Section filter
+    if (section !== 'all' && (r.student?.section || '') !== section) {
+      return false;
+    }
+
+    // Search query
+    if (search) {
+      const sName = String(r.student?.name || '').toLowerCase();
+      const sId = String(r.student?.id || '').toLowerCase();
+      const sNum = String(r.student?.student_number || '').toLowerCase();
+      const sSubj = String(r.assignment?.subject || '').toLowerCase();
+      const sClass = String(classLabel(r.student) || '').toLowerCase();
+      const match = sName.includes(search) || sId.includes(search) || sNum.includes(search) || sSubj.includes(search) || sClass.includes(search);
+      if (!match) return false;
+    }
+
+    return true;
+  });
+
+  // 2. Sort rows
+  filtered.sort((a, b) => {
+    if (sortBy === 'grade_section') {
+      const gA = extractGradeNumber(a.student?.grade);
+      const gB = extractGradeNumber(b.student?.grade);
+      if (gA !== gB) return gA - gB;
+
+      const secA = String(a.student?.section || '');
+      const secB = String(b.student?.section || '');
+      const secCmp = secA.localeCompare(secB);
+      if (secCmp !== 0) return secCmp;
+
+      return String(a.student?.name || '').localeCompare(String(b.student?.name || ''));
+    } else if (sortBy === 'name_asc') {
+      return String(a.student?.name || '').localeCompare(String(b.student?.name || ''));
+    } else if (sortBy === 'name_desc') {
+      return String(b.student?.name || '').localeCompare(String(a.student?.name || ''));
+    } else if (sortBy === 'status') {
+      const order = { requested: 1, pending: 1, on_hold: 2, not_requested: 3, approved: 4 };
+      const stA = order[getRowStatus(a)] || 99;
+      const stB = order[getRowStatus(b)] || 99;
+      if (stA !== stB) return stA - stB;
+      return String(a.student?.name || '').localeCompare(String(b.student?.name || ''));
+    }
+    return 0;
+  });
+
+  // 3. Update summary texts
+  const statsEl = document.getElementById('tableStatsText');
+  const summaryEl = document.getElementById('activeFilterSummary');
+  if (statsEl) {
+    if (filtered.length === allRows.length) {
+      statsEl.textContent = `Showing all ${allRows.length} clearance records`;
+    } else {
+      statsEl.textContent = `Showing ${filtered.length} of ${allRows.length} clearance records (filtered)`;
+    }
+  }
+  if (summaryEl) {
+    const sortLabels = {
+      grade_section: 'Sorted by Grade & Section',
+      name_asc: 'Sorted by Name (A → Z)',
+      name_desc: 'Sorted by Name (Z → A)',
+      status: 'Sorted by Pending First'
+    };
+    summaryEl.textContent = sortLabels[sortBy] || 'Custom Sort';
+  }
+
+  // 4. Render Table HTML
+  const body = document.getElementById('requestBody');
+  if (!body) return;
+
+  if (!filtered.length) {
+    body.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-academy-muted">
+      <span class="material-symbols-rounded text-3xl text-slate-400 mb-1">search_off</span>
+      <p class="font-extrabold text-academy-navy text-sm">No matching clearance records found</p>
+      <p class="text-xs mt-1">Try adjusting your search keywords or clearing filters.</p>
+      <button onclick="resetFilters()" class="mt-3 px-4 py-1.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-academy-light transition">
+        Clear All Filters
+      </button>
+    </td></tr>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map(r => {
+    const isTeacher = !r.field;
+    const req = isTeacher ? requestFor(r.key) : null;
+    let status = getRowStatus(r);
     const isApproved = status === 'approved';
 
     // Clearance hierarchy check
@@ -446,8 +718,8 @@ function renderAll(){
     let actionButtons = '';
     if (isApproved) {
       actionButtons = `
-        <button disabled class="px-3 py-1.5 rounded-lg bg-green-100 text-green-800 cursor-not-allowed opacity-80 font-bold text-xs">
-          Approved
+        <button disabled class="px-3 py-1.5 rounded-lg bg-green-100 text-green-800 cursor-not-allowed opacity-80 font-bold text-xs flex items-center gap-1">
+          <span class="material-symbols-rounded text-sm">check</span> Approved
         </button>
       `;
     } else if (isLocked) {
@@ -458,26 +730,56 @@ function renderAll(){
       `;
     } else {
       actionButtons = `
-        <button onclick="approve('${r.key.replaceAll("'", "\\'")}', this)" class="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-bold text-xs">
-          Approve
+        <button onclick="approve('${r.key.replaceAll("'", "\\'")}', this)" class="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-bold text-xs flex items-center gap-1 transition shadow-xs">
+          <span class="material-symbols-rounded text-sm">check_circle</span> Approve
         </button>
-        <button onclick="hold('${r.key.replaceAll("'", "\\'")}', this)" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs">
-          Hold
+        <button onclick="hold('${r.key.replaceAll("'", "\\'")}', this)" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs flex items-center gap-1 transition shadow-xs">
+          <span class="material-symbols-rounded text-sm">pause_circle</span> Hold
         </button>
       `;
     }
 
-    return `<tr>
-      <td class="px-4 py-3 font-extrabold text-academy-navy">${r.student.name}</td>
-      <td class="px-4 py-3">${classLabel(r.student)}</td>
-      <td class="px-4 py-3">${r.assignment.subject || 'Subject'}</td>
-      <td class="px-4 py-3">${statusBadge(status)}</td>
-      <td class="px-4 py-3"><input value="${req?.remarks || ''}" placeholder="Optional remarks" class="px-3 py-2 rounded-xl border border-academy-border w-full" ${isApproved ? 'disabled' : ''}></td>
-      <td class="px-4 py-3 flex items-center gap-2">
+    return `<tr class="hover:bg-academy-soft/40 transition">
+      <td class="px-4 py-3.5 font-extrabold text-academy-navy">
+        ${r.student.name}
+        <span class="block text-[11px] font-normal text-slate-400 font-mono">${r.student.id || ''}</span>
+      </td>
+      <td class="px-4 py-3.5">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-blue-50 text-academy-navy font-bold text-xs">
+          ${classLabel(r.student)}
+        </span>
+      </td>
+      <td class="px-4 py-3.5 text-slate-700 font-semibold">${r.assignment.subject || 'Subject'}</td>
+      <td class="px-4 py-3.5">${statusBadge(status)}</td>
+      <td class="px-4 py-3.5"><input value="${req?.remarks || ''}" placeholder="Optional remarks" class="px-3 py-1.5 rounded-xl border border-academy-border w-full text-xs bg-white focus:outline-none focus:ring-1 focus:ring-academy-blue" ${isApproved ? 'disabled' : ''}></td>
+      <td class="px-4 py-3.5 flex items-center gap-1.5">
         ${actionButtons}
       </td>
     </tr>`;
-  }).join('') : `<tr><td colspan="6" class="px-4 py-8 text-center text-academy-muted">No clearance requests pending for this role.</td></tr>`;
+  }).join('');
+}
+
+function renderAll(){
+  const acc = currentAccount();
+  teacherNameLabel.textContent = acc.name;
+  teacherRoleLabel.textContent = roleLabel(acc.role);
+
+  if (acc.role === 'teacher_clearance_head') {
+    assignmentCount.textContent = (acc.assignments || []).length;
+    assignmentPills.innerHTML = (acc.assignments || []).map(a => `<span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">${a.grade} · ${a.section || 'N/A'} · ${a.subject || 'Subject'}</span>`).join('') || '<span class="text-sm text-academy-muted">No assignments yet.</span>';
+  } else {
+    assignmentCount.textContent = (appData.students || []).length;
+    assignmentPills.innerHTML = `<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">All Students Scope (${roleLabel(acc.role)})</span>`;
+  }
+
+  const rows = teacherRows();
+  const pending = rows.filter(r => ['requested', 'on_hold', 'pending'].includes(requestFor(r.key)?.status)).length;
+  const approved = rows.filter(r => requestFor(r.key)?.status === 'approved').length;
+  pendingCount.textContent = pending;
+  approvedCount.textContent = approved;
+
+  updateSectionFilterOptions();
+  renderTable();
 }
 function mergeAccountsState(localAccounts = [], dbAccounts = []) {
   const map = new Map();
