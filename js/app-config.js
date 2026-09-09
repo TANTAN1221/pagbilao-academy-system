@@ -601,8 +601,12 @@
 
       const DEFAULT_INSTALLMENT_TEMPLATE = [];
 
+      const storedClearanceOpen = typeof localStorage !== 'undefined' && localStorage.getItem('pa_clearance_period_open') !== null
+        ? localStorage.getItem('pa_clearance_period_open') === 'true'
+        : true;
+
       const state = {
-        settings: { schoolName: "Pagbilao Academy Inc.", schoolYear: "2026-2027" },
+        settings: { schoolName: "Pagbilao Academy Inc.", schoolYear: "2026-2027", clearanceOpen: storedClearanceOpen },
         feeStructures: { JHS: [], SHS: [] },
         vouchers: [],
         installmentTemplate: [],
@@ -1129,41 +1133,92 @@
       .maybeSingle();
     if (!student) throw new Error("Student not found.");
 
-    const { data: req } = await supabase
+    let { data: req } = await supabase
       .from("clearance_requests")
       .select("id")
       .eq("student_id", student.id)
       .maybeSingle();
+
+    if (!req) {
+      try {
+        const { data: newReq } = await supabase
+          .from("clearance_requests")
+          .insert({
+            student_id: student.id,
+            school_year: "2026-2027",
+            status: "pending"
+          })
+          .select()
+          .single();
+        req = newReq;
+      } catch (e) {
+        console.warn("Auto-create clearance request error:", e);
+      }
+    }
     if (!req) throw new Error("Clearance request not found.");
 
-    const { data: approvals, error: fetchErr } = await supabase
+    const { data: allApprovals, error: fetchErr } = await supabase
       .from("clearance_approvals")
-      .select("id, teacher_assignment_id, teacher_assignments(subject_name)")
-      .eq("clearance_request_id", req.id)
-      .eq("approver_profile_id", teacherProfileId);
+      .select("id, approver_profile_id, teacher_assignment_id, teacher_assignments(subject_name)")
+      .eq("clearance_request_id", req.id);
 
     if (fetchErr) throw fetchErr;
-    if (!approvals || approvals.length === 0) throw new Error("Clearance approval row not found for this teacher.");
 
-    let targetApproval = approvals[0];
-    if (approvals.length > 1 && subjectName) {
-      const match = approvals.find(a => a.teacher_assignments?.subject_name === subjectName);
-      if (match) targetApproval = match;
+    let targetApproval = null;
+    if (allApprovals && allApprovals.length > 0) {
+      if (subjectName) {
+        targetApproval = allApprovals.find(a => a.teacher_assignments?.subject_name === subjectName);
+      }
+      if (!targetApproval && teacherProfileId) {
+        targetApproval = allApprovals.find(a => a.approver_profile_id === teacherProfileId);
+      }
+      if (!targetApproval) {
+        targetApproval = allApprovals.find(a => a.teacher_assignment_id !== null);
+      }
     }
 
-    const { data, error } = await supabase
-      .from("clearance_approvals")
-      .update({
+    if (targetApproval) {
+      const { data, error } = await supabase
+        .from("clearance_approvals")
+        .update({
+          status: status,
+          remarks: remarks || null,
+          approved_at: status === "approved" ? new Date().toISOString() : null
+        })
+        .eq("id", targetApproval.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } else {
+      const { data: dept } = await supabase
+        .from("departments")
+        .select("id")
+        .eq("name", "Teacher")
+        .maybeSingle();
+
+      const insertPayload = {
+        clearance_request_id: req.id,
+        department_id: dept?.id || null,
+        approval_order: 1,
         status: status,
         remarks: remarks || null,
         approved_at: status === "approved" ? new Date().toISOString() : null
-      })
-      .eq("id", targetApproval.id)
-      .select()
-      .single();
+      };
+      if (teacherProfileId && isUuid(teacherProfileId)) {
+        insertPayload.approver_profile_id = teacherProfileId;
+      }
 
-    if (error) throw error;
-    return data;
+      const { data, error } = await supabase
+        .from("clearance_approvals")
+        .insert(insertPayload)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
   }
 
   async function updateOfficeClearance(studentNumber, departmentName, status, remarks = "") {
@@ -1200,11 +1255,28 @@
     }
 
     // 2. Direct table fallback
-    const { data: req } = await supabase
+    let { data: req } = await supabase
       .from("clearance_requests")
       .select("id")
       .eq("student_id", student.id)
       .maybeSingle();
+
+    if (!req) {
+      try {
+        const { data: newReq } = await supabase
+          .from("clearance_requests")
+          .insert({
+            student_id: student.id,
+            school_year: "2026-2027",
+            status: "pending"
+          })
+          .select()
+          .single();
+        req = newReq;
+      } catch (e) {
+        console.warn("Auto-create clearance request in updateOfficeClearance error:", e);
+      }
+    }
     if (!req) throw new Error("Clearance request not found.");
 
     const { data: dept } = await supabase

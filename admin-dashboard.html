@@ -276,17 +276,59 @@
       </section>
 
       <section id="clearancePage" class="page-section hidden space-y-5">
-        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm space-y-4">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h3 class="text-xl font-extrabold text-academy-navy">Clearance Monitoring</h3>
-              <p class="text-sm text-academy-muted mt-1">Teachers can have many grade/section/subject assignments.
+              <div class="flex items-center gap-2.5">
+                <h3 class="text-xl font-extrabold text-academy-navy">Clearance Monitoring</h3>
+                <span id="clearancePeriodHeaderBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Period: OPEN
+                </span>
+              </div>
+              <p class="text-sm text-academy-muted mt-1">
+                Monitor student clearance compliance across assigned teachers and administrative offices.
+              </p>
             </div>
-            <button onclick="refreshClearanceApprovals()"
-              class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold hover:bg-blue-900 transition flex items-center gap-1.5">
-              <span class="material-symbols-rounded text-sm">refresh</span>
-              Refresh Approval Requirements
-            </button>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button onclick="refreshClearanceApprovals()"
+                class="px-4 py-2.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy font-bold hover:bg-academy-light transition flex items-center gap-1.5 text-xs shadow-xs">
+                <span class="material-symbols-rounded text-base">refresh</span>
+                Refresh Requirements
+              </button>
+            </div>
+          </div>
+
+          <!-- Clearance Period Master Toggle Control Card -->
+          <div id="clearancePeriodControlCard" class="rounded-2xl p-4 border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/70 border-emerald-200">
+            <div class="flex items-start gap-3.5">
+              <div id="clearancePeriodIconBox" class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border bg-emerald-100 text-emerald-700 border-emerald-200 shadow-xs">
+                <span id="clearancePeriodIcon" class="material-symbols-rounded text-2xl">lock_open</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 id="clearancePeriodTitle" class="font-extrabold text-sm text-emerald-950">Clearance Application & Approvals: OPEN</h4>
+                  <span id="clearancePeriodYearTag" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-200/80 text-emerald-800">SY 2026-2027</span>
+                </div>
+                <p id="clearancePeriodDesc" class="text-xs mt-0.5 leading-relaxed text-emerald-900/90">
+                  Clearance applications are currently <strong>ACTIVE</strong>. Students can submit requests to their assigned teachers, and teachers/offices can approve or put requests on hold.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0 self-start sm:self-center">
+              <div class="text-right hidden sm:block">
+                <p id="clearancePeriodToggleStatusLabel" class="text-xs font-extrabold text-emerald-800">Period Active</p>
+                <p class="text-[10px] text-academy-muted">Used once per school year</p>
+              </div>
+              <button id="clearancePeriodToggleBtn" onclick="toggleClearancePeriod()"
+                class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-academy-blue focus:ring-offset-2 bg-emerald-600 shadow-xs"
+                role="switch" aria-checked="true" title="Click to toggle clearance application period">
+                <span id="clearancePeriodToggleKnob"
+                  class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out translate-x-6 flex items-center justify-center text-emerald-700">
+                  <span class="material-symbols-rounded text-xs">check</span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
         <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden">
@@ -653,9 +695,39 @@
               <div><label class="block text-sm font-bold mb-2">School Name</label><input id="schoolNameInput"
                   value="Pagbilao Academy Inc." class="w-full px-4 py-3 rounded-xl border border-academy-border"></div>
               <div><label class="block text-sm font-bold mb-2">School Year</label><input id="schoolYearInput"
-                  value="2026-2027" class="w-full px-4 py-3 rounded-xl border border-academy-border"></div><button
-                class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold">Save Settings</button>
+                  value="2026-2027" class="w-full px-4 py-3 rounded-xl border border-academy-border"></div>
+              <button class="px-5 py-3 rounded-xl bg-academy-navy text-white font-bold hover:bg-blue-900 transition">Save Settings</button>
             </form>
+          </section>
+
+          <!-- Clearance Period Configuration Card -->
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded text-indigo-600 text-2xl">fact_check</span>
+                <h3 class="text-xl font-extrabold text-academy-navy">Clearance Period Control</h3>
+              </div>
+              <p class="text-sm text-academy-muted mt-1">
+                Clearance is utilized only once every school year. Toggle this switch to open or close clearance applications for students and approval actions for faculty.
+              </p>
+            </div>
+
+            <div class="p-5 rounded-2xl border border-academy-border bg-academy-soft/60 space-y-4">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <h4 class="font-bold text-sm text-academy-navy">Annual Clearance Status</h4>
+                  <p class="text-xs text-academy-muted mt-0.5">Controls clearance availability across all portals</p>
+                </div>
+                <button type="button" id="settingsClearanceToggleBtn" onclick="toggleClearancePeriod()"
+                  class="px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-xs">
+                  <span class="material-symbols-rounded text-base">lock_open</span>
+                  <span>Active (Click to Close)</span>
+                </button>
+              </div>
+              <p class="text-xs text-academy-muted leading-relaxed border-t border-academy-border/60 pt-3">
+                When closed, students cannot submit teacher clearance requests and faculty cannot sign off or hold clearance.
+              </p>
+            </div>
           </section>
         </div>
       </section>
@@ -776,7 +848,7 @@
     const DEFAULT_INSTALLMENT_TEMPLATE = [];
 
     const defaultData = {
-      settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027' },
+      settings: { schoolName: 'Pagbilao Academy Inc.', schoolYear: '2026-2027', clearanceOpen: true },
       feeStructures: DEFAULT_FEE_STRUCTURES,
       vouchers: DEFAULT_VOUCHERS,
       installmentTemplate: DEFAULT_INSTALLMENT_TEMPLATE,
@@ -870,10 +942,132 @@
 
     let appData = loadData();
     ensurePrototypeData(appData);
+    function isClearancePeriodOpen() {
+      const stored = localStorage.getItem('pa_clearance_period_open');
+      if (stored !== null) return stored === 'true';
+      if (appData && appData.settings && typeof appData.settings.clearanceOpen === 'boolean') {
+        return appData.settings.clearanceOpen;
+      }
+      return true;
+    }
+
+    function updateClearancePeriodToggleUI() {
+      const isOpen = isClearancePeriodOpen();
+      const sy = appData?.settings?.schoolYear || '2026-2027';
+
+      // Header badge
+      const headerBadge = document.getElementById('clearancePeriodHeaderBadge');
+      if (headerBadge) {
+        if (isOpen) {
+          headerBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs';
+          headerBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Period: OPEN';
+        } else {
+          headerBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 shadow-xs';
+          headerBadge.innerHTML = '<span class="material-symbols-rounded text-xs text-slate-500">lock</span> Period: CLOSED';
+        }
+      }
+
+      // Main banner card in #clearancePage
+      const card = document.getElementById('clearancePeriodControlCard');
+      const iconBox = document.getElementById('clearancePeriodIconBox');
+      const icon = document.getElementById('clearancePeriodIcon');
+      const title = document.getElementById('clearancePeriodTitle');
+      const yearTag = document.getElementById('clearancePeriodYearTag');
+      const desc = document.getElementById('clearancePeriodDesc');
+      const statusLabel = document.getElementById('clearancePeriodToggleStatusLabel');
+      const toggleBtn = document.getElementById('clearancePeriodToggleBtn');
+      const toggleKnob = document.getElementById('clearancePeriodToggleKnob');
+
+      if (yearTag) yearTag.textContent = `SY ${sy}`;
+
+      if (isOpen) {
+        if (card) card.className = 'rounded-2xl p-4 border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/70 border-emerald-200';
+        if (iconBox) iconBox.className = 'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border bg-emerald-100 text-emerald-700 border-emerald-200 shadow-xs';
+        if (icon) icon.textContent = 'lock_open';
+        if (title) {
+          title.className = 'font-extrabold text-sm text-emerald-950';
+          title.textContent = 'Clearance Application & Approvals: OPEN';
+        }
+        if (desc) {
+          desc.className = 'text-xs mt-0.5 leading-relaxed text-emerald-900/90';
+          desc.innerHTML = 'Clearance applications are currently <strong>ACTIVE</strong>. Students can submit requests to their assigned teachers, and teachers/offices can approve or put requests on hold.';
+        }
+        if (statusLabel) {
+          statusLabel.className = 'text-xs font-extrabold text-emerald-800';
+          statusLabel.textContent = 'Period Active';
+        }
+        if (toggleBtn) {
+          toggleBtn.className = 'relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-academy-blue focus:ring-offset-2 bg-emerald-600 shadow-xs';
+          toggleBtn.setAttribute('aria-checked', 'true');
+          toggleBtn.setAttribute('title', 'Click to CLOSE clearance application period');
+        }
+        if (toggleKnob) {
+          toggleKnob.className = 'pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out translate-x-6 flex items-center justify-center text-emerald-700';
+          toggleKnob.innerHTML = '<span class="material-symbols-rounded text-xs">check</span>';
+        }
+      } else {
+        if (card) card.className = 'rounded-2xl p-4 border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border-slate-300';
+        if (iconBox) iconBox.className = 'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border bg-slate-200 text-slate-700 border-slate-300 shadow-xs';
+        if (icon) icon.textContent = 'lock';
+        if (title) {
+          title.className = 'font-extrabold text-sm text-slate-900';
+          title.textContent = 'Clearance Application & Approvals: CLOSED (Locked)';
+        }
+        if (desc) {
+          desc.className = 'text-xs mt-0.5 leading-relaxed text-slate-600';
+          desc.innerHTML = 'Clearance is currently <strong>LOCKED</strong>. Students cannot submit clearance requests, and approval actions are disabled in teacher portals until opened for year-end clearance.';
+        }
+        if (statusLabel) {
+          statusLabel.className = 'text-xs font-extrabold text-slate-600';
+          statusLabel.textContent = 'Period Locked';
+        }
+        if (toggleBtn) {
+          toggleBtn.className = 'relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-academy-blue focus:ring-offset-2 bg-slate-300 shadow-xs';
+          toggleBtn.setAttribute('aria-checked', 'false');
+          toggleBtn.setAttribute('title', 'Click to OPEN clearance application period');
+        }
+        if (toggleKnob) {
+          toggleKnob.className = 'pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out translate-x-0 flex items-center justify-center text-slate-400';
+          toggleKnob.innerHTML = '<span class="material-symbols-rounded text-xs">close</span>';
+        }
+      }
+
+      // Settings page button update
+      const settingsToggleBtn = document.getElementById('settingsClearanceToggleBtn');
+      if (settingsToggleBtn) {
+        if (isOpen) {
+          settingsToggleBtn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white';
+          settingsToggleBtn.innerHTML = '<span class="material-symbols-rounded text-base">check_circle</span> Active (Click to Close)';
+        } else {
+          settingsToggleBtn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-xs bg-slate-200 hover:bg-slate-300 text-slate-700';
+          settingsToggleBtn.innerHTML = '<span class="material-symbols-rounded text-base">lock</span> Locked (Click to Open)';
+        }
+      }
+    }
+
+    function toggleClearancePeriod() {
+      const currentState = isClearancePeriodOpen();
+      const newState = !currentState;
+      if (!appData.settings) appData.settings = {};
+      appData.settings.clearanceOpen = newState;
+      localStorage.setItem('pa_clearance_period_open', String(newState));
+      saveData();
+      updateClearancePeriodToggleUI();
+      renderClearance();
+      showToast(
+        newState ? 'Clearance Period Opened' : 'Clearance Period Closed',
+        newState
+          ? 'Clearance application and approval is now OPEN for students and faculty.'
+          : 'Clearance application and approval actions have been LOCKED.',
+        newState ? 'info' : 'error'
+      );
+    }
+
     function saveData() {
       ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
+      localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
       if (typeof syncInstallmentsToSupabase === 'function') syncInstallmentsToSupabase();
       if (typeof syncVouchersToSupabase === 'function') syncVouchersToSupabase();
       if (typeof syncFeeStructuresToSupabase === 'function') syncFeeStructuresToSupabase();
@@ -1147,6 +1341,7 @@
       showToast('Reminders Dispatched', `Automated due date alerts successfully dispatched to ${totalCount} student account(s) (${overdueStudents.length} Overdue, ${upcomingStudents.length} Upcoming).`, 'success');
     }
     function renderClearance() {
+      updateClearancePeriodToggleUI();
       clearanceBody.innerHTML = appData.students.map(s => {
         const teacherApproved = teacherApprovedCount(s);
         const teacherTotal = teacherCountForStudent(s);
@@ -3643,6 +3838,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       ensurePrototypeData();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
+      localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
       syncInstallmentsToSupabase();
       syncVouchersToSupabase();
       syncFeeStructuresToSupabase();
@@ -3764,6 +3960,12 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         }
       }
     }
+    window.addEventListener('storage', e => {
+      if (e.key === 'pa_clearance_period_open') {
+        updateClearancePeriodToggleUI();
+      }
+    });
+
     initAdminDashboard();
   </script>
 </body>

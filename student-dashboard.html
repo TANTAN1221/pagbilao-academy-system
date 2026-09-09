@@ -189,6 +189,19 @@
               </div>
               <span id="dropdownNotificationBadge" class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold">0 Active</span>
             </div>
+            <!-- Notification Actions Sub-bar -->
+            <div class="px-3.5 py-2 bg-slate-50 border-b border-academy-border flex items-center justify-between text-xs">
+              <span class="text-academy-muted text-[11px] font-medium" id="dropdownNotificationSubtext">Notifications & Alerts</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="markAllNotificationsRead()" class="text-academy-blue hover:text-blue-900 font-extrabold hover:underline inline-flex items-center gap-1 text-[11px]" title="Mark all notifications as read">
+                  <span class="material-symbols-rounded text-sm">done_all</span> Mark read
+                </button>
+                <span class="text-slate-300">|</span>
+                <button type="button" onclick="clearAllNotifications()" class="text-red-600 hover:text-red-800 font-extrabold hover:underline inline-flex items-center gap-1 text-[11px]" title="Clear all notification reminders">
+                  <span class="material-symbols-rounded text-sm">clear_all</span> Clear all
+                </button>
+              </div>
+            </div>
             <div id="dropdownNotificationList" class="p-3 max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-slate-100">
               <!-- Dynamic Notifications populate here -->
             </div>
@@ -346,9 +359,19 @@
                 <p class="text-xs text-academy-muted mt-0.5">Real-time alerts for upcoming payment due dates and clearance approval progress</p>
               </div>
             </div>
-            <button onclick="renderAll()" class="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light text-xs font-bold flex items-center gap-1.5 transition">
-              <span class="material-symbols-rounded text-base">refresh</span> Refresh Alerts
-            </button>
+            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              <button type="button" onclick="markAllNotificationsRead()" class="px-3 py-2 rounded-xl bg-academy-soft hover:bg-blue-50 text-academy-navy text-xs font-extrabold flex items-center gap-1.5 transition border border-academy-border shadow-xs" title="Mark all notifications as read">
+                <span class="material-symbols-rounded text-base text-academy-blue">done_all</span>
+                <span>Mark all as read</span>
+              </button>
+              <button type="button" onclick="clearAllNotifications()" class="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold flex items-center gap-1.5 transition border border-red-200/80 shadow-xs" title="Clear all notification reminders">
+                <span class="material-symbols-rounded text-base text-red-600">clear_all</span>
+                <span>Clear all</span>
+              </button>
+              <button type="button" onclick="renderAll()" class="px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light text-xs font-bold flex items-center gap-1.5 transition shadow-xs" title="Refresh Alerts">
+                <span class="material-symbols-rounded text-base">refresh</span>
+              </button>
+            </div>
           </div>
 
           <!-- Notifications Cards List -->
@@ -555,6 +578,22 @@
 
       <!-- TAB 4: CLEARANCE MONITORING PAGE -->
       <section id="clearancePage" class="page-section space-y-5 hidden">
+        <!-- Clearance Period Closed Notice Banner -->
+        <div id="clearancePeriodClosedBanner" class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex items-start gap-3.5 shadow-xs">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200 shadow-xs">
+            <span class="material-symbols-rounded text-2xl">lock_clock</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <h4 class="font-extrabold text-sm text-amber-950">Clearance Application Period is Currently Closed</h4>
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-200/80 text-amber-900">Annual Clearance</span>
+            </div>
+            <p class="text-xs text-amber-900/90 mt-1 leading-relaxed">
+              Clearance applications are only utilized once every school year near the conclusion of the academic term. The school administration has currently locked clearance applications. You will be notified when the clearance period opens.
+            </p>
+          </div>
+        </div>
+
         <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
             <div>
@@ -563,7 +602,7 @@
               </h3>
               <p class="text-xs text-academy-muted mt-1">Subject teachers are assigned based on your enrolled grade, section, and strand.</p>
             </div>
-            <button onclick="requestAllTeacherApprovals()" class="px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
+            <button id="requestAllTeachersBtn" onclick="requestAllTeacherApprovals()" class="px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm">
               Request All Teachers →
             </button>
           </div>
@@ -1102,7 +1141,8 @@
         level, grade, section, strand,
         voucher: (source.voucher !== undefined && source.voucher !== null && source.voucher !== '') ? source.voucher : 'None',
         paid: Number(source.paid || 0),
-        clearance: source.clearance || { Teacher: 'pending', Guidance: 'pending', Prefect: 'pending', Library: 'pending', Principal: 'pending', Accounting: 'pending', Registrar: 'pending' }
+        clearance: source.clearance || { Teacher: 'pending', Guidance: 'pending', Prefect: 'pending', Library: 'pending', Principal: 'pending', Accounting: 'pending', Registrar: 'pending' },
+        clearanceRemarks: source.clearanceRemarks || {}
       }
     }
 
@@ -1117,7 +1157,8 @@
           ...appData.students[idx],
           ...student,
           voucher: (existingVoucher !== undefined && existingVoucher !== null && existingVoucher !== 'None') ? existingVoucher : student.voucher,
-          clearance: { ...(appData.students[idx].clearance || {}), ...(student.clearance || {}) }
+          clearance: { ...(appData.students[idx].clearance || {}), ...(student.clearance || {}) },
+          clearanceRemarks: { ...(appData.students[idx].clearanceRemarks || {}), ...(student.clearanceRemarks || {}), ...(source.clearanceRemarks || {}) }
         }
       } else {
         appData.students.push(student)
@@ -1464,7 +1505,39 @@
       }
     }
 
+    function isClearancePeriodOpen() {
+      const stored = localStorage.getItem('pa_clearance_period_open');
+      if (stored !== null) return stored === 'true';
+      if (appData && appData.settings && typeof appData.settings.clearanceOpen === 'boolean') {
+        return appData.settings.clearanceOpen;
+      }
+      return true;
+    }
+
     function renderTeacherClearance(s) {
+      const isClrOpen = isClearancePeriodOpen();
+      const clrClosedBanner = document.getElementById('clearancePeriodClosedBanner');
+      if (clrClosedBanner) {
+        if (isClrOpen) {
+          clrClosedBanner.classList.add('hidden');
+        } else {
+          clrClosedBanner.classList.remove('hidden');
+        }
+      }
+
+      const reqAllBtn = document.getElementById('requestAllTeachersBtn');
+      if (reqAllBtn) {
+        if (isClrOpen) {
+          reqAllBtn.disabled = false;
+          reqAllBtn.className = 'px-5 py-3 rounded-xl bg-academy-navy text-white text-xs font-extrabold hover:bg-blue-900 transition shadow-sm cursor-pointer';
+          reqAllBtn.title = 'Request clearance approvals from all assigned subject teachers';
+        } else {
+          reqAllBtn.disabled = true;
+          reqAllBtn.className = 'px-5 py-3 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 text-xs font-extrabold cursor-not-allowed transition shadow-none';
+          reqAllBtn.title = 'Clearance application period is currently closed by the administration.';
+        }
+      }
+
       const rows = assignedTeacherRows(s);
       teacherClearanceCards.innerHTML = rows.length ? rows.map(row => {
         const req = requestFor(row);
@@ -1473,8 +1546,28 @@
         const isOnHold = status === 'on_hold';
         const isApproved = status === 'approved';
         const isRequested = status === 'requested';
-        const disabled = isApproved || isRequested;
-        const btnText = status === 'not_requested' ? 'Request Approval' : (isOnHold ? 'Re-submit Request' : (isApproved ? 'Approved' : 'Request Sent'));
+        const isPeriodLocked = !isClrOpen && (status === 'not_requested' || isOnHold);
+        const disabled = isApproved || isRequested || isPeriodLocked;
+
+        let btnText = 'Request Approval';
+        if (isPeriodLocked) {
+          btnText = 'Clearance Closed';
+        } else if (status === 'not_requested') {
+          btnText = 'Request Approval';
+        } else if (isOnHold) {
+          btnText = 'Re-submit Request';
+        } else if (isApproved) {
+          btnText = 'Approved';
+        } else {
+          btnText = 'Request Sent';
+        }
+
+        let btnClass = 'bg-academy-navy text-white hover:bg-blue-900 cursor-pointer';
+        if (disabled) {
+          btnClass = 'bg-slate-100 text-slate-400 cursor-not-allowed';
+        } else if (isOnHold) {
+          btnClass = 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer';
+        }
 
         return `<div class="border border-academy-border rounded-xl p-4 bg-white space-y-3">
           <div class="flex items-start justify-between gap-3">
@@ -1484,16 +1577,16 @@
             </div>
             ${statusBadge(status)}
           </div>
-          ${isOnHold ? `
-            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
-              <div class="flex items-center gap-1.5 font-bold text-amber-900 mb-1">
+          ${(isOnHold || (remarkNote && status !== 'approved')) ? `
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200/90 text-xs text-amber-950 shadow-xs">
+              <div class="flex items-center gap-1.5 font-extrabold text-amber-900 mb-1">
                 <span class="material-symbols-rounded text-base text-amber-600">warning</span>
-                Teacher Clearance Remarks:
+                Requirement Note / Remark:
               </div>
-              <p class="text-amber-800 leading-relaxed font-medium">${remarkNote || 'Requirement compliance pending. Please settle outstanding tasks.'}</p>
+              <p class="text-amber-900 leading-relaxed font-semibold pl-5 text-[13px]">"${remarkNote || 'Missing Module 4 & 5 Activity. Please submit to room 204.'}"</p>
             </div>
           ` : ''}
-          <button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="w-full px-3 py-2 rounded-xl text-xs font-extrabold ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : (isOnHold ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer' : 'bg-academy-navy text-white hover:bg-blue-900 cursor-pointer')} transition shadow-xs">${btnText}</button>
+          <button ${disabled ? 'disabled' : ''} onclick="requestTeacherApproval('${row.key.replaceAll("'", "\\'")}')" class="w-full px-3 py-2 rounded-xl text-xs font-extrabold ${btnClass} transition shadow-xs" ${isPeriodLocked ? 'title="Clearance application period is currently closed by administration."' : ''}>${btnText}</button>
         </div>`;
       }).join('') : `<div class="sm:col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">No teacher assignment found for ${classLabel(s)}. Ask the admin to add teacher clearance heads for this grade/section.</div>`;
 
@@ -1506,13 +1599,13 @@
             <span class="font-extrabold text-sm text-academy-navy">${k} Office</span>
             ${statusBadge(st)}
           </div>
-          ${isOnHold ? `
-            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
-              <div class="flex items-center gap-1.5 font-bold text-amber-900 mb-1">
+          ${(isOnHold || (remark && st !== 'approved')) ? `
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200/90 text-xs text-amber-950 shadow-xs">
+              <div class="flex items-center gap-1.5 font-extrabold text-amber-900 mb-1">
                 <span class="material-symbols-rounded text-base text-amber-600">warning</span>
-                Office Clearance Remarks:
+                Requirement Note / Remark:
               </div>
-              <p class="text-amber-800 leading-relaxed font-medium">${remark || 'Office compliance pending. Please visit or contact the office.'}</p>
+              <p class="text-amber-900 leading-relaxed font-semibold pl-5 text-[13px]">"${remark || 'Office clearance requirements pending. Please settle at the office.'}"</p>
             </div>
           ` : ''}
         </div>`;
@@ -1521,7 +1614,7 @@
       // Render Overview Clearance Summary
       const summaryGrid = document.getElementById('clearanceSummaryGrid');
       if (summaryGrid) {
-        const teacherAnyHold = rows.some(r => requestFor(r)?.status === 'on_hold');
+        const teacherAnyHold = rows.some(r => requestFor(r)?.status === 'on_hold' || s.clearanceRemarks?.[r.assignment?.subject]);
         const teacherStatus = teacherApprovalsApproved(s) ? 'approved' : (teacherAnyHold ? 'on_hold' : 'pending');
         summaryGrid.innerHTML = [
           ['Subject Teachers', teacherStatus],
@@ -1542,8 +1635,8 @@
       const holdBanner = document.getElementById('clearanceHoldAlertBanner');
       const holdMsg = document.getElementById('clearanceHoldAlertMsg');
       if (holdBanner && holdMsg) {
-        const holdTeachers = rows.filter(r => requestFor(r)?.status === 'on_hold');
-        const holdOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold');
+        const holdTeachers = rows.filter(r => requestFor(r)?.status === 'on_hold' || s.clearanceRemarks?.[r.assignment?.subject]);
+        const holdOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold' || s.clearanceRemarks?.[k]);
         const totalHolds = holdTeachers.length + holdOffices.length;
 
         if (totalHolds > 0) {
@@ -1552,14 +1645,14 @@
             ...holdTeachers.map(r => {
               const req = requestFor(r);
               const note = req?.remarks || s.clearanceRemarks?.[r.assignment?.subject];
-              return `${r.assignment?.subject || 'Subject'}${note ? ` ("${note}")` : ''}`;
+              return `<strong>${r.assignment?.subject || 'Subject'}</strong>: "${note || 'Missing requirements'}"`;
             }),
             ...holdOffices.map(k => {
               const note = s.clearanceRemarks?.[k];
-              return `${k} Office${note ? ` ("${note}")` : ''}`;
+              return `<strong>${k} Office</strong>: "${note || 'Requirements pending'}"`;
             })
           ];
-          holdMsg.textContent = `${totalHolds} requirement(s) on hold: ${details.join('; ')}. Please review remarks and comply.`;
+          holdMsg.innerHTML = `<span class="font-bold text-red-950">${totalHolds} clearance requirement(s) on hold:</span> ${details.join(' • ')}.<br><span class="text-xs text-red-700 font-medium">Please review the notes and comply with your instructors/offices to proceed.</span>`;
         } else {
           holdBanner.classList.add('hidden');
         }
@@ -1679,26 +1772,31 @@
 
       // 0. CLEARANCE ON HOLD HIGH-PRIORITY ALERTS
       const teacherRows = assignedTeacherRows(s);
-      const onHoldTeachers = teacherRows.filter(row => requestFor(row)?.status === 'on_hold');
+      const onHoldTeachers = teacherRows.filter(row => {
+        const req = requestFor(row);
+        return req?.status === 'on_hold' || s.clearanceRemarks?.[row.assignment?.subject];
+      });
       onHoldTeachers.forEach(row => {
         const req = requestFor(row);
-        const remarkNote = req?.remarks || s.clearanceRemarks?.[row.assignment?.subject];
+        const remarkNote = req?.remarks || s.clearanceRemarks?.[row.assignment?.subject] || 'Incomplete clearance requirements';
+        const gradeLevel = row.assignment?.grade || s.grade || 'Grade 10';
+        const subjName = row.assignment?.subject || 'Mathematics';
         notifications.push({
-          id: `hold_teacher_${row.assignment?.subject || 'subj'}`,
+          id: `hold_teacher_${subjName}`,
           category: 'Clearance On Hold',
           severity: 'danger',
           icon: 'report',
           badgeText: 'Action Required',
-          title: `Clearance On Hold: ${row.assignment?.subject || 'Subject'}`,
-          message: `${row.teacher?.name || 'Teacher'} placed this clearance on hold. Remark: "${remarkNote || 'Compliance required before approval'}".`,
+          title: `Clearance On Hold: ${gradeLevel} - ${subjName}`,
+          message: `Teacher ${row.teacher?.name || 'Instructor'} placed your clearance on hold. Remark: "${remarkNote}". Please comply with this requirement to proceed with clearance.`,
           actionText: 'View Clearance Details',
           actionFn: "showPage('clearancePage')"
         });
       });
 
-      const onHoldOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold');
+      const onHoldOffices = officeKeys().filter(k => s.clearance?.[k] === 'on_hold' || s.clearanceRemarks?.[k]);
       onHoldOffices.forEach(officeName => {
-        const remarkNote = s.clearanceRemarks?.[officeName];
+        const remarkNote = s.clearanceRemarks?.[officeName] || 'Office compliance pending';
         notifications.push({
           id: `hold_office_${officeName}`,
           category: 'Clearance On Hold',
@@ -1706,7 +1804,7 @@
           icon: 'report',
           badgeText: 'Action Required',
           title: `Clearance On Hold: ${officeName} Office`,
-          message: `${officeName} Office placed your clearance on hold. Remark: "${remarkNote || 'Please visit or contact the office to comply'}".`,
+          message: `${officeName} Office placed your clearance on hold. Remark: "${remarkNote}". Please comply with this requirement to proceed with clearance.`,
           actionText: 'View Clearance Details',
           actionFn: "showPage('clearancePage')"
         });
@@ -1781,7 +1879,7 @@
           actionFn: "showPage('certificatePage')"
         });
       } else {
-        if (pendingTeachers.length > 0) {
+        if (pendingTeachers.length > 0 && isClearancePeriodOpen()) {
           notifications.push({
             id: 'clearance_teachers_pending',
             category: 'Clearance',
@@ -1826,9 +1924,106 @@
       return notifications;
     }
 
+    // ==========================================
+    // NOTIFICATION MANAGEMENT & CLEAR CONTROLS
+    // ==========================================
+    function getStudentNotifStorageKey(prefix) {
+      const s = currentStudent();
+      return prefix + (s?.id || 'default');
+    }
+
+    function getReadNotifIds() {
+      try {
+        const key = getStudentNotifStorageKey('pa_read_notifs_');
+        return JSON.parse(localStorage.getItem(key) || '[]');
+      } catch { return []; }
+    }
+
+    function setReadNotifIds(ids) {
+      try {
+        const key = getStudentNotifStorageKey('pa_read_notifs_');
+        localStorage.setItem(key, JSON.stringify(ids));
+      } catch {}
+    }
+
+    function getClearedNotifIds() {
+      try {
+        const key = getStudentNotifStorageKey('pa_cleared_notifs_');
+        return JSON.parse(localStorage.getItem(key) || '[]');
+      } catch { return []; }
+    }
+
+    function setClearedNotifIds(ids) {
+      try {
+        const key = getStudentNotifStorageKey('pa_cleared_notifs_');
+        localStorage.setItem(key, JSON.stringify(ids));
+      } catch {}
+    }
+
+    function markAllNotificationsRead() {
+      const s = currentStudent();
+      const allNotifs = generateStudentNotifications(s);
+      const currentIds = allNotifs.map(n => n.id);
+      const existing = new Set(getReadNotifIds());
+      currentIds.forEach(id => existing.add(id));
+      setReadNotifIds(Array.from(existing));
+      renderNotifications(s);
+      showToast('Notifications Marked Read', 'All notifications and alerts marked as read.', 'info');
+    }
+
+    function markNotificationRead(notifId) {
+      if (!notifId) return;
+      const existing = new Set(getReadNotifIds());
+      existing.add(notifId);
+      setReadNotifIds(Array.from(existing));
+      const s = currentStudent();
+      renderNotifications(s);
+    }
+
+    function clearAllNotifications() {
+      const s = currentStudent();
+      const allNotifs = generateStudentNotifications(s);
+      const currentIds = allNotifs.map(n => n.id);
+      const existingCleared = new Set(getClearedNotifIds());
+      currentIds.forEach(id => existingCleared.add(id));
+      setClearedNotifIds(Array.from(existingCleared));
+
+      const existingRead = new Set(getReadNotifIds());
+      currentIds.forEach(id => existingRead.add(id));
+      setReadNotifIds(Array.from(existingRead));
+
+      renderNotifications(s);
+      showToast('Notifications Cleared', 'All notification alerts have been cleared.', 'info');
+    }
+
+    function clearSingleNotification(notifId) {
+      if (!notifId) return;
+      const existingCleared = new Set(getClearedNotifIds());
+      existingCleared.add(notifId);
+      setClearedNotifIds(Array.from(existingCleared));
+
+      const existingRead = new Set(getReadNotifIds());
+      existingRead.add(notifId);
+      setReadNotifIds(Array.from(existingRead));
+
+      const s = currentStudent();
+      renderNotifications(s);
+      showToast('Alert Dismissed', 'Notification removed from active alerts.', 'info');
+    }
+
+    function restoreAllNotifications() {
+      const s = currentStudent();
+      setClearedNotifIds([]);
+      renderNotifications(s);
+      showToast('Reminders Restored', 'Active reminders and notifications are visible again.', 'info');
+    }
+
     function renderNotifications(s) {
-      const list = generateStudentNotifications(s);
-      const activeAlerts = list.filter(n => n.severity !== 'success');
+      const rawList = generateStudentNotifications(s);
+      const readIds = new Set(getReadNotifIds());
+      const clearedIds = new Set(getClearedNotifIds());
+      const list = rawList.filter(n => !clearedIds.has(n.id));
+      const activeAlerts = list.filter(n => n.severity !== 'success' && !readIds.has(n.id));
       const activeCount = activeAlerts.length;
 
       // Update Header Badges
@@ -1843,25 +2038,25 @@
         }
       }
       if (dropdownBadge) {
-        dropdownBadge.textContent = `${activeCount} Active`;
+        dropdownBadge.textContent = activeCount > 0 ? `${activeCount} Unread` : '0 Unread';
       }
 
       // Update Overview Stat Card
       const overviewCountEl = document.getElementById('overviewNotificationCount');
       const overviewNoteEl = document.getElementById('overviewNotificationNote');
       if (overviewCountEl) {
-        overviewCountEl.textContent = `${activeCount} Active`;
+        overviewCountEl.textContent = activeCount > 0 ? `${activeCount} Unread` : 'All Caught Up';
       }
       if (overviewNoteEl) {
-        const payCount = list.filter(n => n.category === 'Payment' || n.category === 'Due Date').length;
-        const clrCount = list.filter(n => n.category === 'Clearance').length;
+        const payCount = list.filter(n => (n.category === 'Payment' || n.category === 'Due Date') && !readIds.has(n.id)).length;
+        const clrCount = list.filter(n => n.category === 'Clearance' && !readIds.has(n.id)).length;
         overviewNoteEl.textContent = `${payCount} payment, ${clrCount} clearance`;
       }
 
       // Update Center Widget Header Badge
       const centerBadge = document.getElementById('centerNotificationBadge');
       if (centerBadge) {
-        centerBadge.textContent = `${activeCount} Action Needed`;
+        centerBadge.textContent = activeCount > 0 ? `${activeCount} Action Needed` : 'All Caught Up';
         centerBadge.className = activeCount > 0
           ? "px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold"
           : "px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-extrabold";
@@ -1871,26 +2066,45 @@
       const dropdownListEl = document.getElementById('dropdownNotificationList');
       if (dropdownListEl) {
         if (list.length === 0) {
-          dropdownListEl.innerHTML = `<div class="p-4 text-center text-academy-muted">No notifications at this time.</div>`;
+          dropdownListEl.innerHTML = `
+            <div class="p-6 text-center space-y-2">
+              <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100 shadow-xs">
+                <span class="material-symbols-rounded text-xl">done_all</span>
+              </div>
+              <p class="font-bold text-academy-navy text-xs">All caught up!</p>
+              <p class="text-[11px] text-academy-muted">No unread notifications or reminders.</p>
+              ${clearedIds.size > 0 ? `
+                <button type="button" onclick="restoreAllNotifications()" class="text-xs font-extrabold text-academy-blue hover:underline inline-flex items-center gap-1 mt-1">
+                  <span class="material-symbols-rounded text-xs">history</span> Restore cleared alerts
+                </button>
+              ` : ''}
+            </div>
+          `;
         } else {
           dropdownListEl.innerHTML = list.map(n => {
+            const isRead = readIds.has(n.id);
             let colorClasses = "bg-blue-50 text-blue-700 border-blue-100";
             if (n.severity === 'danger') colorClasses = "bg-red-50 text-red-700 border-red-100";
             if (n.severity === 'warning') colorClasses = "bg-amber-50 text-amber-800 border-amber-100";
             if (n.severity === 'success') colorClasses = "bg-emerald-50 text-emerald-700 border-emerald-100";
 
             return `
-              <div class="py-2.5 first:pt-0 last:pb-0 flex items-start gap-3">
+              <div class="py-2.5 first:pt-0 last:pb-0 flex items-start gap-3 group transition ${isRead ? 'opacity-70' : ''}">
                 <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${colorClasses}">
                   <span class="material-symbols-rounded text-lg">${n.icon}</span>
                 </span>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-1">
-                    <p class="font-extrabold text-academy-navy text-xs truncate">${n.title}</p>
-                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${colorClasses}">${n.badgeText}</span>
+                    <p class="font-extrabold text-academy-navy text-xs truncate ${isRead ? 'font-medium text-slate-700' : ''}">${n.title}</p>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${isRead ? 'bg-slate-100 text-slate-500 border border-slate-200' : colorClasses}">${isRead ? 'Read' : n.badgeText}</span>
+                      <button type="button" onclick="clearSingleNotification('${n.id}')" title="Dismiss" class="text-slate-300 hover:text-red-600 transition p-0.5">
+                        <span class="material-symbols-rounded text-[14px]">close</span>
+                      </button>
+                    </div>
                   </div>
                   <p class="text-[11px] text-slate-600 mt-0.5 leading-tight">${n.message}</p>
-                  <button onclick="toggleNotificationDropdown(true); ${n.actionFn}" class="mt-1 text-[11px] font-extrabold text-academy-blue hover:underline inline-flex items-center gap-0.5">
+                  <button onclick="toggleNotificationDropdown(true); markNotificationRead('${n.id}'); ${n.actionFn}" class="mt-1 text-[11px] font-extrabold text-academy-blue hover:underline inline-flex items-center gap-0.5">
                     <span>${n.actionText}</span> →
                   </button>
                 </div>
@@ -1904,9 +2118,25 @@
       const overviewListEl = document.getElementById('overviewNotificationsList');
       if (overviewListEl) {
         if (list.length === 0) {
-          overviewListEl.innerHTML = `<div class="col-span-2 p-6 text-center text-academy-muted bg-academy-soft rounded-xl">No active reminders right now.</div>`;
+          overviewListEl.innerHTML = `
+            <div class="col-span-2 p-8 text-center bg-academy-soft/60 rounded-2xl border border-academy-border space-y-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100 shadow-xs">
+                <span class="material-symbols-rounded text-2xl">check_circle</span>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-sm">You are all caught up!</h4>
+                <p class="text-xs text-academy-muted mt-1">No active reminders require your attention right now.</p>
+              </div>
+              ${clearedIds.size > 0 ? `
+                <button type="button" onclick="restoreAllNotifications()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-academy-border text-academy-navy text-xs font-extrabold hover:bg-academy-soft transition shadow-xs">
+                  <span class="material-symbols-rounded text-sm">history</span> Restore Dismissed Reminders
+                </button>
+              ` : ''}
+            </div>
+          `;
         } else {
           overviewListEl.innerHTML = list.map(n => {
+            const isRead = readIds.has(n.id);
             let bgBorder = "bg-blue-50/50 border-blue-200/80 text-blue-900";
             let iconBg = "bg-blue-100 text-blue-700";
             let btnClass = "bg-academy-navy hover:bg-blue-900 text-white";
@@ -1926,22 +2156,32 @@
             }
 
             return `
-              <div class="p-4 rounded-xl border ${bgBorder} shadow-xs flex flex-col justify-between gap-3">
+              <div class="p-4 rounded-xl border ${bgBorder} shadow-xs flex flex-col justify-between gap-3 relative transition ${isRead ? 'opacity-75 bg-slate-50 border-slate-200 text-slate-800' : ''}">
                 <div class="flex items-start gap-3">
-                  <div class="w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-xs">
+                  <div class="w-9 h-9 rounded-xl ${isRead ? 'bg-slate-200 text-slate-600' : iconBg} flex items-center justify-center shrink-0 shadow-xs">
                     <span class="material-symbols-rounded text-xl">${n.icon}</span>
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-[11px] font-extrabold uppercase tracking-wide opacity-75">${n.category} Alert</span>
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${iconBg}">${n.badgeText}</span>
+                      <div class="flex items-center gap-1.5">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${isRead ? 'bg-slate-200 text-slate-600' : iconBg}">${isRead ? 'Read' : n.badgeText}</span>
+                        <button type="button" onclick="clearSingleNotification('${n.id}')" title="Dismiss" class="p-1 text-slate-400 hover:text-red-600 hover:bg-black/5 rounded-lg transition">
+                          <span class="material-symbols-rounded text-base">close</span>
+                        </button>
+                      </div>
                     </div>
                     <h4 class="font-extrabold text-sm mt-0.5 leading-snug">${n.title}</h4>
                     <p class="text-xs mt-1 opacity-90 leading-relaxed">${n.message}</p>
                   </div>
                 </div>
-                <div class="pt-2 border-t border-black/5 flex justify-end">
-                  <button onclick="${n.actionFn}" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold shadow-xs transition flex items-center gap-1 ${btnClass}">
+                <div class="pt-2 border-t border-black/5 flex items-center justify-between gap-2">
+                  ${!isRead ? `
+                    <button type="button" onclick="markNotificationRead('${n.id}')" class="text-[11px] font-bold text-slate-500 hover:text-slate-800 inline-flex items-center gap-1">
+                      <span class="material-symbols-rounded text-sm">done</span> Mark read
+                    </button>
+                  ` : `<span class="text-[11px] text-slate-400 italic">Marked as read</span>`}
+                  <button onclick="markNotificationRead('${n.id}'); ${n.actionFn}" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold shadow-xs transition flex items-center gap-1 ${btnClass}">
                     <span>${n.actionText}</span>
                     <span class="material-symbols-rounded text-sm">arrow_forward</span>
                   </button>
@@ -2183,6 +2423,10 @@
     }
 
     async function requestTeacherApproval(key) {
+      if (!isClearancePeriodOpen()) {
+        showToast('Clearance Period Closed', 'Clearance applications are currently closed by the school administration. Clearance is only active once per school year.', 'error');
+        return;
+      }
       const student = currentStudent();
       const row = assignedTeacherRows(student).find(r => r.key === key);
       if (!row) return;
@@ -2221,6 +2465,10 @@
     }
 
     async function requestAllTeacherApprovals() {
+      if (!isClearancePeriodOpen()) {
+        showToast('Clearance Period Closed', 'Clearance applications are currently closed by the school administration. Clearance is only active once per school year.', 'error');
+        return;
+      }
       const student = currentStudent();
       const rows = assignedTeacherRows(student);
       if (!rows.length) { showToast('No Teachers Assigned', 'No assigned teachers found for your grade/section yet. Please contact the admin.', 'warning'); return; }
@@ -2730,10 +2978,26 @@
           };
 
           ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
-            if (dbS.clearance && (dbS.clearance[k] === 'approved' || dbS.clearance[k] === 'on_hold')) {
-              mergedClearance[k] = dbS.clearance[k];
-            } else if (local.clearance && local.clearance[k] === 'approved' && (!dbS.clearance || dbS.clearance[k] === 'pending')) {
+            const dbSt = dbS.clearance?.[k];
+            const localSt = local.clearance?.[k];
+            if (dbSt === 'on_hold' || localSt === 'on_hold') {
+              mergedClearance[k] = 'on_hold';
+            } else if (dbSt === 'approved' || localSt === 'approved') {
               mergedClearance[k] = 'approved';
+            } else if (dbSt === 'requested' || localSt === 'requested') {
+              mergedClearance[k] = 'requested';
+            } else {
+              mergedClearance[k] = dbSt || localSt || 'pending';
+            }
+          });
+
+          const mergedRemarks = {
+            ...(local.clearanceRemarks || {}),
+            ...(dbS.clearanceRemarks || {})
+          };
+          Object.keys(local.clearanceRemarks || {}).forEach(k => {
+            if (local.clearanceRemarks[k] && !mergedRemarks[k]) {
+              mergedRemarks[k] = local.clearanceRemarks[k];
             }
           });
 
@@ -2750,7 +3014,7 @@
             assessedOverride: local.assessedOverride !== undefined ? local.assessedOverride : dbS.assessedOverride,
             paid: effectivePaid,
             clearance: mergedClearance,
-            clearanceRemarks: { ...(local.clearanceRemarks || {}), ...(dbS.clearanceRemarks || {}) }
+            clearanceRemarks: mergedRemarks
           };
         } else {
           merged.push({ ...dbS });
@@ -2795,11 +3059,17 @@
         const key = String(dbR.id || dbR.key || '').toLowerCase();
         if (key) {
           const local = map.get(key);
+          const effectiveStatus = (dbR.status === 'on_hold' || local?.status === 'on_hold')
+            ? 'on_hold'
+            : (dbR.status === 'approved' || local?.status === 'approved')
+              ? 'approved'
+              : (dbR.status || local?.status || 'not_requested');
+          const effectiveRemarks = dbR.remarks || local?.remarks || '';
           map.set(key, {
             ...dbR,
             ...(local || {}),
-            status: dbR.status || local?.status,
-            remarks: dbR.remarks || local?.remarks || ''
+            status: effectiveStatus,
+            remarks: effectiveRemarks
           });
         }
       });
@@ -3121,6 +3391,13 @@
         }, 600);
       }
     }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY || e.key === 'pa_user_session' || e.key === 'pa_clearance_period_open') {
+        appData = loadData();
+        renderAll();
+      }
+    });
 
     initStudentDashboard();
   </script>
