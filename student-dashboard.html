@@ -3093,11 +3093,11 @@
       // Verify if current student portal account has been disabled
       const curStudentId = sess.studentId || sess.student_number || sess.id;
       const curEmail = String(sess.email || '').toLowerCase().trim();
-      const currentStudent = (appData.students || []).find(s => 
+      const curStudentAccount = (appData.students || []).find(s => 
         (curStudentId && (s.id === curStudentId || s.student_number === curStudentId)) || 
         (curEmail && String(s.email || '').toLowerCase().trim() === curEmail)
       );
-      if (currentStudent && (currentStudent.status === 'disabled' || currentStudent.status === 'inactive' || currentStudent.active === false)) {
+      if (curStudentAccount && (curStudentAccount.status === 'disabled' || curStudentAccount.status === 'inactive' || curStudentAccount.active === false)) {
         showToast('Account Disabled', 'Your student portal account has been disabled. Please contact the school administration.', 'error');
         setTimeout(() => {
           localStorage.removeItem('pa_user_session');
