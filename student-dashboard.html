@@ -743,70 +743,42 @@
     </div>
   </div>
 
-  <!-- PAYMENT MODAL WITH PARTIAL & ITEMIZED FEE OPTIONS -->
+  <!-- PAYMENT MODAL (SPECIFIC FEE SELECTION / PARTIAL PAYMENT) -->
   <div id="paymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white rounded-3xl border border-academy-border max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-extrabold text-lg text-academy-navy">Make Tuition Payment</h3>
-          <p class="text-xs text-academy-muted">Pay custom amount or choose specific fees</p>
+          <p class="text-xs text-academy-muted">Select specific fee items to pay partially, or select all for full payment</p>
         </div>
         <button onclick="closePaymentModal()" class="p-1 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100">
           <span class="material-symbols-rounded">close</span>
         </button>
       </div>
 
-      <!-- Payment Option Toggle (Custom Partial vs Itemized Fee Selection) -->
-      <div>
-        <label class="block text-xs font-extrabold text-academy-navy mb-2">Select Payment Option</label>
-        <div class="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-academy-soft border border-academy-border">
-          <button id="modeBtnCustom" type="button" onclick="setPaymentMode('custom')"
-            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs">
-            Custom / Partial Amount
-          </button>
-          <button id="modeBtnItemized" type="button" onclick="setPaymentMode('itemized')"
-            class="py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy">
-            Select Specific Fee Items
-          </button>
-        </div>
-      </div>
-
-      <!-- Custom Partial Payment Controls -->
-      <div id="modeSectionCustom" class="space-y-3">
-        <div>
-          <label class="block text-xs font-extrabold text-academy-navy mb-1">Enter Payment Amount (PHP)</label>
-          <div class="relative">
-            <span class="absolute left-4 top-3 font-extrabold text-slate-400">₱</span>
-            <input type="number" id="payAmountInput" min="1" step="any"
-              class="w-full pl-9 pr-4 py-3 rounded-2xl border-2 border-academy-border font-extrabold text-lg text-slate-900 focus:border-academy-blue focus:outline-none" placeholder="0">
-          </div>
-          <p id="payAmountHint" class="text-xs text-slate-500 mt-1.5">Current outstanding balance: ₱0</p>
-        </div>
-
-        <!-- Quick Preset Buttons -->
-        <div>
-          <p class="text-[11px] font-bold text-academy-muted mb-1.5">Quick Presets</p>
-          <div class="grid grid-cols-4 gap-2 text-xs font-bold">
-            <button type="button" onclick="applyPayPreset('full')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">Full Balance</button>
-            <button type="button" onclick="applyPayPreset('half')" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">50% Balance</button>
-            <button type="button" onclick="applyPayPreset(5000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱5,000</button>
-            <button type="button" onclick="applyPayPreset(2000)" class="py-2 rounded-xl border border-academy-border bg-white text-academy-navy hover:bg-academy-soft">₱2,000</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Itemized Mode Fee Selection Checklist -->
-      <div id="modeSectionItemized" class="hidden space-y-3">
+      <!-- Itemized Fee Selection Checklist -->
+      <div class="space-y-3">
         <div class="flex justify-between items-center">
-          <label class="block text-xs font-extrabold text-academy-navy">Check Fee Items You Wish to Pay</label>
-          <button type="button" onclick="selectAllFeeItems(true)" class="text-xs font-bold text-academy-blue hover:underline">Select All</button>
+          <label class="block text-xs font-extrabold text-academy-navy">Select Fee Items to Pay:</label>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="selectAllFeeItems(true)" class="text-xs font-bold text-academy-blue hover:underline">Select All</button>
+            <span class="text-slate-300">|</span>
+            <button type="button" onclick="selectAllFeeItems(false)" class="text-xs font-bold text-slate-500 hover:underline">Clear</button>
+          </div>
         </div>
 
-        <div id="feeItemsChecklist" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+        <div id="feeItemsChecklist" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
 
-        <div class="p-3.5 rounded-2xl bg-academy-soft border border-academy-border flex justify-between items-center text-xs font-bold">
-          <span class="text-academy-navy">Selected Fees Total:</span>
-          <span id="itemizedSelectedTotal" class="text-base font-extrabold text-emerald-700">₱0</span>
+        <!-- Selected Summary Box -->
+        <div class="p-4 rounded-2xl bg-academy-soft border border-academy-border space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+            <span>Items Selected:</span>
+            <span id="itemizedSelectedCount" class="font-extrabold text-academy-navy">0 item(s)</span>
+          </div>
+          <div class="flex justify-between items-center pt-1 border-t border-slate-200/80">
+            <span class="text-xs font-extrabold text-academy-navy">Total Payment Amount:</span>
+            <span id="itemizedSelectedTotal" class="text-lg font-black text-emerald-700">₱0</span>
+          </div>
         </div>
       </div>
 
@@ -827,16 +799,18 @@
         </div>
       </div>
 
-      <!-- Channel Details -->
+      <!-- Channel Details & Checkout Trigger -->
       <div id="viewPaymongo" class="pay-view space-y-3">
         <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs text-blue-950 leading-5">
           <p class="font-bold text-academy-navy flex items-center gap-1.5">
             <span class="material-symbols-rounded text-base text-blue-600">verified</span>Official PayMongo Gateway
           </p>
-          <p class="mt-1 text-slate-600">Generates an official QR Ph checkout session. You can scan the QR code using GCash, Maya, ShopeePay, BDO, BPI, UnionBank, or any Philippine bank app supporting QR Ph.</p>
+          <p class="mt-1 text-slate-600">Generates a live QR Ph checkout session. You can scan the QR code using GCash, Maya, ShopeePay, BDO, BPI, UnionBank, or any Philippine banking app supporting QR Ph.</p>
         </div>
-        <button onclick="triggerPayMongoLiveFromModal()" class="w-full py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2 text-sm">
-          Generate PayMongo QR Ph Checkout →
+        <button id="payMongoSubmitBtn" onclick="triggerPayMongoLiveFromModal()" class="w-full py-3.5 rounded-2xl bg-academy-navy text-white font-extrabold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          <span>Pay with QR Ph</span>
+          <span id="payMongoBtnAmount" class="font-black text-amber-300">₱0</span>
+          <span>→</span>
         </button>
       </div>
     </div>
@@ -2547,27 +2521,6 @@
       return items;
     }
 
-    function setPaymentMode(mode) {
-      currentPayMode = mode;
-      const btnCustom = document.getElementById('modeBtnCustom');
-      const btnItemized = document.getElementById('modeBtnItemized');
-      const secCustom = document.getElementById('modeSectionCustom');
-      const secItemized = document.getElementById('modeSectionItemized');
-
-      if (mode === 'custom') {
-        btnCustom.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
-        btnItemized.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
-        secCustom.classList.remove('hidden');
-        secItemized.classList.add('hidden');
-      } else {
-        btnItemized.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition bg-white text-academy-navy shadow-xs';
-        btnCustom.className = 'py-2.5 px-3 rounded-xl font-extrabold text-xs transition text-academy-muted hover:text-academy-navy';
-        secItemized.classList.remove('hidden');
-        secCustom.classList.add('hidden');
-        renderFeeChecklist();
-      }
-    }
-
     // Helper: Determine settlement status for individual fee items
     function getSettledFeeStatusMap(s) {
       const feeItems = (s && s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
@@ -2658,8 +2611,14 @@
             <p class="text-[11px] text-emerald-700">All specific fee items have been paid in full.</p>
           </div>
         `;
-        document.getElementById('itemizedSelectedTotal').textContent = '₱0';
-        document.getElementById('payAmountInput').value = 0;
+        const totEl = document.getElementById('itemizedSelectedTotal');
+        if (totEl) totEl.textContent = '₱0';
+        const cntEl = document.getElementById('itemizedSelectedCount');
+        if (cntEl) cntEl.textContent = '0 item(s)';
+        const btnAmt = document.getElementById('payMongoBtnAmount');
+        if (btnAmt) btnAmt.textContent = '₱0';
+        const submitBtn = document.getElementById('payMongoSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
         return;
       }
 
@@ -2676,7 +2635,7 @@
                 <div class="flex flex-col">
                   <span class="text-xs font-extrabold text-slate-500">${item.name}</span>
                   <span class="text-[11px] font-semibold text-emerald-700 flex items-center gap-0.5">
-                    <span class="material-symbols-rounded text-[13px]">check_circle</span> Already Settled / Paid
+                    <span class="material-symbols-rounded text-[13px]">check_circle</span> Settled / Paid
                   </span>
                 </div>
               </div>
@@ -2692,7 +2651,7 @@
         return `
           <label class="flex items-center justify-between p-3 rounded-xl border border-academy-border bg-white hover:bg-academy-soft cursor-pointer transition">
             <div class="flex items-center gap-3">
-              <input type="checkbox" class="fee-item-cb w-4 h-4 rounded text-academy-navy accent-academy-navy focus:ring-0 cursor-pointer" value="${item.amount}" data-name="${item.name}" onchange="recalculateItemizedTotal()">
+              <input type="checkbox" checked class="fee-item-cb w-4 h-4 rounded text-academy-navy accent-academy-navy focus:ring-0 cursor-pointer" value="${item.amount}" data-name="${item.name}" onchange="recalculateItemizedTotal()">
               <div class="flex flex-col">
                 <span class="text-xs font-extrabold text-academy-navy">${item.name}</span>
                 <span class="text-[10px] text-amber-700 font-semibold">Pending Payment</span>
@@ -2709,12 +2668,25 @@
     function recalculateItemizedTotal() {
       const cbs = document.querySelectorAll('.fee-item-cb:checked:not(:disabled)');
       let total = 0;
-      cbs.forEach(cb => { total += Number(cb.value || 0) });
+      let count = 0;
+      cbs.forEach(cb => {
+        total += Number(cb.value || 0);
+        count++;
+      });
       
       const totEl = document.getElementById('itemizedSelectedTotal');
       if (totEl) totEl.textContent = money(total);
-      const inputEl = document.getElementById('payAmountInput');
-      if (inputEl) inputEl.value = total;
+
+      const cntEl = document.getElementById('itemizedSelectedCount');
+      if (cntEl) cntEl.textContent = `${count} item(s)`;
+
+      const btnAmt = document.getElementById('payMongoBtnAmount');
+      if (btnAmt) btnAmt.textContent = total > 0 ? money(total) : '₱0';
+
+      const submitBtn = document.getElementById('payMongoSubmitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = total <= 0;
+      }
     }
 
     function selectAllFeeItems(select = true) {
@@ -2722,27 +2694,19 @@
       recalculateItemizedTotal();
     }
 
-    function applyPayPreset(preset) {
-      const s = currentStudent();
-      const bal = balance(s);
-      let amt = bal;
-      if (preset === 'half') amt = Math.round(bal / 2);
-      else if (typeof preset === 'number') amt = Math.min(bal, preset);
-      
-      document.getElementById('payAmountInput').value = amt;
-    }
-
     function startPayMongoCheckout() {
       const s = currentStudent();
       const bal = balance(s);
       if (bal <= 0) {
-        showToast('No Outstanding Balance', 'You have no outstanding balance due!', 'info');
+        showToast('All Fees Settled', 'You have no outstanding balance due!', 'info');
         return;
       }
-      setPaymentMode('custom');
-      document.getElementById('payAmountInput').value = bal;
-      document.getElementById('payAmountHint').textContent = `Current outstanding balance: ${money(bal)}`;
+      renderFeeChecklist();
       document.getElementById('paymentModal').classList.remove('hidden');
+    }
+
+    function openPaymentModal() {
+      startPayMongoCheckout();
     }
 
     function closePaymentModal() {
@@ -2888,20 +2852,22 @@
 
     async function triggerPayMongoLiveFromModal() {
       const s = currentStudent();
-      const amountInput = Number(document.getElementById('payAmountInput').value) || balance(s);
-      if (amountInput <= 0) {
-        showToast('Invalid Amount', 'Please enter a valid payment amount greater than 0.', 'warning');
-        return;
-      }
-      if (!window.paApi || !window.paApi.isSupabaseReady()) {
-        showToast('Connection Notice', 'Database connection is initializing. Please try again.', 'warning');
+      const cbs = document.querySelectorAll('.fee-item-cb:checked:not(:disabled)');
+      let amountInput = 0;
+      let feeBreakdown = [];
+      cbs.forEach(cb => {
+        amountInput += Number(cb.value || 0);
+        feeBreakdown.push(cb.dataset.name);
+      });
+
+      if (amountInput <= 0 || feeBreakdown.length === 0) {
+        showToast('Select Fee Items', 'Please select at least one specific fee item to pay.', 'warning');
         return;
       }
 
-      let feeBreakdown = [];
-      if (currentPayMode === 'itemized') {
-        const cbs = document.querySelectorAll('.fee-item-cb:checked:not(:disabled)');
-        cbs.forEach(cb => feeBreakdown.push(cb.dataset.name));
+      if (!window.paApi || !window.paApi.isSupabaseReady()) {
+        showToast('Connection Notice', 'Database connection is initializing. Please try again.', 'warning');
+        return;
       }
 
       try {
@@ -2918,7 +2884,7 @@
           email: s.email,
           amount: amountInput,
           feeBreakdown: feeBreakdown,
-          payMode: currentPayMode,
+          payMode: 'itemized',
           time: Date.now()
         };
 
@@ -2927,7 +2893,7 @@
 
         await window.paApi.createCheckout({
           amount: Math.max(100, Math.round(amountInput * 100)),
-          description: `Payment for ${s.name}`,
+          description: `Payment for ${s.name} (${feeBreakdown.join(', ')})`,
           studentId: s.id || s.dbId,
           studentName: s.name,
           studentEmail: s.email,
