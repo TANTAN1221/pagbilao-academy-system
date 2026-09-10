@@ -917,21 +917,22 @@
         });
       }
 
-      // Check localStorage cache fallback for feeStructures if database returned empty
-      if ((!state.feeStructures.JHS || state.feeStructures.JHS.length === 0) &&
-          (!state.feeStructures.SHS || state.feeStructures.SHS.length === 0) &&
-          typeof localStorage !== 'undefined') {
-        try {
-          const cachedFees = localStorage.getItem('pa_app_fees_v2');
-          if (cachedFees) {
-            const parsed = JSON.parse(cachedFees);
-            if (parsed && typeof parsed === 'object') {
-              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) state.feeStructures.JHS = parsed.JHS;
-              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) state.feeStructures.SHS = parsed.SHS;
+      // Check localStorage cache fallback for feeStructures per level if database returned empty
+      ['JHS', 'SHS'].forEach(lvl => {
+        if ((!state.feeStructures[lvl] || state.feeStructures[lvl].length === 0) && typeof localStorage !== 'undefined') {
+          try {
+            const cachedFees = localStorage.getItem('pa_app_fees_v2');
+            if (cachedFees) {
+              const parsed = JSON.parse(cachedFees);
+              if (parsed && typeof parsed === 'object' && Array.isArray(parsed[lvl]) && parsed[lvl].length > 0) {
+                state.feeStructures[lvl] = parsed[lvl];
+              }
             }
-          }
-        } catch (_) {}
-      } else if (typeof localStorage !== 'undefined' && (state.feeStructures.JHS.length > 0 || state.feeStructures.SHS.length > 0)) {
+          } catch (_) {}
+        }
+      });
+
+      if (typeof localStorage !== 'undefined' && (state.feeStructures.JHS.length > 0 || state.feeStructures.SHS.length > 0)) {
         try {
           localStorage.setItem('pa_app_fees_v2', JSON.stringify(state.feeStructures));
         } catch (_) {}

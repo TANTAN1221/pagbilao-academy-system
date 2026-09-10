@@ -1052,18 +1052,20 @@
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
       if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
-      if ((!data.feeStructures.JHS.length && !data.feeStructures.SHS.length)) {
-        try {
-          const cachedFees = localStorage.getItem('pa_app_fees_v2');
-          if (cachedFees) {
-            const parsed = JSON.parse(cachedFees);
-            if (parsed && typeof parsed === 'object') {
-              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) data.feeStructures.JHS = parsed.JHS;
-              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) data.feeStructures.SHS = parsed.SHS;
+      try {
+        const cachedFees = localStorage.getItem('pa_app_fees_v2');
+        if (cachedFees) {
+          const parsed = JSON.parse(cachedFees);
+          if (parsed && typeof parsed === 'object') {
+            if ((!data.feeStructures.JHS || data.feeStructures.JHS.length === 0) && Array.isArray(parsed.JHS) && parsed.JHS.length > 0) {
+              data.feeStructures.JHS = parsed.JHS;
+            }
+            if ((!data.feeStructures.SHS || data.feeStructures.SHS.length === 0) && Array.isArray(parsed.SHS) && parsed.SHS.length > 0) {
+              data.feeStructures.SHS = parsed.SHS;
             }
           }
-        } catch {}
-      }
+        }
+      } catch {}
       data.vouchers = data.vouchers || [];
       const MOCK_TEMPLATE_IDS = ['ins-downpayment-2026', 'ins-q2-2026', 'ins-q3-2027', 'ins-q4-2027'];
       if (!data.installmentTemplate || !data.installmentTemplate.length) {
@@ -2517,25 +2519,23 @@
 
     // ITEMIZE & PARTIAL PAYMENT MODAL LOGIC
     function getFeeItemsForStudent(s) {
-      let items = appData.feeStructures?.[s.level] || [];
-      if (!items || items.length === 0) {
-        if (s.level === 'JHS') {
-          items = [
-            { id: 'f1', name: 'Tuition Fee', amount: 15000 },
-            { id: 'f2', name: 'Miscellaneous & Computer Fee', amount: 4000 },
-            { id: 'f3', name: 'Laboratory & Facilities Fee', amount: 2000 },
-            { id: 'f4', name: 'Registration & Student ID', amount: 1000 }
-          ];
-        } else {
-          items = [
-            { id: 'f1', name: 'Tuition Fee', amount: 18000 },
-            { id: 'f2', name: 'Miscellaneous & Facilities Fee', amount: 5000 },
-            { id: 'f3', name: 'Track / Specialization Fee', amount: 3000 },
-            { id: 'f4', name: 'Registration & Student ID', amount: 1000 }
-          ];
-        }
+      if (!s) return [];
+      const items = (appData.feeStructures && appData.feeStructures[s.level]) || [];
+      if (Array.isArray(items) && items.length > 0) {
+        return items;
       }
-      return items;
+      try {
+        const cached = localStorage.getItem('pa_app_fees_v2');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && Array.isArray(parsed[s.level]) && parsed[s.level].length > 0) {
+            appData.feeStructures = appData.feeStructures || { JHS: [], SHS: [] };
+            appData.feeStructures[s.level] = parsed[s.level];
+            return parsed[s.level];
+          }
+        }
+      } catch {}
+      return [];
     }
 
     // Helper: Determine settlement status for individual fee items
@@ -3184,12 +3184,15 @@
               teacherClearanceRequests: mergedRequests,
               payments: mergedPayments,
               feeStructures: {
-                JHS: dbFeeJHS.length ? dbFeeJHS : localFeeJHS,
-                SHS: dbFeeSHS.length ? dbFeeSHS : localFeeSHS
+                JHS: (dbFeeJHS && dbFeeJHS.length > 0) ? dbFeeJHS : localFeeJHS,
+                SHS: (dbFeeSHS && dbFeeSHS.length > 0) ? dbFeeSHS : localFeeSHS
               },
               vouchers: activeVouchers,
               installmentTemplate: activeInstallments
             };
+            try {
+              localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures));
+            } catch (_) {}
           }
         } catch (err) {
           console.warn("Could not load dynamic state from Supabase, using local defaults:", err);
@@ -3313,6 +3316,20 @@
             if (state.teacherClearanceRequests) {
               appData.teacherClearanceRequests = mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests);
             }
+            if (state.feeStructures) {
+              appData.feeStructures = {
+                JHS: (state.feeStructures.JHS && state.feeStructures.JHS.length > 0) ? state.feeStructures.JHS : (appData.feeStructures?.JHS || []),
+                SHS: (state.feeStructures.SHS && state.feeStructures.SHS.length > 0) ? state.feeStructures.SHS : (appData.feeStructures?.SHS || [])
+              };
+              localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures));
+            }
+            if (state.vouchers && state.vouchers.length > 0) {
+              appData.vouchers = state.vouchers;
+            }
+            if (state.installmentTemplate && state.installmentTemplate.length > 0) {
+              appData.installmentTemplate = state.installmentTemplate.filter(p => !['ins-downpayment-2026', 'ins-q2-2026', 'ins-q3-2027', 'ins-q4-2027'].includes(p.id));
+              localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate));
+            }
             saveData();
             renderAll();
           }
@@ -3329,6 +3346,10 @@
           refreshFromDatabase();
         });
         window.paApi.subscribeRealtime('students', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('fee_structures', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('fee_structure_items', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('voucher_types', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('installment_templates', () => refreshFromDatabase());
         window.paApi.subscribeRealtime('clearance_approvals', () => refreshFromDatabase());
         window.paApi.subscribeRealtime('clearance_requests', () => refreshFromDatabase());
       } catch (e) {
@@ -3340,6 +3361,27 @@
         if (document.visibilityState === 'visible') refreshFromDatabase();
       });
       window.addEventListener('focus', () => refreshFromDatabase());
+
+      // Cross-tab synchronization via storage events
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'pa_app_fees_v2' || e.key === 'pa_full_admin_v2' || e.key === 'pa_installment_templates' || e.key === 'pa_clearance_period_open') {
+          try {
+            if (e.key === 'pa_app_fees_v2' && e.newValue) {
+              const parsed = JSON.parse(e.newValue);
+              if (parsed && typeof parsed === 'object') {
+                appData.feeStructures = parsed;
+              }
+            }
+            if (e.key === 'pa_installment_templates' && e.newValue) {
+              const parsed = JSON.parse(e.newValue);
+              if (Array.isArray(parsed)) {
+                appData.installmentTemplate = parsed;
+              }
+            }
+          } catch (_) {}
+          renderAll();
+        }
+      });
 
       // Polling fallback to guarantee continuous live updates
       setInterval(() => {

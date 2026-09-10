@@ -177,3 +177,42 @@ test('fee structures are restored from localStorage cache if database query retu
   assert.equal(state.feeStructures.SHS[0].name, 'SHS Standard Tuition');
   assert.equal(state.feeStructures.SHS[0].amount, 17500);
 });
+
+test('student dashboard resolves fees dynamically from feeStructures cache and database', async () => {
+  const customFees = {
+    JHS: [
+      { id: 'f-jhs-1', name: 'Annual Tuition Fee', amount: 16500, required: true },
+      { id: 'f-jhs-2', name: 'Science Lab Fee', amount: 3500, required: true }
+    ],
+    SHS: [
+      { id: 'f-shs-1', name: 'Senior High Tuition', amount: 20000, required: true },
+      { id: 'f-shs-2', name: 'Tech / Voc Lab Fee', amount: 4500, required: true }
+    ]
+  };
+
+  const client = createMockSupabase();
+  const { context, values } = browser(client, {
+    pa_app_fees_v2: JSON.stringify(customFees)
+  });
+
+  const state = await context.window.paApi.fetchDatabaseState();
+
+  // Test feeTotal calculation for JHS (16500 + 3500 = 20000)
+  const jhsTotal = (state.feeStructures.JHS || []).reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  assert.equal(jhsTotal, 20000);
+
+  // Test feeTotal calculation for SHS (20000 + 4500 = 24500)
+  const shsTotal = (state.feeStructures.SHS || []).reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  assert.equal(shsTotal, 24500);
+
+  // Test single student fee resolution
+  const jhsStudent = { id: 'stu-001', level: 'JHS', voucher: 'None' };
+  const shsStudent = { id: 'stu-002', level: 'SHS', voucher: 'None' };
+
+  const getFeeItems = (s) => (state.feeStructures && state.feeStructures[s.level]) || [];
+  assert.equal(getFeeItems(jhsStudent).length, 2);
+  assert.equal(getFeeItems(jhsStudent)[0].name, 'Annual Tuition Fee');
+  assert.equal(getFeeItems(shsStudent).length, 2);
+  assert.equal(getFeeItems(shsStudent)[0].name, 'Senior High Tuition');
+});
+

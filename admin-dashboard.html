@@ -920,18 +920,20 @@
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
       if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
-      if ((!data.feeStructures.JHS.length && !data.feeStructures.SHS.length)) {
-        try {
-          const cachedFees = localStorage.getItem('pa_app_fees_v2');
-          if (cachedFees) {
-            const parsed = JSON.parse(cachedFees);
-            if (parsed && typeof parsed === 'object') {
-              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) data.feeStructures.JHS = parsed.JHS;
-              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) data.feeStructures.SHS = parsed.SHS;
+      try {
+        const cachedFees = localStorage.getItem('pa_app_fees_v2');
+        if (cachedFees) {
+          const parsed = JSON.parse(cachedFees);
+          if (parsed && typeof parsed === 'object') {
+            if ((!data.feeStructures.JHS || data.feeStructures.JHS.length === 0) && Array.isArray(parsed.JHS) && parsed.JHS.length > 0) {
+              data.feeStructures.JHS = parsed.JHS;
+            }
+            if ((!data.feeStructures.SHS || data.feeStructures.SHS.length === 0) && Array.isArray(parsed.SHS) && parsed.SHS.length > 0) {
+              data.feeStructures.SHS = parsed.SHS;
             }
           }
-        } catch {}
-      }
+        }
+      } catch {}
       ['JHS', 'SHS'].forEach(level => {
         if (Array.isArray(data.feeStructures[level])) {
           const seen = new Set();
@@ -2671,6 +2673,8 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         }
 
         applyFeeSetup();
+        saveData();
+        renderAll();
         closeFormModal();
         showToast('Voucher Saved', `Saved voucher discount "${item.name}".`);
       };
@@ -2683,6 +2687,8 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       if (!v) return;
       v.active = !v.active;
       applyFeeSetup();
+      saveData();
+      renderAll();
       showToast('Voucher Updated', `Voucher "${v.name}" is now ${v.active ? 'Active' : 'Inactive'}.`);
     }
 
@@ -4162,6 +4168,10 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           refreshFromDatabase();
         });
         window.paApi.subscribeRealtime('students', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('fee_structures', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('fee_structure_items', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('voucher_types', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('installment_templates', () => refreshFromDatabase());
         window.paApi.subscribeRealtime('clearance_approvals', () => refreshFromDatabase());
         window.paApi.subscribeRealtime('clearance_requests', () => refreshFromDatabase());
       } catch (e) {
