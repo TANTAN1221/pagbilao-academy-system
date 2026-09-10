@@ -324,7 +324,7 @@
               <span class="material-symbols-rounded">receipt_long</span>
             </span>
             <p class="font-extrabold text-academy-navy">Payment History</p>
-            <p class="text-xs text-academy-muted mt-1">View receipts & transactions</p>
+            <p class="text-xs text-academy-muted mt-1">View proof of payments & transactions</p>
           </button>
 
           <button onclick="showPage('clearancePage')" class="p-5 rounded-2xl bg-white border border-academy-border hover:border-academy-blue hover:shadow-card text-left transition group">
@@ -567,7 +567,7 @@
                   <th class="text-left p-4">Payment Channel</th>
                   <th class="text-left p-4">Amount</th>
                   <th class="text-left p-4">Status</th>
-                  <th class="text-left p-4">Receipt</th>
+                  <th class="text-left p-4">Proof of Payment</th>
                 </tr>
               </thead>
               <tbody id="paymentHistoryBody" class="divide-y divide-academy-border"></tbody>
@@ -842,7 +842,7 @@
     </div>
   </div>
 
-  <!-- RECEIPT MODAL -->
+  <!-- PROOF OF PAYMENT MODAL -->
   <div id="receiptModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div id="receiptPrintArea" class="bg-white rounded-3xl border border-academy-border max-w-md w-full p-6 shadow-2xl text-slate-800 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-200 pb-3">
@@ -850,7 +850,7 @@
           <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-10 h-10 object-contain rounded-full border p-0.5 bg-white">
           <div>
             <h3 class="font-extrabold text-sm text-academy-navy leading-tight">PAGBILAO ACADEMY INC.</h3>
-            <p class="text-[11px] text-slate-500">Official Student Payment Receipt</p>
+            <p class="text-[11px] text-slate-500 font-medium">Student Proof of Payment</p>
           </div>
         </div>
         <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wide">Success</span>
@@ -858,9 +858,11 @@
 
       <div id="receiptDetails" class="bg-slate-50 rounded-2xl p-4 text-xs space-y-2 border border-slate-200"></div>
 
+      <p class="text-[10px] text-slate-400 italic text-center">Note: This document serves as an electronic acknowledgment and proof of payment.</p>
+
       <div class="flex gap-2 no-print">
         <button onclick="printReceipt()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 flex items-center justify-center gap-1.5">
-          <span class="material-symbols-rounded text-base">print</span>Print Receipt
+          <span class="material-symbols-rounded text-base">print</span>Print Proof of Payment
         </button>
         <button onclick="closeReceiptModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900">Close</button>
       </div>
@@ -876,7 +878,7 @@
           <span class="material-symbols-rounded text-academy-blue text-2xl">description</span>
           <div>
             <h3 class="font-extrabold text-base sm:text-lg text-academy-navy">Official Statement of Account</h3>
-            <p class="text-xs text-academy-muted">Printable fee breakdown receipt for Pagbilao Academy Inc.</p>
+            <p class="text-xs text-academy-muted">Printable fee breakdown for Pagbilao Academy Inc.</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -1333,7 +1335,7 @@
     const navItems = [
       ['dashboardPage', 'dashboard', 'Dashboard Overview', 'Summary of your fees, clearance, and account status'],
       ['paymentsPage', 'account_balance_wallet', 'Tuition & Billing', 'View gross fees, discounts, net balance, and make payments'],
-      ['transactionsPage', 'receipt_long', 'Payment History', 'View past transactions, payment receipts, and payment references'],
+      ['transactionsPage', 'receipt_long', 'Payment History', 'View past transactions, payment proofs, and payment references'],
       ['clearancePage', 'fact_check', 'Clearance Status', 'Track subject teacher and school office clearance approvals'],
       ['certificatePage', 'workspace_premium', 'Clearance Certificate', 'Generate and view your official clearance certificate'],
       ['profilePage', 'person', 'Student Profile', 'View your personal, academic, and enrollment information']
@@ -1480,7 +1482,7 @@
           <td class="p-4">${statusBadge('paid')}</td>
           <td class="p-4">
             <button onclick='showReceiptModal(${JSON.stringify(p).replaceAll("'", "\\'")})' class="px-3 py-1.5 rounded-xl bg-academy-soft border border-academy-border text-academy-navy text-xs font-bold hover:bg-academy-light">
-              Receipt
+              Proof of Payment
             </button>
           </td>
         </tr>`;
@@ -2847,7 +2849,7 @@
           <div class="flex justify-between text-slate-500"><span>Grade & Section:</span><span class="font-semibold text-slate-700">${classLabel(s)}</span></div>
         </div>
         <div class="space-y-1.5">
-          <div class="flex justify-between"><span>Reference / Receipt No:</span><span class="font-extrabold text-academy-navy">${p.referenceNo || p.id}</span></div>
+          <div class="flex justify-between"><span>Reference / Proof No:</span><span class="font-extrabold text-academy-navy">${p.referenceNo || p.id}</span></div>
           <div class="flex justify-between"><span>Payment Channel:</span><span class="font-bold text-emerald-700">${p.method}</span></div>
           ${feeItemsHtml}
           <div class="flex justify-between"><span>Transaction Date:</span><span>${dateStr}</span></div>
@@ -3243,7 +3245,7 @@
           saveData();
           renderAll();
           showReceiptModal(paymentObj);
-          showToast('Payment Successful!', `PHP ${paidAmt.toLocaleString()} payment recorded. Official receipt generated below.`, 'success');
+          showToast('Payment Successful!', `PHP ${paidAmt.toLocaleString()} payment recorded. Proof of payment generated below.`, 'success');
         }
 
         window.history.replaceState({}, document.title, window.location.pathname);
