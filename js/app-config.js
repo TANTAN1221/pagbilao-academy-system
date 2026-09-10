@@ -803,7 +803,11 @@
       "pa_auth_role"
     ].forEach((key) => localStorage.removeItem(key));
 
-    location.href = redirectTo;
+    if (typeof window !== 'undefined' && window.location) {
+      window.location.href = redirectTo;
+    } else if (typeof location !== 'undefined') {
+      location.href = redirectTo;
+    }
   }
 
   async function fetchDatabaseState() {
@@ -908,6 +912,26 @@
             state.feeStructures[fs.education_level] = deduped;
           }
         });
+      }
+
+      // Check localStorage cache fallback for feeStructures if database returned empty
+      if ((!state.feeStructures.JHS || state.feeStructures.JHS.length === 0) &&
+          (!state.feeStructures.SHS || state.feeStructures.SHS.length === 0) &&
+          typeof localStorage !== 'undefined') {
+        try {
+          const cachedFees = localStorage.getItem('pa_app_fees_v2');
+          if (cachedFees) {
+            const parsed = JSON.parse(cachedFees);
+            if (parsed && typeof parsed === 'object') {
+              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) state.feeStructures.JHS = parsed.JHS;
+              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) state.feeStructures.SHS = parsed.SHS;
+            }
+          }
+        } catch (_) {}
+      } else if (typeof localStorage !== 'undefined' && (state.feeStructures.JHS.length > 0 || state.feeStructures.SHS.length > 0)) {
+        try {
+          localStorage.setItem('pa_app_fees_v2', JSON.stringify(state.feeStructures));
+        } catch (_) {}
       }
 
       // 2. Vouchers

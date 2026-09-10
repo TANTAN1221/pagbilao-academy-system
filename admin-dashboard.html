@@ -920,6 +920,18 @@
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
       if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
+      if ((!data.feeStructures.JHS.length && !data.feeStructures.SHS.length)) {
+        try {
+          const cachedFees = localStorage.getItem('pa_app_fees_v2');
+          if (cachedFees) {
+            const parsed = JSON.parse(cachedFees);
+            if (parsed && typeof parsed === 'object') {
+              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) data.feeStructures.JHS = parsed.JHS;
+              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) data.feeStructures.SHS = parsed.SHS;
+            }
+          }
+        } catch {}
+      }
       ['JHS', 'SHS'].forEach(level => {
         if (Array.isArray(data.feeStructures[level])) {
           const seen = new Set();
@@ -1077,11 +1089,12 @@
     }
 
     function toggleClearancePeriod() {
-      const currentState = isClearancePeriodOpen();
-      const newState = !currentState;
-      if (!appData.settings) appData.settings = {};
-      appData.settings.clearanceOpen = newState;
+      const current = isClearancePeriodOpen();
+      const newState = !current;
       localStorage.setItem('pa_clearance_period_open', String(newState));
+      if (appData && appData.settings) {
+        appData.settings.clearanceOpen = newState;
+      }
       saveData();
       updateClearancePeriodToggleUI();
       renderClearance();
@@ -1097,6 +1110,7 @@
     function saveData() {
       ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
       if (typeof syncInstallmentsToSupabase === 'function') syncInstallmentsToSupabase();
@@ -2456,7 +2470,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         </form>
       `;
 
-      feeForm.onsubmit = e => {
+      feeForm.onsubmit = async (e) => {
         e.preventDefault();
         const selectedLevel = feeLevel.value;
         const nameVal = feeName.value.trim();
@@ -2510,8 +2524,12 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
         }
 
         applyFeeSetup();
+        saveData();
         renderAll();
         closeFormModal();
+        if (typeof syncFeeStructuresToSupabase === 'function') {
+          syncFeeStructuresToSupabase();
+        }
         showToast('Fee Updated', `"${nameVal}" set to ${money(amtVal)} for ${selectedLevel}.`, 'success');
       };
 
@@ -2533,6 +2551,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             applyFeeSetup();
             saveData();
             renderAll();
+            if (typeof syncFeeStructuresToSupabase === 'function') {
+              syncFeeStructuresToSupabase();
+            }
             showToast('Fee Item Deleted', `Removed "${name}" from ${level} fee setup.`, 'info');
           }
         });
@@ -2550,6 +2571,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           applyFeeSetup();
           saveData();
           renderAll();
+          if (typeof syncFeeStructuresToSupabase === 'function') {
+            syncFeeStructuresToSupabase();
+          }
           showToast('Fees & Vouchers Cleared', 'All fee structures and vouchers have been cleared.', 'info');
         }
       });
@@ -3880,8 +3904,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     }
 
     function saveData() {
-      ensurePrototypeData();
+      ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
       syncInstallmentsToSupabase();
@@ -3992,6 +4017,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
                   appData.feeStructures[level] = clean;
                 }
               });
+              localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures));
             }
             if (state.settings) appData.settings = { ...appData.settings, ...state.settings };
           }

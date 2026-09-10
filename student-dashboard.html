@@ -1052,6 +1052,18 @@
       data.feeStructures = data.feeStructures || { JHS: [], SHS: [] };
       if (!data.feeStructures.JHS) data.feeStructures.JHS = [];
       if (!data.feeStructures.SHS) data.feeStructures.SHS = [];
+      if ((!data.feeStructures.JHS.length && !data.feeStructures.SHS.length)) {
+        try {
+          const cachedFees = localStorage.getItem('pa_app_fees_v2');
+          if (cachedFees) {
+            const parsed = JSON.parse(cachedFees);
+            if (parsed && typeof parsed === 'object') {
+              if (Array.isArray(parsed.JHS) && parsed.JHS.length > 0) data.feeStructures.JHS = parsed.JHS;
+              if (Array.isArray(parsed.SHS) && parsed.SHS.length > 0) data.feeStructures.SHS = parsed.SHS;
+            }
+          }
+        } catch {}
+      }
       data.vouchers = data.vouchers || [];
       const MOCK_TEMPLATE_IDS = ['ins-downpayment-2026', 'ins-q2-2026', 'ins-q3-2027', 'ins-q4-2027'];
       if (!data.installmentTemplate || !data.installmentTemplate.length) {
@@ -1086,7 +1098,12 @@
     let appData = loadData();
     let currentPayMode = 'custom'; // 'custom' or 'itemized'
 
-    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)) }
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      if (appData.feeStructures && (appData.feeStructures.JHS?.length || appData.feeStructures.SHS?.length)) {
+        try { localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures)); } catch (_) {}
+      }
+    }
 
     function currentSession() {
       try { return JSON.parse(localStorage.getItem('pa_user_session') || localStorage.getItem('pa_current_user') || '{}') } catch { return {} }
