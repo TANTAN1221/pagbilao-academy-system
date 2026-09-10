@@ -519,6 +519,272 @@
     return result;
   }
 
+  async function deleteStudent(studentRef) {
+    if (!studentRef) return { success: false, message: "No student specified." };
+
+    const sObj = typeof studentRef === "object" ? studentRef : { id: String(studentRef) };
+    const rawId = String(sObj.id || sObj.student_number || sObj.studentId || "").trim();
+    const studentNumber = String(sObj.student_number || sObj.studentId || sObj.id || "").trim();
+    const email = String(sObj.email || sObj.studentEmail || "").trim().toLowerCase();
+    const authUserId = String(sObj.authUserId || sObj.auth_user_id || "").trim();
+    const dbId = String(sObj.dbId || (rawId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? rawId : "")).trim();
+
+    const isUuid = val => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+
+    const supabaseClient = client();
+    if (supabaseClient) {
+      try {
+        const studentUuids = new Set();
+        const studentNumbers = new Set();
+        const studentEmails = new Set();
+        const authUserIds = new Set();
+
+        if (studentNumber) studentNumbers.add(studentNumber);
+        if (email) studentEmails.add(email);
+        if (authUserId && isUuid(authUserId)) authUserIds.add(authUserId);
+        if (dbId && isUuid(dbId)) studentUuids.add(dbId);
+        if (rawId && isUuid(rawId)) studentUuids.add(rawId);
+
+        // Look up matching records in students table
+        try {
+          const { data: matchedStudents } = await supabaseClient
+            .from("students")
+            .select("id, auth_user_id, student_number, email");
+          if (Array.isArray(matchedStudents)) {
+            matchedStudents.forEach(row => {
+              const rNum = String(row.student_number || "").trim();
+              const rEmail = String(row.email || "").trim().toLowerCase();
+              const rAuth = String(row.auth_user_id || "").trim();
+              const rId = String(row.id || "").trim();
+
+              const matches = (
+                (studentNumbers.size > 0 && studentNumbers.has(rNum)) ||
+                (studentEmails.size > 0 && rEmail && studentEmails.has(rEmail)) ||
+                (authUserIds.size > 0 && rAuth && authUserIds.has(rAuth)) ||
+                (studentUuids.size > 0 && studentUuids.has(rId))
+              );
+
+              if (matches) {
+                if (rId && isUuid(rId)) studentUuids.add(rId);
+                if (rNum) studentNumbers.add(rNum);
+                if (rEmail) studentEmails.add(rEmail);
+                if (rAuth && isUuid(rAuth)) authUserIds.add(rAuth);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Error querying students table for deletion:", e);
+        }
+
+        // Look up matching records in student_registration_requests table
+        try {
+          const { data: matchedReqs } = await supabaseClient
+            .from("student_registration_requests")
+            .select("id, auth_user_id, student_number, email");
+          if (Array.isArray(matchedReqs)) {
+            matchedReqs.forEach(row => {
+              const rNum = String(row.student_number || "").trim();
+              const rEmail = String(row.email || "").trim().toLowerCase();
+              const rAuth = String(row.auth_user_id || "").trim();
+              const rId = String(row.id || "").trim();
+
+              const matches = (
+                (studentNumbers.size > 0 && studentNumbers.has(rNum)) ||
+                (studentEmails.size > 0 && rEmail && studentEmails.has(rEmail)) ||
+                (authUserIds.size > 0 && rAuth && authUserIds.has(rAuth)) ||
+                (studentUuids.size > 0 && studentUuids.has(rId))
+              );
+
+              if (matches) {
+                if (rNum) studentNumbers.add(rNum);
+                if (rEmail) studentEmails.add(rEmail);
+                if (rAuth && isUuid(rAuth)) authUserIds.add(rAuth);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Error querying student_registration_requests for deletion:", e);
+        }
+
+        const targetStudentIds = Array.from(studentUuids);
+        const targetStudentNumbers = Array.from(studentNumbers);
+        const targetEmails = Array.from(studentEmails);
+        const targetAuthIds = Array.from(authUserIds);
+
+        // Delete cascade children
+        if (targetStudentIds.length > 0) {
+          // 1. clearance_certificate_requests
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("clearance_certificate_requests").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 2. clearance_approvals via clearance_requests
+          try {
+            const { data: clReqs } = await supabaseClient.from("clearance_requests").select("id").in("student_id", targetStudentIds);
+            if (Array.isArray(clReqs) && clReqs.length > 0) {
+              const clReqIds = clReqs.map(r => r.id);
+              for (const cId of clReqIds) {
+                try { await supabaseClient.from("clearance_approvals").delete().eq("clearance_request_id", cId); } catch (_) {}
+              }
+            }
+          } catch (_) {}
+
+          // 3. clearance_requests
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("clearance_requests").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 4. student_vouchers
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("student_vouchers").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 5. student_assessments
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("student_assessments").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 6. payments and payment_allocations
+          try {
+            const { data: pymts } = await supabaseClient.from("payments").select("id").in("student_id", targetStudentIds);
+            if (Array.isArray(pymts) && pymts.length > 0) {
+              const pIds = pymts.map(p => p.id);
+              for (const pId of pIds) {
+                try { await supabaseClient.from("payment_allocations").delete().eq("payment_id", pId); } catch (_) {}
+              }
+            }
+          } catch (_) {}
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("payments").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 7. student_installments and payment_allocations
+          try {
+            const { data: insts } = await supabaseClient.from("student_installments").select("id").in("student_id", targetStudentIds);
+            if (Array.isArray(insts) && insts.length > 0) {
+              const instIds = insts.map(i => i.id);
+              for (const instId of instIds) {
+                try { await supabaseClient.from("payment_allocations").delete().eq("student_installment_id", instId); } catch (_) {}
+              }
+            }
+          } catch (_) {}
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("student_installments").delete().eq("student_id", sId); } catch (_) {}
+          }
+
+          // 8. Delete from students table by ID
+          for (const sId of targetStudentIds) {
+            try { await supabaseClient.from("students").delete().eq("id", sId); } catch (_) {}
+          }
+        }
+
+        // Delete from students table by student_number or email
+        for (const num of targetStudentNumbers) {
+          try { await supabaseClient.from("students").delete().eq("student_number", num); } catch (_) {}
+        }
+        for (const em of targetEmails) {
+          try { await supabaseClient.from("students").delete().eq("email", em); } catch (_) {}
+        }
+
+        // Delete from student_registration_requests
+        for (const num of targetStudentNumbers) {
+          try { await supabaseClient.from("student_registration_requests").delete().eq("student_number", num); } catch (_) {}
+        }
+        for (const em of targetEmails) {
+          try { await supabaseClient.from("student_registration_requests").delete().eq("email", em); } catch (_) {}
+        }
+        for (const aId of targetAuthIds) {
+          try { await supabaseClient.from("student_registration_requests").delete().eq("auth_user_id", aId); } catch (_) {}
+        }
+
+        // Delete student profile from profiles table
+        for (const em of targetEmails) {
+          try { await supabaseClient.from("profiles").delete().eq("email", em).eq("role", "student"); } catch (_) {}
+        }
+        for (const aId of targetAuthIds) {
+          try { await supabaseClient.from("profiles").delete().eq("auth_user_id", aId).eq("role", "student"); } catch (_) {}
+        }
+      } catch (err) {
+        console.warn("deleteStudent Supabase sync error:", err);
+      }
+    }
+
+    // Clean local storage
+    try {
+      if (typeof localStorage !== "undefined") {
+        const checkMatch = u => {
+          if (!u) return false;
+          const uNum = String(u.studentId || u.student_number || u.id || "").trim();
+          const uEmail = String(u.email || "").trim().toLowerCase();
+          const uAuth = String(u.authUserId || u.auth_user_id || "").trim();
+          const uClean = uNum.replace(/^stu-/i, "");
+          const matchNum = studentNumber && (uNum === studentNumber || (uClean && uClean === studentNumber.replace(/^stu-/i, "")));
+          const matchEmail = email && uEmail === email;
+          const matchAuth = authUserId && uAuth === authUserId;
+          const matchRaw = rawId && (u.id === rawId || u.studentId === rawId);
+          return matchNum || matchEmail || matchAuth || matchRaw;
+        };
+
+        const localReg = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
+        if (Array.isArray(localReg)) {
+          const updatedReg = localReg.filter(u => !checkMatch(u));
+          localStorage.setItem("pa_registered_users", JSON.stringify(updatedReg));
+        }
+
+        const rawAdmin = localStorage.getItem("pa_full_admin_v2");
+        if (rawAdmin) {
+          const parsed = JSON.parse(rawAdmin);
+          if (parsed && Array.isArray(parsed.students)) {
+            parsed.students = parsed.students.filter(s => !checkMatch(s));
+            localStorage.setItem("pa_full_admin_v2", JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (localErr) {
+      console.warn("deleteStudent local storage cleaning error:", localErr);
+    }
+
+    return { success: true };
+  }
+
+  async function deleteStaffAccount(staffRef) {
+    if (!staffRef) return { success: false, message: "No staff account specified." };
+    const sObj = typeof staffRef === "object" ? staffRef : { id: String(staffRef) };
+    const profileId = sObj.id || sObj.profile_id;
+    const email = String(sObj.email || "").trim().toLowerCase();
+    const authUserId = sObj.authUserId || sObj.auth_user_id;
+
+    const supabaseClient = client();
+    if (supabaseClient) {
+      try {
+        if (profileId) {
+          try { await supabaseClient.from("teacher_assignments").delete().eq("teacher_profile_id", profileId); } catch (_) {}
+          try { await supabaseClient.from("clearance_heads").delete().eq("profile_id", profileId); } catch (_) {}
+          try { await supabaseClient.from("staff_accounts").delete().eq("profile_id", profileId); } catch (_) {}
+          try { await supabaseClient.from("profiles").delete().eq("id", profileId); } catch (_) {}
+        }
+        if (email) {
+          try { await supabaseClient.from("staff_accounts").delete().eq("email", email); } catch (_) {}
+          try { await supabaseClient.from("profiles").delete().eq("email", email); } catch (_) {}
+        }
+      } catch (err) {
+        console.warn("deleteStaffAccount error:", err);
+      }
+    }
+
+    try {
+      if (typeof localStorage !== "undefined") {
+        const localReg = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
+        if (Array.isArray(localReg)) {
+          const updatedReg = localReg.filter(u => u.id !== profileId && String(u.email || "").toLowerCase() !== email);
+          localStorage.setItem("pa_registered_users", JSON.stringify(updatedReg));
+        }
+      }
+    } catch (_) {}
+
+    return { success: true };
+  }
+
   async function logout(redirectTo = "index.html") {
     try {
       const supabaseClient = client();
@@ -857,6 +1123,7 @@
 
           return {
             id: s.student_number,
+            student_number: s.student_number,
             dbId: s.id,
             authUserId: s.auth_user_id,
             name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.student_number,
@@ -1461,6 +1728,8 @@
     dashboardForRole,
     normalizeRole,
     registerStudent,
+    deleteStudent,
+    deleteStaffAccount,
     invokeFunction,
     createCheckout,
     createSchoolAccount,

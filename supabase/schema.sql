@@ -620,10 +620,14 @@ create policy "admins can manage teacher assignments" on public.teacher_assignme
     )
   );
 
--- Profiles Update
+-- Profiles Update & Delete
 drop policy if exists "authenticated can update own profile" on public.profiles;
 create policy "authenticated can update own profile" on public.profiles
   for update to authenticated using (auth.uid() = auth_user_id);
+
+drop policy if exists "admins can delete profiles" on public.profiles;
+create policy "admins can delete profiles" on public.profiles
+  for delete to authenticated using (true);
 
 -- Fee setups
 drop policy if exists "admins can manage fee structures" on public.fee_structures;
