@@ -3762,60 +3762,116 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       return merged;
     }
 
+    let _isSyncingInstallments = false;
+    let _hasPendingInstallmentsSync = false;
+
     async function syncInstallmentsToSupabase() {
-      if (window.paApi && window.paApi.client) {
-        const client = window.paApi.client();
-        if (client) {
-          try {
-            const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
-            await client.from('installment_templates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            const list = appData.installmentTemplate || [];
-            if (list.length > 0) {
-              const rows = list.map((t, i) => {
-                const row = {
-                  title: t.title || `Milestone ${i + 1}`,
-                  school_year: '2026-2027',
-                  percent_of_net: (t.percent !== undefined && Number(t.percent) > 0) ? Number(t.percent) : (list.length ? Math.round(100 / list.length) : 25),
-                  due_date: t.dueDate || new Date().toISOString().slice(0, 10),
-                  sort_order: i + 1,
-                  active: true
-                };
-                if (t.id && isUuid(t.id)) {
-                  row.id = t.id;
-                }
-                return row;
-              });
-              const { error } = await client.from('installment_templates').insert(rows);
-              if (error) console.warn('Syncing installment_templates notice:', error);
-            }
-          } catch (e) {
-            console.warn('Syncing installment_templates error:', e);
+      if (!window.paApi || !window.paApi.client) return;
+      const client = window.paApi.client();
+      if (!client) return;
+
+      if (_isSyncingInstallments) {
+        _hasPendingInstallmentsSync = true;
+        return;
+      }
+      _isSyncingInstallments = true;
+
+      try {
+        const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+        const list = appData.installmentTemplate || [];
+        const { data: existing } = await client.from('installment_templates').select('id');
+        const activeIds = list.map(t => t.id).filter(id => id && isUuid(id));
+        const toDeleteIds = (existing || []).map(e => e.id).filter(id => !activeIds.includes(id));
+
+        if (toDeleteIds.length > 0) {
+          for (const delId of toDeleteIds) {
+            try {
+              await client.from('installment_templates').delete().eq('id', delId);
+            } catch (_) {}
           }
+        }
+
+        if (list.length > 0) {
+          const rows = list.map((t, i) => {
+            const row = {
+              title: t.title || `Milestone ${i + 1}`,
+              school_year: '2026-2027',
+              percent_of_net: (t.percent !== undefined && Number(t.percent) > 0) ? Number(t.percent) : (list.length ? Math.round(100 / list.length) : 25),
+              due_date: t.dueDate || new Date().toISOString().slice(0, 10),
+              sort_order: i + 1,
+              active: true
+            };
+            if (t.id && isUuid(t.id)) {
+              row.id = t.id;
+            }
+            return row;
+          });
+          const { error } = await client.from('installment_templates').upsert(rows, { onConflict: 'id' });
+          if (error) console.warn('Syncing installment_templates notice:', error);
+        }
+      } catch (e) {
+        console.warn('Syncing installment_templates error:', e);
+      } finally {
+        _isSyncingInstallments = false;
+        if (_hasPendingInstallmentsSync) {
+          _hasPendingInstallmentsSync = false;
+          syncInstallmentsToSupabase();
         }
       }
     }
 
+    let _isSyncingVouchers = false;
+    let _hasPendingVouchersSync = false;
+
     async function syncVouchersToSupabase() {
-      if (window.paApi && window.paApi.client) {
-        const client = window.paApi.client();
-        if (client) {
-          try {
-            await client.from('voucher_types').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            const list = appData.vouchers || [];
-            if (list.length > 0) {
-              const rows = list.map(v => ({
-                id: (v.id && !v.id.startsWith('vouch-') && !v.id.startsWith('V-') && !v.id.startsWith('v-')) ? v.id : undefined,
-                voucher_name: v.name,
-                applies_to: v.appliesTo === 'All' ? 'SHS' : v.appliesTo,
-                amount: Number(v.amount || 0),
-                active: v.active !== false
-              }));
-              const { error } = await client.from('voucher_types').insert(rows);
-              if (error) console.warn('Syncing voucher_types notice:', error);
-            }
-          } catch (e) {
-            console.warn('Syncing voucher_types error:', e);
+      if (!window.paApi || !window.paApi.client) return;
+      const client = window.paApi.client();
+      if (!client) return;
+
+      if (_isSyncingVouchers) {
+        _hasPendingVouchersSync = true;
+        return;
+      }
+      _isSyncingVouchers = true;
+
+      try {
+        const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+        const list = appData.vouchers || [];
+        const { data: existing } = await client.from('voucher_types').select('id');
+        const activeIds = list.map(v => v.id).filter(id => id && isUuid(id));
+        const toDeleteIds = (existing || []).map(e => e.id).filter(id => !activeIds.includes(id));
+
+        if (toDeleteIds.length > 0) {
+          for (const delId of toDeleteIds) {
+            try {
+              await client.from('voucher_types').delete().eq('id', delId);
+            } catch (_) {}
           }
+        }
+
+        if (list.length > 0) {
+          const rows = list.map(v => {
+            const row = {
+              voucher_name: v.name,
+              applies_to: v.appliesTo === 'All' ? 'SHS' : v.appliesTo,
+              amount: Number(v.amount || 0),
+              active: v.active !== false
+            };
+            if (v.id && isUuid(v.id)) {
+              row.id = v.id;
+            }
+            return row;
+          });
+          const { error } = await client.from('voucher_types').upsert(rows, { onConflict: 'id' });
+          if (error) console.warn('Syncing voucher_types notice:', error);
+        }
+      } catch (e) {
+        console.warn('Syncing voucher_types error:', e);
+      } finally {
+        _isSyncingVouchers = false;
+        if (_hasPendingVouchersSync) {
+          _hasPendingVouchersSync = false;
+          syncVouchersToSupabase();
         }
       }
     }
