@@ -1167,7 +1167,7 @@
       }
 
       // 7. Payments
-      if (dbPayments && studentsList) {
+      if (dbPayments) {
         state.payments = dbPayments.map(p => {
           const student = (studentsList || []).find(s => s.id === p.student_id || s.student_number === p.student_id || s.auth_user_id === p.student_id);
           const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : "Student";
@@ -1176,7 +1176,9 @@
             id: p.id,
             dbId: p.id,
             studentId: student?.student_number || p.student_id,
+            student_number: student?.student_number || null,
             studentDbId: p.student_id,
+            student_id: p.student_id,
             studentName: studentName,
             date: p.paid_at ? p.paid_at.slice(0, 10) : (p.created_at ? p.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
             paidAt: p.paid_at || p.created_at || new Date().toISOString(),
@@ -1687,12 +1689,17 @@
     const supabaseClient = client();
     if (!supabaseClient) return null;
     try {
+      const channelId = `realtime_${table}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const channel = supabaseClient
-        .channel(`public:${table}-realtime`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+        .channel(channelId)
+        .on('postgres_changes', { event: '*', schema: 'public', table: table }, (payload) => {
           if (typeof callback === 'function') callback(payload);
         })
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`[Supabase Realtime] Subscribed to ${table}`);
+          }
+        });
       return channel;
     } catch (e) {
       console.warn("Realtime subscription notice:", e);

@@ -3867,6 +3867,41 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       return Array.from(map.values());
     }
 
+    function mergePaymentsState(localPayments = [], dbPayments = []) {
+      if (!dbPayments || dbPayments.length === 0) return localPayments || [];
+      if (!localPayments || localPayments.length === 0) return dbPayments || [];
+
+      const map = new Map();
+      (localPayments || []).forEach(p => {
+        if (p) {
+          const key = String(p.referenceNo || p.id || '').toLowerCase();
+          if (key) map.set(key, { ...p });
+        }
+      });
+
+      (dbPayments || []).forEach(dbP => {
+        if (dbP) {
+          const refKey = dbP.referenceNo ? String(dbP.referenceNo).toLowerCase() : null;
+          const idKey = dbP.id ? String(dbP.id).toLowerCase() : null;
+          const matchKey = (refKey && map.has(refKey)) ? refKey : ((idKey && map.has(idKey)) ? idKey : null);
+
+          if (matchKey) {
+            const local = map.get(matchKey);
+            map.set(matchKey, { ...local, ...dbP });
+          } else {
+            const primaryKey = refKey || idKey || `db-${Date.now()}-${Math.random()}`;
+            map.set(primaryKey, { ...dbP });
+          }
+        }
+      });
+
+      return Array.from(map.values()).sort((a, b) => {
+        const timeA = new Date(a.paidAt || a.date || 0).getTime();
+        const timeB = new Date(b.paidAt || b.date || 0).getTime();
+        return timeB - timeA;
+      });
+    }
+
     async function initAdminDashboard() {
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
@@ -3879,8 +3914,8 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
               appData.accounts = mergeAccountsState(appData.accounts || [], state.accounts);
             }
             
-            // Primary source of truth is Supabase database state
-            appData.payments = state.payments || [];
+            // Primary source of truth is Supabase database state merged with local
+            appData.payments = mergePaymentsState(appData.payments || [], state.payments || []);
             if (state.certificateRequests) appData.certificateRequests = state.certificateRequests;
             if (state.teacherClearanceRequests) appData.teacherClearanceRequests = state.teacherClearanceRequests;
             if (state.vouchers && state.vouchers.length > 0) appData.vouchers = state.vouchers;
@@ -3914,6 +3949,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
       }
       renderNav();
       renderAll();
+      setupAdminRealtimeSubscriptions();
 
       const savedKey = localStorage.getItem('pa_gemini_api_key') || DEFAULT_GEMINI_API_KEY;
       if (document.getElementById('geminiApiKeyInput')) {
@@ -3952,6 +3988,60 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           }
         }
       }
+    }
+
+    function setupAdminRealtimeSubscriptions() {
+      if (!window.paApi || !window.paApi.isSupabaseReady || !window.paApi.isSupabaseReady()) return;
+
+      let isRefreshing = false;
+      const refreshFromDatabase = async () => {
+        if (isRefreshing) return;
+        isRefreshing = true;
+        try {
+          const state = await window.paApi.fetchDatabaseState();
+          if (state) {
+            if (state.students && state.students.length > 0) {
+              appData.students = mergeStudentsState(appData.students || [], state.students);
+            }
+            if (state.payments) {
+              appData.payments = mergePaymentsState(appData.payments || [], state.payments);
+            }
+            if (state.teacherClearanceRequests) {
+              appData.teacherClearanceRequests = state.teacherClearanceRequests;
+            }
+            if (state.certificateRequests) {
+              appData.certificateRequests = state.certificateRequests;
+            }
+            saveData();
+            renderAll();
+          }
+        } catch (e) {
+          console.warn('Admin realtime refresh notice:', e);
+        } finally {
+          isRefreshing = false;
+        }
+      };
+
+      try {
+        window.paApi.subscribeRealtime('payments', (payload) => {
+          console.log('[Admin Realtime] Payment event detected:', payload);
+          refreshFromDatabase();
+        });
+        window.paApi.subscribeRealtime('students', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('clearance_approvals', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('clearance_requests', () => refreshFromDatabase());
+      } catch (e) {
+        console.warn('Admin realtime subscription error:', e);
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshFromDatabase();
+      });
+      window.addEventListener('focus', () => refreshFromDatabase());
+
+      setInterval(() => {
+        refreshFromDatabase();
+      }, 6000);
     }
     window.addEventListener('storage', e => {
       if (e.key === 'pa_clearance_period_open') {

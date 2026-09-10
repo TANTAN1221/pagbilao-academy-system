@@ -1135,8 +1135,13 @@
       const level = source.educationLevel || source.education_level || source.level || session.educationLevel || meta.education_level || inferLevelFromGrade(grade);
       const section = source.section || source.section_name || session.section || meta.section_name || (grade === 'Grade 7' ? 'Cattleya' : grade === 'Grade 8' ? 'Vermillion' : grade === 'Grade 9' ? 'Aristotle' : grade === 'Grade 10' ? 'Diamond' : grade === 'Grade 11' ? 'Humility' : 'Honesty');
       const strand = source.strand || session.strand || meta.strand || (level === 'SHS' ? 'GAS' : 'N/A');
+      const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+      const dbId = source.dbId || (isUuid(source.id) ? source.id : null) || null;
+      const studentId = source.student_number || source.studentNumber || source.studentId || (!isUuid(source.id) ? source.id : null) || session.studentId || meta.student_number || `STU-${Date.now()}`;
       return {
-        id: source.studentId || source.student_number || source.id || session.studentId || session.id || meta.student_number || `STU-${Date.now()}`,
+        id: studentId,
+        student_number: studentId,
+        dbId: dbId,
         authUserId: source.authUserId || source.auth_user_id || session.id || null,
         name: fullName,
         email: source.email || session.email || '',
@@ -1251,25 +1256,34 @@
     function getStudentPayments(s) {
       if (!s) return [];
       const allPayments = appData.payments || [];
-      const studentEmail = String(s.email || '').toLowerCase();
-      const studentId = String(s.id || '').toLowerCase();
-      const dbId = String(s.dbId || '').toLowerCase();
-      const cleanStudentId = studentId.replace('stu-', '').trim();
-      const authUserId = String(s.authUserId || s.auth_user_id || '').toLowerCase();
+      const sEmail = String(s.email || '').toLowerCase().trim();
+      const sId = String(s.id || s.student_number || s.studentId || '').toLowerCase().trim();
+      const sDbId = String(s.dbId || '').toLowerCase().trim();
+      const sCleanId = sId.replace(/^stu-/, '').trim();
+      const sAuthId = String(s.authUserId || s.auth_user_id || '').toLowerCase().trim();
+      const sName = String(s.name || s.fullName || '').toLowerCase().trim();
 
       return allPayments.filter(p => {
         if (!p) return false;
-        const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase();
-        const pCleanId = pStudentId.replace('stu-', '').trim();
-        const pEmail = String(p.email || p.studentEmail || '').toLowerCase();
+        const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase().trim();
+        const pCleanId = pStudentId.replace(/^stu-/, '').trim();
+        const pEmail = String(p.email || p.studentEmail || '').toLowerCase().trim();
+        const pAuthId = String(p.authUserId || p.auth_user_id || '').toLowerCase().trim();
+        const pName = String(p.studentName || p.student_name || '').toLowerCase().trim();
 
-        return (
-          (studentId && pStudentId === studentId) ||
-          (dbId && pStudentId === dbId) ||
-          (cleanStudentId && pCleanId === cleanStudentId) ||
-          (authUserId && pStudentId === authUserId) ||
-          (studentEmail && pEmail && pEmail === studentEmail)
-        );
+        const matchId = (sId && (pStudentId === sId || pCleanId === sId)) ||
+                        (sDbId && (pStudentId === sDbId || pCleanId === sDbId)) ||
+                        (sCleanId && (pCleanId === sCleanId || pStudentId === sCleanId));
+
+        const matchAuth = Boolean(sAuthId && (pStudentId === sAuthId || pAuthId === sAuthId));
+        const matchEmail = Boolean(sEmail && pEmail && (pEmail === sEmail));
+        const matchName = Boolean(sName && pName && (sName === pName));
+
+        return matchId || matchAuth || matchEmail || matchName;
+      }).sort((a, b) => {
+        const timeA = new Date(a.paidAt || a.date || 0).getTime();
+        const timeB = new Date(b.paidAt || b.date || 0).getTime();
+        return timeB - timeA;
       });
     }
 
@@ -3079,6 +3093,41 @@
       return Array.from(map.values());
     }
 
+    function mergePaymentsState(localPayments = [], dbPayments = []) {
+      if (!dbPayments || dbPayments.length === 0) return localPayments || [];
+      if (!localPayments || localPayments.length === 0) return dbPayments || [];
+
+      const map = new Map();
+      (localPayments || []).forEach(p => {
+        if (p) {
+          const key = String(p.referenceNo || p.id || '').toLowerCase();
+          if (key) map.set(key, { ...p });
+        }
+      });
+
+      (dbPayments || []).forEach(dbP => {
+        if (dbP) {
+          const refKey = dbP.referenceNo ? String(dbP.referenceNo).toLowerCase() : null;
+          const idKey = dbP.id ? String(dbP.id).toLowerCase() : null;
+          const matchKey = (refKey && map.has(refKey)) ? refKey : ((idKey && map.has(idKey)) ? idKey : null);
+
+          if (matchKey) {
+            const local = map.get(matchKey);
+            map.set(matchKey, { ...local, ...dbP });
+          } else {
+            const primaryKey = refKey || idKey || `db-${Date.now()}-${Math.random()}`;
+            map.set(primaryKey, { ...dbP });
+          }
+        }
+      });
+
+      return Array.from(map.values()).sort((a, b) => {
+        const timeA = new Date(a.paidAt || a.date || 0).getTime();
+        const timeB = new Date(b.paidAt || b.date || 0).getTime();
+        return timeB - timeA;
+      });
+    }
+
     async function initStudentDashboard() {
       const urlParams = new URLSearchParams(window.location.search);
       const isPaymentReturn = Boolean(urlParams.get('payment') || urlParams.get('checkout_session_id') || urlParams.get('session_id'));
@@ -3142,6 +3191,7 @@
             const mergedStudents = mergeStudentsState(appData.students || [], state.students || []);
             const mergedAccounts = mergeAccountsState(appData.accounts || [], state.accounts || []);
             const mergedRequests = mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests || []);
+            const mergedPayments = mergePaymentsState(appData.payments || [], state.payments || []);
 
             appData = {
               ...appData,
@@ -3149,7 +3199,7 @@
               students: mergedStudents,
               accounts: mergedAccounts,
               teacherClearanceRequests: mergedRequests,
-              payments: state.payments || [],
+              payments: mergedPayments,
               feeStructures: {
                 JHS: dbFeeJHS.length ? dbFeeJHS : localFeeJHS,
                 SHS: dbFeeSHS.length ? dbFeeSHS : localFeeSHS
@@ -3257,7 +3307,61 @@
       }
 
       renderAll();
+      setupRealtimeSubscriptions();
       autoTriggerStudentWalkthrough();
+    }
+
+    function setupRealtimeSubscriptions() {
+      if (!window.paApi || !window.paApi.isSupabaseReady || !window.paApi.isSupabaseReady()) return;
+
+      let isRefreshing = false;
+      const refreshFromDatabase = async () => {
+        if (isRefreshing) return;
+        isRefreshing = true;
+        try {
+          const state = await window.paApi.fetchDatabaseState();
+          if (state) {
+            if (state.payments) {
+              appData.payments = mergePaymentsState(appData.payments || [], state.payments);
+            }
+            if (state.students && state.students.length > 0) {
+              appData.students = mergeStudentsState(appData.students || [], state.students);
+            }
+            if (state.teacherClearanceRequests) {
+              appData.teacherClearanceRequests = mergeClearanceRequestsState(appData.teacherClearanceRequests || [], state.teacherClearanceRequests);
+            }
+            saveData();
+            renderAll();
+          }
+        } catch (e) {
+          console.warn('Realtime refresh notice:', e);
+        } finally {
+          isRefreshing = false;
+        }
+      };
+
+      try {
+        window.paApi.subscribeRealtime('payments', (payload) => {
+          console.log('[Student Realtime] New payment event detected:', payload);
+          refreshFromDatabase();
+        });
+        window.paApi.subscribeRealtime('students', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('clearance_approvals', () => refreshFromDatabase());
+        window.paApi.subscribeRealtime('clearance_requests', () => refreshFromDatabase());
+      } catch (e) {
+        console.warn('Realtime subscription registration notice:', e);
+      }
+
+      // Re-sync immediately when tab is refocused
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshFromDatabase();
+      });
+      window.addEventListener('focus', () => refreshFromDatabase());
+
+      // Polling fallback to guarantee continuous live updates
+      setInterval(() => {
+        refreshFromDatabase();
+      }, 6000);
     }
 
     /* STUDENT DASHBOARD WALKTHROUGH CONTROLLER */
