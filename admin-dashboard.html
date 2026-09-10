@@ -1197,7 +1197,13 @@
       const discount = Number(s.feeDiscount || 0);
       return Math.max(0, baseFee - voucherAmount(s) - discount);
     }
-    function balance(student) { return Math.max(0, assessedTotal(student) - Number(student.paid || 0)) }
+    function balance(student) {
+      if (!student) return 0;
+      const paid = (typeof getStudentTotalPaidInAdmin === 'function')
+        ? Math.max(Number(student.paid || 0), getStudentTotalPaidInAdmin(student))
+        : Number(student.paid || 0);
+      return Math.max(0, assessedTotal(student) - paid);
+    }
     function classLabel(s) {
       if (s.level === 'SHS') {
         const strandStr = s.strand && s.strand !== 'N/A' ? ` (${s.strand})` : '';
@@ -1256,9 +1262,9 @@
     function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } if (typeof renderAll === 'function') renderAll(); }
     function renderDashboard() {
       totalStudents.textContent = appData.students.length;
-      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
-      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
-      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+      const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+      const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
+      const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
       totalCollected.textContent = money(collected);
       totalOutstanding.textContent = money(outstanding);
       voucherTotal.textContent = money(vouchers);
@@ -1558,10 +1564,10 @@
     function renderAnalyticsCharts() {
       if (typeof Chart === 'undefined') return;
 
-      const billed = appData.students.reduce((s, x) => s + assessedTotal(x), 0);
-      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
-      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
-      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+      const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
+      const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+      const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
+      const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
 
       // 1. Collection Doughnut Chart
       const doughnutCtx = document.getElementById('collectionDoughnutChart')?.getContext('2d');
@@ -1763,10 +1769,10 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     }
 
     function renderAnalytics() {
-      const billed = appData.students.reduce((s, x) => s + assessedTotal(x), 0);
-      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
-      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
-      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+      const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
+      const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+      const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
+      const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
 
       analyticsCards.innerHTML = [['Total Assessed', billed, 'text-academy-navy'], ['Total Collected', collected, 'text-green-700'], ['Outstanding', outstanding, 'text-red-600'], ['Voucher Impact', vouchers, 'text-academy-navy']].map(c => `<div class="rounded-2xl bg-white border border-academy-border p-5"><p class="text-sm text-academy-muted">${c[0]}</p><h3 class="mt-3 text-2xl font-extrabold ${c[2]}">${money(c[1])}</h3></div>`).join('');
       
