@@ -1102,6 +1102,9 @@
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      if (appData.payments && Array.isArray(appData.payments)) {
+        try { localStorage.setItem('pa_global_payments_v2', JSON.stringify(appData.payments)); } catch (_) {}
+      }
       if (appData.feeStructures && (appData.feeStructures.JHS?.length || appData.feeStructures.SHS?.length)) {
         try { localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures)); } catch (_) {}
       }
@@ -3270,9 +3273,11 @@
                 studentNumber: s.studentNumber || s.student_number || s.id,
                 email: s.email,
                 authUserId: s.authUserId || s.auth_user_id,
+                name: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
                 amount: paidAmt,
                 method: 'QR Ph (PayMongo)',
-                referenceNo: refNo
+                referenceNo: refNo,
+                feeBreakdown: feeBreakdown
               });
             } catch (err) {
               console.warn('Direct payment sync skipped:', err);

@@ -981,6 +981,18 @@
       data.students = (data.students || []).filter(s => !isStaffOrAdminEntry(s));
       data.accounts = data.accounts || [];
       data.payments = data.payments || [];
+      try {
+        const globalPaymentsRaw = localStorage.getItem('pa_global_payments_v2') || localStorage.getItem('pa_student_payments');
+        if (globalPaymentsRaw) {
+          const globalPayments = JSON.parse(globalPaymentsRaw);
+          if (Array.isArray(globalPayments) && globalPayments.length > 0) {
+            const map = new Map();
+            (data.payments || []).forEach(p => { const k = String(p.referenceNo || p.id || '').toLowerCase(); if (k) map.set(k, p); });
+            globalPayments.forEach(p => { const k = String(p.referenceNo || p.id || '').toLowerCase(); if (k && !map.has(k)) map.set(k, p); });
+            data.payments = Array.from(map.values());
+          }
+        }
+      } catch (_) {}
       data.certificateRequests = data.certificateRequests || [];
       return data;
     }
@@ -1112,6 +1124,9 @@
     function saveData() {
       ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      if (appData.payments && Array.isArray(appData.payments)) {
+        try { localStorage.setItem('pa_global_payments_v2', JSON.stringify(appData.payments)); } catch (_) {}
+      }
       localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
@@ -3974,6 +3989,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     function saveData() {
       ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      if (appData.payments && Array.isArray(appData.payments)) {
+        try { localStorage.setItem('pa_global_payments_v2', JSON.stringify(appData.payments)); } catch (_) {}
+      }
       localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
@@ -4196,6 +4214,18 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     window.addEventListener('storage', e => {
       if (e.key === 'pa_clearance_period_open') {
         updateClearancePeriodToggleUI();
+      }
+      if (e.key === 'pa_global_payments_v2' || e.key === 'pa_full_student_portal' || e.key === 'pa_app_fees_v2' || e.key === 'pa_installment_templates') {
+        try {
+          if ((e.key === 'pa_global_payments_v2' || e.key === 'pa_full_student_portal') && e.newValue) {
+            const parsed = JSON.parse(e.newValue);
+            const newPayments = Array.isArray(parsed) ? parsed : (parsed?.payments || []);
+            if (newPayments && newPayments.length > 0) {
+              appData.payments = mergePaymentsState(appData.payments || [], newPayments);
+            }
+          }
+        } catch (_) {}
+        renderAll();
       }
     });
 

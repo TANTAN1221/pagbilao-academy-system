@@ -1225,6 +1225,34 @@
         });
       }
 
+      // Merge local payment transactions from client cache if present
+      try {
+        if (typeof localStorage !== "undefined") {
+          const globalPaymentsRaw = localStorage.getItem("pa_global_payments_v2") || localStorage.getItem("pa_student_payments");
+          if (globalPaymentsRaw) {
+            const parsed = JSON.parse(globalPaymentsRaw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const map = new Map();
+              (state.payments || []).forEach(p => {
+                const k = String(p.referenceNo || p.id || "").toLowerCase();
+                if (k) map.set(k, p);
+              });
+              parsed.forEach(p => {
+                const k = String(p.referenceNo || p.id || "").toLowerCase();
+                if (k && !map.has(k)) {
+                  map.set(k, p);
+                }
+              });
+              state.payments = Array.from(map.values()).sort((a, b) => {
+                const timeA = new Date(a.paidAt || a.date || 0).getTime();
+                const timeB = new Date(b.paidAt || b.date || 0).getTime();
+                return timeB - timeA;
+              });
+            }
+          }
+        }
+      } catch (_) {}
+
       // 8. Certificate Requests
       if (certRequests && studentsList) {
         state.certificateRequests = certRequests.map(cr => {
@@ -1388,6 +1416,35 @@
       })
       .select()
       .maybeSingle();
+
+    try {
+      if (typeof localStorage !== "undefined") {
+        const raw = localStorage.getItem("pa_global_payments_v2");
+        const list = raw ? JSON.parse(raw) : [];
+        const existingIdx = list.findIndex(p => p.referenceNo === refNo || p.id === refNo);
+        const item = {
+          id: data?.id || refNo || `PAY-${Date.now()}`,
+          dbId: data?.id,
+          studentId: student.student_number || student.id,
+          student_number: student.student_number || null,
+          studentName: studentObj?.name || studentObj?.fullName || `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Student',
+          amount: Number(amt),
+          method: mth || "QR Ph (PayMongo)",
+          referenceNo: refNo,
+          feeBreakdown: studentObj?.feeBreakdown || [],
+          status: "paid",
+          paidAt: new Date().toISOString(),
+          date: new Date().toISOString().slice(0, 10),
+          schoolYear: "2026-2027"
+        };
+        if (existingIdx < 0) {
+          list.unshift(item);
+        } else {
+          list[existingIdx] = { ...list[existingIdx], ...item };
+        }
+        localStorage.setItem("pa_global_payments_v2", JSON.stringify(list));
+      }
+    } catch (_) {}
 
     return data;
   }

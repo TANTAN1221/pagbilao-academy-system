@@ -61,6 +61,20 @@ function createMockSupabase(initialDb = {}) {
             })
           });
         },
+        maybeSingle: () => {
+          let result = rows;
+          if (filters.length > 0) {
+            result = result.filter(r => filters.every(f => f(r)));
+          }
+          return Promise.resolve({ data: result[0] || null, error: null });
+        },
+        single: () => {
+          let result = rows;
+          if (filters.length > 0) {
+            result = result.filter(r => filters.every(f => f(r)));
+          }
+          return Promise.resolve({ data: result[0] || null, error: null });
+        },
         then: (resolve, reject) => {
           let result = rows;
           if (filters.length > 0) {
@@ -215,4 +229,36 @@ test('student dashboard resolves fees dynamically from feeStructures cache and d
   assert.equal(getFeeItems(shsStudent).length, 2);
   assert.equal(getFeeItems(shsStudent)[0].name, 'Senior High Tuition');
 });
+
+test('payments recorded in student portal reflect in database state and admin cache', async () => {
+  const client = createMockSupabase({
+    students: [
+      { id: 'stu-uuid-1', student_number: '2026-0001', first_name: 'Maria', last_name: 'Santos', email: 'maria@pagbilao.edu.ph', education_level: 'JHS', grade_level: 'Grade 7', section_name: 'Rose' }
+    ]
+  });
+
+  const { context, values } = browser(client);
+
+  // Student makes a payment
+  await context.window.paApi.recordPayment({
+    studentId: '2026-0001',
+    amount: 5000,
+    method: 'QR Ph (PayMongo)',
+    referenceNo: 'PM-TEST-9988'
+  });
+
+  // Verify payment was stored in client cache and database
+  const state = await context.window.paApi.fetchDatabaseState();
+  assert.ok(state.payments.length >= 1, 'Payments must contain the recorded transaction');
+  const matched = state.payments.find(p => p.referenceNo === 'PM-TEST-9988');
+  assert.ok(matched, 'Payment PM-TEST-9988 must exist');
+  assert.equal(matched.amount, 5000);
+  assert.equal(matched.studentId, '2026-0001');
+
+  // Verify student paid amount reflects in state.students
+  const std = state.students.find(s => s.id === '2026-0001');
+  assert.ok(std, 'Student 2026-0001 must exist');
+  assert.equal(std.paid, 5000);
+});
+
 
