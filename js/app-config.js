@@ -818,6 +818,9 @@
       const safeQuery = async (query) => {
         try {
           const res = await query;
+          if (res && res.error) {
+            return { data: [] };
+          }
           return res || { data: [] };
         } catch {
           return { data: [] };
@@ -850,7 +853,7 @@
         safeQuery(supabase.from("teacher_assignments").select("*")),
         safeQuery(supabase.from("students").select("*")),
         safeQuery(supabase.from("student_vouchers").select("*, voucher_types(voucher_name)")),
-        safeQuery(supabase.from("payments").select("*")),
+        safeQuery(supabase.from("payments").select("id, student_id, amount, method, provider, provider_reference, checkout_session_id, status, paid_at, created_at")),
         safeQuery(supabase.from("clearance_requests").select("*")),
         safeQuery(supabase.from("clearance_approvals").select("*")),
         safeQuery(supabase.from("clearance_certificate_requests").select("*")),

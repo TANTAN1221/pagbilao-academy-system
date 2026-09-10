@@ -678,12 +678,14 @@ create policy "admins can manage student installments" on public.student_install
 
 -- Payments
 drop policy if exists "authenticated can read payments" on public.payments;
-create policy "authenticated can read payments" on public.payments
-  for select to authenticated using (true);
+drop policy if exists "public read payments" on public.payments;
+create policy "public read payments" on public.payments
+  for select using (true);
 
 drop policy if exists "authenticated can read allocations" on public.payment_allocations;
-create policy "authenticated can read allocations" on public.payment_allocations
-  for select to authenticated using (true);
+drop policy if exists "public read allocations" on public.payment_allocations;
+create policy "public read allocations" on public.payment_allocations
+  for select using (true);
 
 drop policy if exists "admins can read gateway events" on public.payment_gateway_events;
 create policy "admins can read gateway events" on public.payment_gateway_events
