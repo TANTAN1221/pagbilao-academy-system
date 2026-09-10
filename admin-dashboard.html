@@ -202,6 +202,37 @@
             </table>
           </div>
         </section>
+
+        <!-- Real-Time Payment Transactions & Proofs Ledger -->
+        <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden mt-5">
+          <div class="p-5 border-b border-academy-border flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h3 class="font-extrabold text-academy-navy">Recent Payment Transactions & Proofs</h3>
+              </div>
+              <p class="text-xs text-academy-muted mt-0.5">Real-time ledger of online (QR Ph, PayMongo) and in-person payments</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="adminTxCountBadge" class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold text-xs border border-emerald-200/60">0 Transaction(s)</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[900px] text-sm">
+              <thead class="bg-slate-900 text-white">
+                <tr>
+                  <th class="text-left px-4 py-3">Ref / Proof No.</th>
+                  <th class="text-left px-4 py-3">Student Name</th>
+                  <th class="text-left px-4 py-3">Payment Channel</th>
+                  <th class="text-left px-4 py-3">Date & Time</th>
+                  <th class="text-left px-4 py-3">Fee Item Breakdown</th>
+                  <th class="text-right px-4 py-3">Amount Paid</th>
+                </tr>
+              </thead>
+              <tbody id="adminPaymentsBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section id="feesPage" class="page-section hidden space-y-5">
@@ -635,24 +666,24 @@
         <section class="bg-white border border-academy-border rounded-2xl shadow-sm overflow-hidden mt-5">
           <div class="p-5 border-b border-academy-border flex justify-between items-center">
             <div>
-              <h4 class="font-extrabold text-academy-navy">Recent Payment Transactions & Receipts</h4>
+              <h4 class="font-extrabold text-academy-navy">Payment Transactions & Proofs History</h4>
               <p class="text-xs text-academy-muted">Real-time ledger of online (QR Ph, PayMongo) and in-person payments</p>
             </div>
-            <span id="adminTxCountBadge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold text-xs">0 Transactions</span>
+            <span id="analyticsTxCountBadge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold text-xs">0 Transactions</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[900px] text-sm">
               <thead class="bg-slate-900 text-white">
                 <tr>
-                  <th class="text-left px-4 py-3">Ref / OR No.</th>
+                  <th class="text-left px-4 py-3">Ref / Proof No.</th>
                   <th class="text-left px-4 py-3">Student</th>
                   <th class="text-left px-4 py-3">Payment Channel</th>
-                  <th class="text-left px-4 py-3">Date</th>
+                  <th class="text-left px-4 py-3">Date & Time</th>
                   <th class="text-left px-4 py-3">Fee Breakdown</th>
                   <th class="text-right px-4 py-3">Amount</th>
                 </tr>
               </thead>
-              <tbody id="adminPaymentsBody" class="divide-y divide-slate-100"></tbody>
+              <tbody id="analyticsPaymentsBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </section>
@@ -1207,7 +1238,16 @@
       showPage('dashboardPage');
     }
     function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } if (typeof renderAll === 'function') renderAll(); }
-    function renderDashboard() { totalStudents.textContent = appData.students.length; const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0); const outstanding = appData.students.reduce((s, x) => s + balance(s), 0); const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0); totalCollected.textContent = money(collected); totalOutstanding.textContent = money(outstanding); voucherTotal.textContent = money(vouchers) }
+    function renderDashboard() {
+      totalStudents.textContent = appData.students.length;
+      const collected = appData.students.reduce((s, x) => s + Number(x.paid || 0), 0);
+      const outstanding = appData.students.reduce((s, x) => s + balance(s), 0);
+      const vouchers = appData.students.reduce((s, x) => s + voucherAmount(s), 0);
+      totalCollected.textContent = money(collected);
+      totalOutstanding.textContent = money(outstanding);
+      voucherTotal.textContent = money(vouchers);
+      renderAdminPayments();
+    }
     function renderStudents() {
       const q = (studentSearch?.value || '').toLowerCase();
       const level = levelFilter?.value || 'all';
@@ -1725,36 +1765,48 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
 
       overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${classLabel(s)} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
 
+      renderAdminPayments();
+      renderAnalyticsCharts();
+    }
+
+    function renderAdminPayments() {
       const isStaffPayment = (p) => {
         if (!p) return false;
-        const name = String(p.studentName || p.studentId || '').toLowerCase();
-        const email = String(p.email || p.studentEmail || '').toLowerCase();
-        return ['admin', 'accountant', 'accounting', 'teacher', 'principal', 'registrar', 'clearance', 'guidance', 'prefect', 'library'].some(k => name.includes(k) || email.includes(k));
+        const email = String(p.email || p.studentEmail || '').toLowerCase().trim();
+        return email === 'admin@pagbilao.edu.ph' || email === 'accounting@pagbilao.edu.ph';
       };
 
       const allPayments = (appData.payments || []).filter(p => !isStaffPayment(p));
       const txBadge = document.getElementById('adminTxCountBadge');
       if (txBadge) txBadge.textContent = `${allPayments.length} Transaction(s)`;
+      const analyticsTxBadge = document.getElementById('analyticsTxCountBadge');
+      if (analyticsTxBadge) analyticsTxBadge.textContent = `${allPayments.length} Transaction(s)`;
 
-      const txBody = document.getElementById('adminPaymentsBody');
-      if (txBody) {
+      const txBodies = [
+        document.getElementById('adminPaymentsBody'),
+        document.getElementById('analyticsPaymentsBody')
+      ].filter(Boolean);
+
+      txBodies.forEach(txBody => {
         if (!allPayments.length) {
           txBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No payment transactions recorded yet.</td></tr>`;
         } else {
-          txBody.innerHTML = allPayments.map(p => `
-            <tr class="hover:bg-academy-soft">
-              <td class="px-4 py-3 font-mono text-xs font-bold text-slate-800">${p.referenceNo || p.id}</td>
-              <td class="px-4 py-3 font-extrabold text-academy-navy">${p.studentName || p.studentId}</td>
-              <td class="px-4 py-3">${pill(p.method || 'Online', 'green')}</td>
-              <td class="px-4 py-3 text-xs text-academy-muted">${p.date || (p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'Today')}</td>
-              <td class="px-4 py-3 text-xs text-slate-600">${p.feeBreakdown && p.feeBreakdown.length ? p.feeBreakdown.join(', ') : (p.remarks || 'Tuition / Assessment Fee')}</td>
-              <td class="px-4 py-3 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
-            </tr>
-          `).join('');
+          txBody.innerHTML = allPayments.map(p => {
+            const dateStr = p.paidAt ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : (p.date || 'Today');
+            const feeItems = p.feeBreakdown && p.feeBreakdown.length ? p.feeBreakdown.join(', ') : (p.remarks || 'Tuition / Assessment Fee');
+            return `
+              <tr class="hover:bg-academy-soft">
+                <td class="px-4 py-3 font-mono text-xs font-bold text-slate-800">${p.referenceNo || p.id}</td>
+                <td class="px-4 py-3 font-extrabold text-academy-navy">${p.studentName || p.studentId || 'Student'}</td>
+                <td class="px-4 py-3">${pill(p.method || 'Online', 'green')}</td>
+                <td class="px-4 py-3 text-xs text-academy-muted">${dateStr}</td>
+                <td class="px-4 py-3 text-xs text-slate-600">${feeItems}</td>
+                <td class="px-4 py-3 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
+              </tr>
+            `;
+          }).join('');
         }
-      }
-
-      renderAnalyticsCharts();
+      });
     }
     function renderCertificates() { certificateBody.innerHTML = appData.students.map(s => { const complete = clearanceComplete(s); const req = appData.certificateRequests.find(r => r.studentId === s.id); return `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${complete ? pill('Completed', 'green') : pill('Incomplete', 'amber')}</td><td class="px-4 py-3">${req ? pill(req.status, req.status === 'approved' ? 'green' : 'amber') : 'No request'}</td><td class="px-4 py-3"><button ${complete ? '' : 'disabled'} onclick="openCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg ${complete ? 'bg-academy-navy text-white' : 'bg-slate-100 text-slate-400'} font-bold text-xs">Open Certificate</button></td></tr>` }).join('') }
     function renderAll() { renderDashboard(); renderStudents(); renderFees(); renderDueDates(); renderClearance(); renderAccounts(); renderAnalytics(); renderCertificates(); }

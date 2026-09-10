@@ -1169,13 +1169,18 @@
       // 7. Payments
       if (dbPayments) {
         state.payments = dbPayments.map(p => {
-          const student = (studentsList || []).find(s => s.id === p.student_id || s.student_number === p.student_id || s.auth_user_id === p.student_id);
-          const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : "Student";
-          const refNo = p.provider_reference || p.checkout_session_id || p.id;
+          const student = (combinedStudents || []).find(s => 
+            (s.id && (s.id === p.student_id || s.id === p.studentId)) || 
+            (s.student_number && (s.student_number === p.student_id || s.student_number === p.studentId)) || 
+            (s.auth_user_id && (s.auth_user_id === p.student_id || s.auth_user_id === p.auth_user_id)) ||
+            (s.email && p.email && s.email.toLowerCase() === p.email.toLowerCase())
+          );
+          const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : (p.studentName || p.student_name || "Student");
+          const refNo = p.provider_reference || p.checkout_session_id || p.reference_no || p.referenceNo || p.id;
           return {
             id: p.id,
             dbId: p.id,
-            studentId: student?.student_number || p.student_id,
+            studentId: student?.student_number || student?.id || p.student_id,
             student_number: student?.student_number || null,
             studentDbId: p.student_id,
             student_id: p.student_id,
@@ -1185,6 +1190,8 @@
             amount: Number(p.amount),
             method: p.method || "Online",
             referenceNo: refNo,
+            feeBreakdown: p.feeBreakdown || p.fee_breakdown || [],
+            remarks: p.remarks || p.notes || "",
             status: p.status || "paid"
           };
         });
@@ -1216,10 +1223,11 @@
   function buildStudentOrFilter(val) {
     const cleanVal = String(val || '').trim();
     if (!cleanVal) return 'student_number.eq.none';
+    const cleanNoStu = cleanVal.replace(/^stu-/i, '');
     if (isUuid(cleanVal)) {
       return `student_number.eq.${cleanVal},id.eq.${cleanVal},auth_user_id.eq.${cleanVal}`;
     }
-    return `student_number.eq.${cleanVal}`;
+    return `student_number.eq.${cleanVal},student_number.eq.${cleanNoStu},student_number.eq.STU-${cleanNoStu}`;
   }
 
   function mergePaymentsState(localPayments = [], dbPayments = []) {
