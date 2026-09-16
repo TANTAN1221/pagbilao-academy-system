@@ -242,20 +242,6 @@
           <div class="absolute -right-8 -bottom-10 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
         </div>
 
-        <!-- Smart Payment Due Reminder Alert Banner -->
-        <div id="dueDateAlertBanner" class="hidden rounded-2xl bg-amber-50 border border-amber-200/80 p-4 text-amber-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="p-2.5 rounded-xl bg-amber-100 text-amber-700 shrink-0"><span class="material-symbols-rounded">notifications_active</span></span>
-            <div>
-              <h4 id="dueDateAlertTitle" class="font-extrabold text-sm text-amber-950">Payment Due Reminder</h4>
-              <p id="dueDateAlertMsg" class="text-xs text-amber-800 mt-0.5">Please settle your outstanding balance before the due date.</p>
-            </div>
-          </div>
-          <button onclick="openPaymentModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition shrink-0 flex items-center gap-1 shadow-sm">
-            <span class="material-symbols-rounded text-xs">payments</span> Pay Now
-          </button>
-        </div>
-
         <!-- Clearance On Hold Alert Banner -->
         <div id="clearanceHoldAlertBanner" class="hidden rounded-2xl bg-red-50 border border-red-200/80 p-4 text-red-950 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div class="flex items-start sm:items-center gap-3">
@@ -512,6 +498,25 @@
             </div>
           </div>
           <p class="mt-4 text-xs text-academy-muted">Partial payments are accepted. You can make custom partial payments or select specific fee items to pay.</p>
+        </div>
+
+        <!-- Payment Due Date Schedules & Specific Fee Milestones -->
+        <div class="bg-white rounded-2xl border border-academy-border p-6 shadow-card space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-academy-border pb-4">
+            <div>
+              <h3 class="font-extrabold text-lg text-academy-navy flex items-center gap-2">
+                <span class="material-symbols-rounded text-amber-500 text-[22px]">event_note</span>Payment Milestones & Due Dates
+              </h3>
+              <p class="text-xs text-academy-muted mt-0.5">Payment deadlines and specific fee items required for each schedule.</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-blue-50 text-academy-navy text-xs font-extrabold border border-blue-100 flex items-center gap-1 w-fit">
+              <span class="material-symbols-rounded text-xs text-amber-600">notifications_active</span> Auto Alerts Active
+            </span>
+          </div>
+
+          <div id="studentInstallmentsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Populated by renderStudentPaymentSchedule() -->
+          </div>
         </div>
       </section>
 
@@ -1402,9 +1407,76 @@
           ...t,
           order: idx + 1,
           status: status,
-          isPaid: isPaid
+          isPaid: isPaid,
+          specificFees: Array.isArray(t.specificFees) ? t.specificFees : []
         };
       });
+    }
+
+    function renderStudentPaymentSchedule(s) {
+      const container = document.getElementById('studentInstallmentsList');
+      if (!container) return;
+
+      const insts = studentInstallments(s);
+      if (!insts || insts.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full p-6 text-center rounded-2xl border border-dashed border-academy-border bg-academy-soft text-academy-muted space-y-1">
+            <span class="material-symbols-rounded text-2xl text-amber-500">calendar_today</span>
+            <p class="font-extrabold text-xs text-academy-navy">No Due Date Schedules Configured</p>
+            <p class="text-[11px]">Your payment milestones and installment deadlines will appear here once configured by the Accounting Office.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = insts.map(inst => {
+        const isPaid = inst.isPaid;
+        const isOverdue = inst.status === 'Overdue';
+        const statusBadgeCls = isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                               isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                               'bg-amber-50 text-amber-800 border-amber-200';
+        const statusIcon = isPaid ? 'check_circle' : isOverdue ? 'error' : 'event_upcoming';
+        const hasSpecific = inst.specificFees && inst.specificFees.length > 0 && !inst.specificFees.includes('All Standard Fees');
+
+        const feeTagsHtml = hasSpecific
+          ? inst.specificFees.map(f => `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-academy-navy text-[10px] font-extrabold border border-blue-200/80 flex items-center gap-0.5"><span class="material-symbols-rounded text-[11px] text-academy-blue">sell</span>${f}</span>`).join('')
+          : `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200 flex items-center gap-0.5"><span class="material-symbols-rounded text-[11px] text-slate-400">layers</span>All Standard Fees</span>`;
+
+        const feesParam = hasSpecific ? JSON.stringify(inst.specificFees).replaceAll('"', '&quot;') : '[]';
+
+        return `
+          <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-xs hover:border-academy-blue/50 transition flex flex-col justify-between gap-3">
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="font-extrabold text-academy-navy text-sm">${inst.title}</h4>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border ${statusBadgeCls} flex items-center gap-1 shrink-0">
+                  <span class="material-symbols-rounded text-xs">${statusIcon}</span> ${inst.status}
+                </span>
+              </div>
+              <p class="text-xs text-academy-muted leading-relaxed line-clamp-2">${inst.description || 'Payment milestone schedule.'}</p>
+              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                <span class="material-symbols-rounded text-sm text-amber-600">event</span>
+                <span>Due Date: <strong>${inst.dueDate || 'As scheduled'}</strong></span>
+              </div>
+              <div class="pt-2 border-t border-slate-100 space-y-1">
+                <p class="text-[10px] font-black text-academy-navy uppercase tracking-wider">Required Fee(s):</p>
+                <div class="flex flex-wrap gap-1 items-center">
+                  ${feeTagsHtml}
+                </div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100">
+              ${isPaid
+                ? `<button disabled class="w-full py-2 rounded-xl bg-emerald-50 text-emerald-700 font-extrabold text-xs border border-emerald-200 flex items-center justify-center gap-1 cursor-default"><span class="material-symbols-rounded text-sm">verified</span> Milestone Settled</button>`
+                : `<button onclick="openPaymentModalForMilestone(${feesParam})" class="w-full py-2 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold text-xs transition flex items-center justify-center gap-1 shadow-xs"><span class="material-symbols-rounded text-sm">payments</span> Pay This Fee</button>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openPaymentModalForMilestone(specificFees = []) {
+      startPayMongoCheckout(Array.isArray(specificFees) ? specificFees : []);
     }
 
     function renderPayments(s) {
@@ -1422,25 +1494,7 @@
       paymentPctLabel.textContent = `${pct}% Paid`;
 
       const insts = studentInstallments(s);
-
-      const banner = document.getElementById('dueDateAlertBanner');
-      const titleEl = document.getElementById('dueDateAlertTitle');
-      const msgEl = document.getElementById('dueDateAlertMsg');
-
-      if (banner && titleEl && msgEl) {
-        if (bal <= 0) {
-          banner.classList.add('hidden');
-        } else {
-          const unpaidInst = (insts || []).find(i => i.status !== 'Paid');
-          if (unpaidInst) {
-            banner.classList.remove('hidden');
-            titleEl.textContent = `Payment Due Reminder: ${unpaidInst.title}`;
-            msgEl.textContent = `Payment milestone reminder for ${unpaidInst.title} due on ${unpaidInst.dueDate || 'As scheduled'}. Current account balance: ${money(bal)}. Settle balance to ensure smooth clearance.`;
-          } else {
-            banner.classList.add('hidden');
-          }
-        }
-      }
+      renderStudentPaymentSchedule(s);
     }
 
     function renderPaymentsHistory() {
@@ -2609,7 +2663,7 @@
       return statusMap;
     }
 
-    function renderFeeChecklist() {
+    function renderFeeChecklist(preferredFees = null) {
       const s = currentStudent();
       const items = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
         ? s.customFees
@@ -2642,6 +2696,9 @@
         return;
       }
 
+      const hasPreferred = Array.isArray(preferredFees) && preferredFees.length > 0;
+      const normalizedPreferred = hasPreferred ? preferredFees.map(f => String(f).toLowerCase().trim()) : [];
+
       checklist.innerHTML = items.map((item, idx) => {
         const key = item.name.toLowerCase().trim();
         const info = settledMap[key] || { settled: false, paidAmount: 0 };
@@ -2668,10 +2725,12 @@
           `;
         }
 
+        const shouldCheck = hasPreferred ? normalizedPreferred.includes(key) : true;
+
         return `
           <label class="flex items-center justify-between p-3 rounded-xl border border-academy-border bg-white hover:bg-academy-soft cursor-pointer transition">
             <div class="flex items-center gap-3">
-              <input type="checkbox" checked class="fee-item-cb w-4 h-4 rounded text-academy-navy accent-academy-navy focus:ring-0 cursor-pointer" value="${item.amount}" data-name="${item.name}" onchange="recalculateItemizedTotal()">
+              <input type="checkbox" ${shouldCheck ? 'checked' : ''} class="fee-item-cb w-4 h-4 rounded text-academy-navy accent-academy-navy focus:ring-0 cursor-pointer" value="${item.amount}" data-name="${item.name}" onchange="recalculateItemizedTotal()">
               <div class="flex flex-col">
                 <span class="text-xs font-extrabold text-academy-navy">${item.name}</span>
                 <span class="text-[10px] text-amber-700 font-semibold">Pending Payment</span>
@@ -2714,19 +2773,19 @@
       recalculateItemizedTotal();
     }
 
-    function startPayMongoCheckout() {
+    function startPayMongoCheckout(preferredFees = null) {
       const s = currentStudent();
       const bal = balance(s);
       if (bal <= 0) {
         showToast('All Fees Settled', 'You have no outstanding balance due!', 'info');
         return;
       }
-      renderFeeChecklist();
+      renderFeeChecklist(preferredFees);
       document.getElementById('paymentModal').classList.remove('hidden');
     }
 
-    function openPaymentModal() {
-      startPayMongoCheckout();
+    function openPaymentModal(preferredFees = null) {
+      startPayMongoCheckout(preferredFees);
     }
 
     function closePaymentModal() {

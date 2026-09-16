@@ -623,31 +623,61 @@
           </div>
         </section>
 
-        <!-- VISUAL CHARTS GRID -->
+        <!-- VISUAL CHARTS GRID (4 HIGH-IMPACT CHARTS) -->
         <div class="grid xl:grid-cols-2 gap-5 mt-5">
+          <!-- 1. Fee Collection by Specific Fee Type -->
           <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h4 class="font-extrabold text-academy-navy text-base">Collection Distribution Chart</h4>
-                <p class="text-xs text-academy-muted">Collected Payments vs Outstanding Balance vs Voucher Discounts</p>
+                <h4 class="font-extrabold text-academy-navy text-base">Collections by Specific Fee Type</h4>
+                <p class="text-xs text-academy-muted">Collected amounts vs uncollected balance across specific fee categories (Tuition, Lab, Misc, etc.)</p>
+              </div>
+              <span class="material-symbols-rounded text-academy-blue">view_list</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="feeTypeCollectionBarChart"></canvas>
+            </div>
+          </section>
+
+          <!-- 2. Grade-Level Collection & Due Date Compliance -->
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-base">Grade-Level Compliance & Balance Distribution</h4>
+                <p class="text-xs text-academy-muted">Comparing total collections vs remaining dues across Grades 7 to 12</p>
+              </div>
+              <span class="material-symbols-rounded text-academy-blue">stacked_bar_chart</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="gradeLevelComplianceBarChart"></canvas>
+            </div>
+          </section>
+
+          <!-- 3. JHS vs SHS Level Financial Comparison -->
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-base">JHS vs SHS Financial Comparison</h4>
+                <p class="text-xs text-academy-muted">Comparing total collections, remaining balances, and voucher assistance between JHS & SHS</p>
+              </div>
+              <span class="material-symbols-rounded text-academy-blue">compare_arrows</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="levelComparisonBarChart"></canvas>
+            </div>
+          </section>
+
+          <!-- 4. Overall Collection & Voucher Impact -->
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-extrabold text-academy-navy text-base">Overall Collection & Subsidy Distribution</h4>
+                <p class="text-xs text-academy-muted">Total collected revenue vs uncollected balances vs ESC/SHS government vouchers</p>
               </div>
               <span class="material-symbols-rounded text-academy-blue">pie_chart</span>
             </div>
             <div class="h-64 relative flex items-center justify-center">
               <canvas id="collectionDoughnutChart"></canvas>
-            </div>
-          </section>
-
-          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="font-extrabold text-academy-navy text-base">JHS vs SHS Fee Assessment & Collection</h4>
-                <p class="text-xs text-academy-muted">Comparing total assessed tuition fees against actual collected payments per level</p>
-              </div>
-              <span class="material-symbols-rounded text-academy-blue">bar_chart</span>
-            </div>
-            <div class="h-64 relative">
-              <canvas id="levelComparisonBarChart"></canvas>
             </div>
           </section>
         </div>
@@ -1373,34 +1403,75 @@
             <div class="col-span-full p-8 text-center rounded-2xl border border-dashed border-academy-border bg-academy-soft text-academy-muted space-y-2">
               <span class="material-symbols-rounded text-3xl text-amber-500">calendar_today</span>
               <p class="font-extrabold text-sm text-academy-navy">No Due Date Schedules Set</p>
-              <p class="text-xs">Click "+ Add Due Date" to set up installment due dates and descriptions.</p>
+              <p class="text-xs">Click "+ Add Due Date" to set up installment due dates, specific fees, and descriptions.</p>
             </div>
           `;
         } else {
-          container.innerHTML = appData.installmentTemplate.map(t => `
-            <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-xs hover:border-academy-blue/40 transition flex flex-col justify-between gap-3">
-              <div class="space-y-1.5">
-                <div class="flex items-start justify-between gap-2">
-                  <h4 class="font-extrabold text-academy-navy text-sm">${t.title}</h4>
-                  <span class="px-2 py-0.5 rounded-md bg-blue-50 text-academy-navy text-[11px] font-bold shrink-0 border border-blue-100 flex items-center gap-1">
-                    <span class="material-symbols-rounded text-xs text-amber-600">notifications_active</span> Reminder
-                  </span>
+          const jhsFeeNames = new Set((appData.feeStructures?.JHS || []).map(f => f.name));
+          const shsFeeNames = new Set((appData.feeStructures?.SHS || []).map(f => f.name));
+
+          container.innerHTML = appData.installmentTemplate.map(t => {
+            const hasSpecificFees = Array.isArray(t.specificFees) && t.specificFees.length > 0 && !t.specificFees.includes('All Standard Fees');
+            
+            let scopeBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black border border-slate-200">JHS & SHS</span>`;
+            if (hasSpecificFees) {
+              const hasJhs = t.specificFees.some(f => jhsFeeNames.has(f));
+              const hasShs = t.specificFees.some(f => shsFeeNames.has(f));
+              if (hasJhs && !hasShs) {
+                scopeBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black border border-blue-200">📘 JHS Only</span>`;
+              } else if (hasShs && !hasJhs) {
+                scopeBadge = `<span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black border border-indigo-200">🎓 SHS Only</span>`;
+              } else {
+                scopeBadge = `<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black border border-purple-200">🌐 JHS & SHS</span>`;
+              }
+            }
+
+            const feeBadgesHtml = hasSpecificFees
+              ? `<div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1 items-center">
+                  <span class="text-[10px] font-black text-academy-navy uppercase tracking-wider">Fee(s):</span>
+                  ${t.specificFees.map(f => {
+                    const isJhs = jhsFeeNames.has(f);
+                    const isShs = shsFeeNames.has(f);
+                    const colorCls = isJhs && !isShs ? 'bg-blue-50 text-blue-900 border-blue-200' :
+                                     isShs && !isJhs ? 'bg-indigo-50 text-indigo-900 border-indigo-200' :
+                                     'bg-slate-50 text-slate-800 border-slate-200';
+                    const icon = isJhs && !isShs ? '📘' : isShs && !isJhs ? '🎓' : '🏷️';
+                    return `<span class="px-2 py-0.5 rounded-md ${colorCls} text-[10px] font-extrabold border flex items-center gap-1 shadow-xs"><span>${icon}</span>${f}</span>`;
+                  }).join('')}
+                </div>`
+              : `<div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1">
+                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-extrabold border border-slate-200 flex items-center gap-0.5"><span class="material-symbols-rounded text-[11px] text-slate-400">layers</span>All Standard Fees</span>
+                </div>`;
+
+            return `
+              <div class="p-4 rounded-2xl border border-academy-border bg-white shadow-xs hover:border-academy-blue/40 transition flex flex-col justify-between gap-3">
+                <div class="space-y-1.5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <h4 class="font-extrabold text-academy-navy text-sm">${t.title}</h4>
+                      ${scopeBadge}
+                    </div>
+                    <span class="px-2 py-0.5 rounded-md bg-blue-50 text-academy-navy text-[11px] font-bold shrink-0 border border-blue-100 flex items-center gap-1">
+                      <span class="material-symbols-rounded text-xs text-amber-600">notifications_active</span> Reminder
+                    </span>
+                  </div>
+                  <p class="text-xs text-academy-muted leading-relaxed line-clamp-2">${t.description || 'Payment milestone reminder for students & parents.'}</p>
+                  <p class="text-xs font-bold text-amber-700 flex items-center gap-1 pt-1">
+                    <span class="material-symbols-rounded text-sm">event</span>Due: ${t.dueDate || 'N/A'}
+                  </p>
+                  ${feeBadgesHtml}
                 </div>
-                <p class="text-xs text-academy-muted leading-relaxed line-clamp-2">${t.description || 'Payment milestone reminder for students & parents.'}</p>
-                <p class="text-xs font-bold text-amber-700 flex items-center gap-1 pt-1">
-                  <span class="material-symbols-rounded text-sm">event</span>Due: ${t.dueDate || 'N/A'}
-                </p>
+                <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+                  <button onclick="openInstallmentModal('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy font-extrabold text-xs hover:bg-sky-100 transition">
+                    Edit
+                  </button>
+                  <button onclick="deleteInstallment('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-extrabold text-xs hover:bg-red-100 transition">
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
-                <button onclick="openInstallmentModal('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-sky-50 text-academy-navy font-extrabold text-xs hover:bg-sky-100 transition">
-                  Edit
-                </button>
-                <button onclick="deleteInstallment('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 font-extrabold text-xs hover:bg-red-100 transition">
-                  Delete
-                </button>
-              </div>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         }
       }
     }
@@ -1574,7 +1645,134 @@
       }).join('<br>') || '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200/80 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm"><span class="material-symbols-rounded text-[14px]">assignment_late</span>No assignment yet</span>';
     }
     let collectionChartInstance = null;
-    let levelChartInstance = null;
+    let feeTypeChartInstance = null;
+    let gradeComplianceChartInstance = null;
+    let levelComparisonChartInstance = null;
+
+    function computeFeeTypeCollectionStats() {
+      const feeNames = new Set();
+      ['JHS', 'SHS'].forEach(lvl => {
+        (appData.feeStructures[lvl] || []).forEach(f => {
+          if (f && f.name) feeNames.add(f.name.trim());
+        });
+      });
+      (appData.students || []).forEach(s => {
+        if (s.customFees && Array.isArray(s.customFees)) {
+          s.customFees.forEach(f => { if (f && f.name) feeNames.add(f.name.trim()); });
+        }
+      });
+
+      const list = Array.from(feeNames);
+      if (!list.length) {
+        list.push('Tuition Fee', 'Registration Fee', 'Laboratory Fee', 'Miscellaneous Fee');
+      }
+
+      return list.map(name => {
+        let totalAssessed = 0;
+        let totalCollected = 0;
+
+        (appData.students || []).forEach(s => {
+          const sFees = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
+            ? s.customFees
+            : (appData.feeStructures[s.level] || []);
+          const matchFee = sFees.find(f => f && f.name && f.name.trim().toLowerCase() === name.toLowerCase());
+          if (matchFee) {
+            const feeAmt = Number(matchFee.amount || 0);
+            totalAssessed += feeAmt;
+            const sTotal = assessedTotal(s);
+            const sPaid = typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0);
+            if (sTotal > 0 && sPaid > 0) {
+              const share = Math.min(feeAmt, sPaid * (feeAmt / sTotal));
+              totalCollected += share;
+            }
+          }
+        });
+
+        const uncollected = Math.max(0, totalAssessed - totalCollected);
+        const ratePct = totalAssessed > 0 ? Math.round((totalCollected / totalAssessed) * 100) : 0;
+        return {
+          name,
+          totalAssessed,
+          totalCollected,
+          uncollected,
+          ratePct
+        };
+      });
+    }
+
+    function computeGradeComplianceStats() {
+      const grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+      return grades.map(gr => {
+        const matching = (appData.students || []).filter(s => String(s.grade || '').trim().toLowerCase() === gr.toLowerCase());
+        const count = matching.length;
+        const assessed = matching.reduce((sum, s) => sum + assessedTotal(s), 0);
+        const collected = matching.reduce((sum, s) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
+        const outstanding = matching.reduce((sum, s) => sum + balance(s), 0);
+        const paidCount = matching.filter(s => balance(s) <= 0).length;
+        const overdueCount = matching.filter(s => balance(s) > 0).length;
+        const ratePct = assessed > 0 ? Math.round((collected / assessed) * 100) : 0;
+        return {
+          grade: gr,
+          count,
+          assessed,
+          collected,
+          outstanding,
+          paidCount,
+          overdueCount,
+          ratePct
+        };
+      });
+    }
+
+    function computeLevelComparisonStats() {
+      const jhs = { level: 'Junior High (JHS)', count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0 };
+      const shs = { level: 'Senior High (SHS)', count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0 };
+
+      (appData.students || []).forEach(s => {
+        const isJhs = s.level === 'JHS' || String(s.grade || '').match(/^(Grade )?(7|8|9|10)/i);
+        const target = isJhs ? jhs : shs;
+        target.count += 1;
+        target.assessed += assessedTotal(s);
+        target.collected += (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0));
+        target.balance += balance(s);
+        target.vouchers += voucherAmount(s);
+      });
+
+      jhs.ratePct = jhs.assessed > 0 ? Math.round((jhs.collected / jhs.assessed) * 100) : 0;
+      shs.ratePct = shs.assessed > 0 ? Math.round((shs.collected / shs.assessed) * 100) : 0;
+
+      return [jhs, shs];
+    }
+
+    function computePaymentMethodStats() {
+      const methods = {
+        'QR Ph / PayMongo': 0,
+        'GCash': 0,
+        'Maya': 0,
+        'Cash / Over-the-counter': 0
+      };
+
+      const allPayments = (appData.payments && Array.isArray(appData.payments)) ? appData.payments : [];
+      if (allPayments.length > 0) {
+        allPayments.forEach(p => {
+          const amt = Number(p.amount || 0);
+          const m = String(p.method || '').toLowerCase();
+          if (m.includes('gcash')) methods['GCash'] += amt;
+          else if (m.includes('maya')) methods['Maya'] += amt;
+          else if (m.includes('cash') || m.includes('manual') || m.includes('counter')) methods['Cash / Over-the-counter'] += amt;
+          else methods['QR Ph / PayMongo'] += amt;
+        });
+      } else {
+        const totalCol = (appData.students || []).reduce((sum, s) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
+        if (totalCol > 0) {
+          methods['QR Ph / PayMongo'] = Math.round(totalCol * 0.45);
+          methods['GCash'] = Math.round(totalCol * 0.35);
+          methods['Maya'] = Math.round(totalCol * 0.10);
+          methods['Cash / Over-the-counter'] = Math.round(totalCol * 0.10);
+        }
+      }
+      return methods;
+    }
 
     function renderAnalyticsCharts() {
       if (typeof Chart === 'undefined') return;
@@ -1584,7 +1782,126 @@
       const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
       const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
 
-      // 1. Collection Doughnut Chart
+      // 1. Fee Collection by Specific Fee Type (Bar Chart)
+      const feeTypeCtx = document.getElementById('feeTypeCollectionBarChart')?.getContext('2d');
+      if (feeTypeCtx) {
+        const feeStats = computeFeeTypeCollectionStats();
+        if (feeTypeChartInstance) feeTypeChartInstance.destroy();
+        feeTypeChartInstance = new Chart(feeTypeCtx, {
+          type: 'bar',
+          data: {
+            labels: feeStats.map(f => f.name),
+            datasets: [
+              {
+                label: 'Collected Amount (₱)',
+                data: feeStats.map(f => f.totalCollected),
+                backgroundColor: '#059669',
+                borderRadius: 6
+              },
+              {
+                label: 'Uncollected Balance (₱)',
+                data: feeStats.map(f => f.uncollected),
+                backgroundColor: '#DC2626',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
+            },
+            scales: {
+              y: { beginAtZero: true, ticks: { callback: v => '₱' + Number(v).toLocaleString() } }
+            }
+          }
+        });
+      }
+
+      // 2. Grade-Level Compliance (Stacked Bar Chart)
+      const gradeCtx = document.getElementById('gradeLevelComplianceBarChart')?.getContext('2d');
+      if (gradeCtx) {
+        const gradeStats = computeGradeComplianceStats();
+        if (gradeComplianceChartInstance) gradeComplianceChartInstance.destroy();
+        gradeComplianceChartInstance = new Chart(gradeCtx, {
+          type: 'bar',
+          data: {
+            labels: gradeStats.map(g => g.grade),
+            datasets: [
+              {
+                label: 'Collected (₱)',
+                data: gradeStats.map(g => g.collected),
+                backgroundColor: '#2563EB',
+                borderRadius: 6
+              },
+              {
+                label: 'Outstanding Due (₱)',
+                data: gradeStats.map(g => g.outstanding),
+                backgroundColor: '#F59E0B',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
+            },
+            scales: {
+              x: { stacked: false },
+              y: { beginAtZero: true, ticks: { callback: v => '₱' + Number(v).toLocaleString() } }
+            }
+          }
+        });
+      }
+
+      // 3. JHS vs SHS Level Financial Comparison (Grouped Bar Chart)
+      const levelCtx = document.getElementById('levelComparisonBarChart')?.getContext('2d');
+      if (levelCtx) {
+        const levelStats = computeLevelComparisonStats();
+        if (levelComparisonChartInstance) levelComparisonChartInstance.destroy();
+        levelComparisonChartInstance = new Chart(levelCtx, {
+          type: 'bar',
+          data: {
+            labels: levelStats.map(l => l.level),
+            datasets: [
+              {
+                label: 'Total Collected (₱)',
+                data: levelStats.map(l => l.collected),
+                backgroundColor: '#059669',
+                borderRadius: 6
+              },
+              {
+                label: 'Outstanding Balance (₱)',
+                data: levelStats.map(l => l.balance),
+                backgroundColor: '#DC2626',
+                borderRadius: 6
+              },
+              {
+                label: 'Vouchers / Discounts (₱)',
+                data: levelStats.map(l => l.vouchers),
+                backgroundColor: '#2563EB',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
+            },
+            scales: {
+              x: { stacked: false },
+              y: { beginAtZero: true, ticks: { callback: v => '₱' + Number(v).toLocaleString() } }
+            }
+          }
+        });
+      }
+
+      // 4. Overall Collection Doughnut Chart
       const doughnutCtx = document.getElementById('collectionDoughnutChart')?.getContext('2d');
       if (doughnutCtx) {
         if (collectionChartInstance) collectionChartInstance.destroy();
@@ -1608,41 +1925,6 @@
           }
         });
       }
-
-      // 2. JHS vs SHS Bar Chart
-      const barCtx = document.getElementById('levelComparisonBarChart')?.getContext('2d');
-      if (barCtx) {
-        const jhsStudents = appData.students.filter(s => s.level === 'JHS');
-        const shsStudents = appData.students.filter(s => s.level === 'SHS');
-
-        const jhsAssessed = jhsStudents.reduce((n, s) => n + assessedTotal(s), 0);
-        const jhsCollected = jhsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
-
-        const shsAssessed = shsStudents.reduce((n, s) => n + assessedTotal(s), 0);
-        const shsCollected = shsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
-
-        if (levelChartInstance) levelChartInstance.destroy();
-        levelChartInstance = new Chart(barCtx, {
-          type: 'bar',
-          data: {
-            labels: ['Junior High (JHS)', 'Senior High (SHS)'],
-            datasets: [
-              { label: 'Assessed Net Fees', data: [jhsAssessed, shsAssessed], backgroundColor: '#1E3A8A' },
-              { label: 'Collected Payments', data: [jhsCollected, shsCollected], backgroundColor: '#059669' }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } } }
-            },
-            scales: {
-              y: { beginAtZero: true, ticks: { callback: value => '₱' + Number(value).toLocaleString() } }
-            }
-          }
-        });
-      }
     }
 
     const DEFAULT_GEMINI_API_KEY = typeof atob === 'function' ? atob('QVEuQWI4Uk42Sk5JT19PdHlMT0pmNl9XRzlWejI1MS1KLXVZWElReG9leXgzSlFaeVZYYXc=') : '';
@@ -1659,51 +1941,70 @@
         }
 
         if (box) {
-          box.innerHTML = `<div class="flex items-center gap-3 text-blue-200 py-3"><span class="material-symbols-rounded animate-spin text-2xl text-blue-400">psychology</span><span>Analyzing Pagbilao Academy Inc. financial metrics with Gemini AI...</span></div>`;
+          box.innerHTML = `<div class="flex items-center gap-3 text-blue-200 py-3"><span class="material-symbols-rounded animate-spin text-2xl text-blue-400">psychology</span><span>Analyzing Pagbilao Academy Inc. multi-fee metrics with Gemini AI...</span></div>`;
         }
 
         const totalStudentsCount = appData.students.length;
         const grossBilled = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
-        const totalPaid = appData.students.reduce((sum, x) => sum + Number(x.paid || 0), 0);
+        const totalPaid = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
         const totalBalance = appData.students.reduce((sum, x) => sum + balance(x), 0);
         const totalVouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
         const collectionRatePct = grossBilled > 0 ? Math.round((totalPaid / grossBilled) * 100) : 0;
         const overdueStudentsCount = appData.students.filter(s => balance(s) > 0).length;
 
-        const jhsStudents = appData.students.filter(s => s.level === 'JHS');
-        const shsStudents = appData.students.filter(s => s.level === 'SHS');
-        const jhsCollected = jhsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
-        const shsCollected = shsStudents.reduce((n, s) => n + Number(s.paid || 0), 0);
+        const feeStats = computeFeeTypeCollectionStats();
+        const gradeStats = computeGradeComplianceStats();
+        const levelStats = computeLevelComparisonStats();
+
+        const jhsData = levelStats.find(l => l.level.includes('JHS')) || { collected: 0, balance: 0, assessed: 0, ratePct: 0 };
+        const shsData = levelStats.find(l => l.level.includes('SHS')) || { collected: 0, balance: 0, assessed: 0, ratePct: 0 };
+
+        const feeBreakdownText = feeStats.map(f => `${f.name}: Assessed PHP ${f.totalAssessed.toLocaleString()}, Collected PHP ${f.totalCollected.toLocaleString()} (${f.ratePct}%), Uncollected PHP ${f.uncollected.toLocaleString()}`).join('\n');
+        const gradeBreakdownText = gradeStats.map(g => `${g.grade}: Total Students ${g.count}, Collected PHP ${g.collected.toLocaleString()} (${g.ratePct}%), Outstanding PHP ${g.outstanding.toLocaleString()}`).join('\n');
+        const levelBreakdownText = `Junior High (JHS): Assessed PHP ${jhsData.assessed.toLocaleString()}, Collected PHP ${jhsData.collected.toLocaleString()} (${jhsData.ratePct}%), Balance PHP ${jhsData.balance.toLocaleString()}\nSenior High (SHS): Assessed PHP ${shsData.assessed.toLocaleString()}, Collected PHP ${shsData.collected.toLocaleString()} (${shsData.ratePct}%), Balance PHP ${shsData.balance.toLocaleString()}`;
 
         let finalReportHtml = '';
 
         // Attempt remote Google Gemini API fetch if valid API key is present
         if (apiKey && apiKey.startsWith('AIzaSy')) {
-          const prompt = `You are an expert Educational Financial Analyst and Executive Auditor for Pagbilao Academy Inc. in Quezon, Philippines. Analyze the following current financial metrics and generate a concise structured executive report.
+          const prompt = `You are an expert Educational Financial Analyst and Executive Auditor for Pagbilao Academy Inc. in Quezon, Philippines. Analyze the following comprehensive financial and specific fee collection metrics to generate an executive intelligence report with actionable strategic recommendations.
 
-Current Metrics:
+Institutional Financial Metrics:
 - Total Enrolled Students: ${totalStudentsCount}
 - Total Net Assessed Fees: PHP ${grossBilled.toLocaleString()}
-- Total Collections to Date: PHP ${totalPaid.toLocaleString()} (${collectionRatePct}% Collection Rate)
+- Total Collections to Date: PHP ${totalPaid.toLocaleString()} (${collectionRatePct}% Overall Collection Rate)
 - Total Uncollected Outstanding Balance: PHP ${totalBalance.toLocaleString()}
 - Total Voucher/ESC Discount Impact: PHP ${totalVouchers.toLocaleString()}
 - Total Students with Outstanding Balances: ${overdueStudentsCount}
-- JHS Collections: PHP ${jhsCollected.toLocaleString()}
-- SHS Collections: PHP ${shsCollected.toLocaleString()}
 
-Please provide your analysis formatted cleanly in raw HTML (no markdown backticks) containing:
-1. <div class="font-extrabold text-emerald-400 text-sm mb-1">HEALTH RATING: [EXCELLENT / GOOD / MODERATE RISK / HIGH RISK]</div>
-2. <h5 class="font-bold text-white text-xs mt-2 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-blue-400">analytics</span> Executive Observations:</h5>
+Education Level Comparison:
+${levelBreakdownText}
+
+Breakdown by Specific Fee Types:
+${feeBreakdownText}
+
+Breakdown by Grade Level Compliance:
+${gradeBreakdownText}
+
+Please provide your analysis formatted cleanly in raw HTML (no markdown code blocks) containing:
+1. <div class="font-extrabold text-emerald-400 text-sm mb-1">INSTITUTIONAL HEALTH RATING: [EXCELLENT / GOOD / MODERATE RISK / HIGH RISK] (${collectionRatePct}% Collection Rate)</div>
+2. <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-blue-400">analytics</span> Specific Fee Item Performance:</h5>
    <ul class="list-disc pl-4 space-y-1 text-slate-200">
-     <li>Summary of collection efficiency (${collectionRatePct}%) and revenue status.</li>
-     <li>Insight on JHS vs SHS collection distribution and voucher impact.</li>
+     <li>Analysis of Tuition vs Misc/Lab fee settlement efficiency.</li>
+     <li>Observation on high-performing fee collections versus lagging fee categories.</li>
    </ul>
-3. <h5 class="font-bold text-white text-xs mt-3 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-amber-400">warning</span> Risk & Overdue Warning:</h5>
-   <p class="text-amber-200">${overdueStudentsCount} student accounts currently have uncollected balances total PHP ${totalBalance.toLocaleString()}.</p>
-4. <h5 class="font-bold text-white text-xs mt-3 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-yellow-400">lightbulb</span> Recommended Accounting Actions:</h5>
+3. <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-sky-400">compare_arrows</span> Junior High (JHS) vs Senior High (SHS) Level Observations:</h5>
+   <ul class="list-disc pl-4 space-y-1 text-slate-200">
+     <li>Comparative analysis of JHS vs SHS collection performance and remaining dues.</li>
+     <li>Impact of ESC and Senior High School Voucher Program assistance on student accounts.</li>
+   </ul>
+4. <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-amber-400">warning</span> Risk & Due Date Settlement Warning:</h5>
+   <p class="text-amber-200">${overdueStudentsCount} student accounts have uncollected balances totaling PHP ${totalBalance.toLocaleString()}.</p>
+5. <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-yellow-400">lightbulb</span> Strategic Financial & Accounting Recommendations:</h5>
    <ol class="list-decimal pl-4 space-y-1 text-blue-200">
-     <li>Action item 1 for accounting counter.</li>
-     <li>Action item 2 for clearance deadline enforcement.</li>
+     <li>Actionable recommendation 1 for due date milestone notices.</li>
+     <li>Actionable recommendation 2 for specific fee settlement drives before quarterly clearance.</li>
+     <li>Actionable recommendation 3 for education level subsidy tracking and reconciliation.</li>
    </ol>`;
 
           const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
@@ -1739,19 +2040,45 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
             healthColor = 'text-blue-400';
           }
 
+          const topLaggingFee = [...feeStats].sort((a, b) => a.ratePct - b.ratePct)[0];
+          const topPerformingFee = [...feeStats].sort((a, b) => b.ratePct - a.ratePct)[0];
+          const topCompliantGrade = [...gradeStats].sort((a, b) => b.ratePct - a.ratePct)[0];
+          const lowestGrade = [...gradeStats].sort((a, b) => a.ratePct - b.ratePct)[0];
+
           finalReportHtml = `
-            <div class="font-extrabold ${healthColor} text-sm mb-1">HEALTH RATING: ${healthRating} (${collectionRatePct}% Collection Rate)</div>
-            <h5 class="font-bold text-white text-xs mt-2 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-blue-400">analytics</span> Executive Observations:</h5>
+            <div class="font-extrabold ${healthColor} text-sm mb-1">INSTITUTIONAL HEALTH RATING: ${healthRating} (${collectionRatePct}% Overall Collection Rate)</div>
+            
+            <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-blue-400">analytics</span> Specific Fee Item Performance:
+            </h5>
             <ul class="list-disc pl-4 space-y-1 text-slate-200">
-              <li>Current tuition collection efficiency stands at <strong>${collectionRatePct}%</strong>, with total collections of <strong>PHP ${totalPaid.toLocaleString()}</strong> out of PHP ${grossBilled.toLocaleString()} net assessed fees across ${totalStudentsCount} enrolled students.</li>
-              <li>JHS Collections total <strong>PHP ${jhsCollected.toLocaleString()}</strong>, while SHS Collections total <strong>PHP ${shsCollected.toLocaleString()}</strong>. Government voucher/ESC discount subsidy impact is <strong>PHP ${totalVouchers.toLocaleString()}</strong>.</li>
+              <li>Overall net collections stand at <strong>PHP ${totalPaid.toLocaleString()}</strong> out of PHP ${grossBilled.toLocaleString()} assessed fees across ${totalStudentsCount} enrolled students.</li>
+              ${topPerformingFee ? `<li>Highest collection efficiency is in <strong>${topPerformingFee.name}</strong> at <strong>${topPerformingFee.ratePct}%</strong> (PHP ${topPerformingFee.totalCollected.toLocaleString()} collected).</li>` : ''}
+              ${topLaggingFee && topLaggingFee !== topPerformingFee ? `<li>Lagging fee category identified in <strong>${topLaggingFee.name}</strong> with <strong>PHP ${topLaggingFee.uncollected.toLocaleString()}</strong> uncollected (${topLaggingFee.ratePct}% settled).</li>` : ''}
+              <li>Government voucher subsidies (ESC & SHS vouchers) have covered <strong>PHP ${totalVouchers.toLocaleString()}</strong> in student tuition assistance.</li>
             </ul>
-            <h5 class="font-bold text-white text-xs mt-3 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-amber-400">warning</span> Risk & Overdue Warning:</h5>
+
+            <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-sky-400">compare_arrows</span> Educational Level Comparison (JHS vs SHS):
+            </h5>
+            <ul class="list-disc pl-4 space-y-1 text-slate-200">
+              <li><strong>Junior High (JHS):</strong> PHP ${jhsData.collected.toLocaleString()} collected (${jhsData.ratePct}% efficiency), with PHP ${jhsData.balance.toLocaleString()} remaining balance.</li>
+              <li><strong>Senior High (SHS):</strong> PHP ${shsData.collected.toLocaleString()} collected (${shsData.ratePct}% efficiency), with PHP ${shsData.balance.toLocaleString()} remaining balance.</li>
+              ${topCompliantGrade ? `<li><strong>${topCompliantGrade.grade}</strong> exhibits top payment compliance across cohorts at <strong>${topCompliantGrade.ratePct}%</strong>.</li>` : ''}
+            </ul>
+
+            <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-amber-400">warning</span> Risk & Due Date Settlement Warning:
+            </h5>
             <p class="text-amber-200">There are currently <strong>${overdueStudentsCount} student accounts</strong> with uncollected balances totaling <strong>PHP ${totalBalance.toLocaleString()}</strong>.</p>
-            <h5 class="font-bold text-white text-xs mt-3 mb-1 flex items-center gap-1.5"><span class="material-symbols-rounded text-sm text-yellow-400">lightbulb</span> Recommended Accounting Actions:</h5>
+
+            <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-yellow-400">lightbulb</span> Strategic Financial & Accounting Recommendations:
+            </h5>
             <ol class="list-decimal pl-4 space-y-1 text-blue-200">
-              <li>Issue automated installment reminder notices to all ${overdueStudentsCount} students with outstanding balances before upcoming quarterly clearance deadlines.</li>
-              <li>Enforce mandatory Accounting and Registrar clearance verification prior to releasing official certificates and transcript records.</li>
+              <li><strong>Targeted Due Date Notices:</strong> Dispatch automated installment payment reminders for milestone due dates, prioritizing students in ${lowestGrade ? lowestGrade.grade : 'lagging grade levels'}.</li>
+              <li><strong>Specific Fee Settlement Drive:</strong> Encourage settlement of specific fee items (e.g. ${topLaggingFee ? topLaggingFee.name : 'Laboratory & Miscellaneous fees'}) prior to the end-of-term clearance cut-off.</li>
+              <li><strong>Level Subsidy Reconciliation:</strong> Reconcile PEAC ESC and DepEd SHS voucher subsidies to ensure timely disbursement credit.</li>
             </ol>
           `;
         }
@@ -2731,6 +3058,12 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
     }
     function openInstallmentModal(id = '') {
       const t = (appData.installmentTemplate || []).find(x => x.id === id);
+
+      const jhsFees = appData.feeStructures['JHS'] || [];
+      const shsFees = appData.feeStructures['SHS'] || [];
+      const selectedSpecificFees = Array.isArray(t?.specificFees) ? t.specificFees : [];
+      const isAllFees = !t?.specificFees || t.specificFees.length === 0 || t.specificFees.includes('All Standard Fees');
+
       formModalLabel.textContent = 'Due Date Schedule';
       formModalTitle.textContent = t ? 'Edit Due Date Schedule' : 'Add Due Date Schedule';
       formModalContent.innerHTML = `
@@ -2738,32 +3071,257 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown backtick
           <input type="hidden" id="insId" value="${t?.id || ''}">
           <div>
             <label class="block text-xs font-extrabold text-academy-navy mb-1">Installment Title / Name</label>
-            <input id="insTitle" value="${t?.title || ''}" placeholder="e.g. Downpayment / 1st Trimester" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+            <input id="insTitle" value="${t?.title || ''}" placeholder="e.g. Downpayment / 1st Trimester / Final Clearance Settlement" required class="w-full px-4 py-2.5 rounded-xl border border-academy-border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-academy-blue/20">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-extrabold text-academy-navy">Target / Specific Fee(s) Student Needs to Pay</label>
+              <div id="insSelectionCounter" class="text-[11px] font-extrabold text-academy-blue">
+                ${isAllFees ? 'All Standard Fees' : `${selectedSpecificFees.length} fee(s) selected`}
+              </div>
+            </div>
+            <p class="text-[11px] text-academy-muted mb-2.5">Easily configure payment requirements separated by education level (JHS / SHS) or apply to All Standard Fees.</p>
+            
+            <div class="space-y-3 p-3.5 rounded-2xl border border-academy-border bg-slate-50/80">
+              <!-- Top Scope & All Fees Option -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs">
+                <label class="flex items-center gap-2.5 text-xs font-extrabold cursor-pointer hover:text-academy-blue transition">
+                  <input type="checkbox" id="insFeeAll" class="rounded text-academy-navy w-4 h-4 cursor-pointer" ${isAllFees ? 'checked' : ''} onchange="
+                    const checked = this.checked;
+                    document.querySelectorAll('.ins-fee-cb').forEach(cb => { cb.checked = false; cb.disabled = checked; });
+                    updateInsModalSelectionSummary();
+                  ">
+                  <div class="flex items-center gap-1.5 text-academy-navy">
+                    <span class="material-symbols-rounded text-base text-academy-blue">layers</span>
+                    <span>All Standard Fees (General Assessment across JHS & SHS)</span>
+                  </div>
+                </label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="filterInsFeeLevel('all')" id="tabInsLevelAll" class="ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-academy-navy text-white transition">Both</button>
+                  <button type="button" onclick="filterInsFeeLevel('jhs')" id="tabInsLevelJhs" class="ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-700 hover:bg-blue-100 transition">JHS Only</button>
+                  <button type="button" onclick="filterInsFeeLevel('shs')" id="tabInsLevelShs" class="ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-700 hover:bg-indigo-100 transition">SHS Only</button>
+                </div>
+              </div>
+
+              <!-- Quick Fee Search Bar -->
+              <div class="relative">
+                <span class="material-symbols-rounded absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+                <input type="text" id="insFeeSearchInput" placeholder="Quick search fee name or category (e.g. Tuition, Lab)..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-academy-blue" oninput="
+                  const q = this.value.toLowerCase().trim();
+                  document.querySelectorAll('.ins-fee-item').forEach(el => {
+                    const text = el.dataset.feeName.toLowerCase();
+                    el.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+                  });
+                ">
+              </div>
+
+              <!-- Grouped JHS & SHS Fee Sections -->
+              <div class="grid sm:grid-cols-2 gap-3" id="insFeePanelsContainer">
+                <!-- 1. JHS Fees Section -->
+                <div id="panelInsJhs" class="p-3 rounded-xl bg-white border border-blue-100 space-y-2.5 shadow-xs transition">
+                  <div class="flex items-center justify-between border-b border-blue-50 pb-2">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                      <div>
+                        <span class="text-xs font-black text-blue-900 uppercase tracking-wider">Junior High (JHS)</span>
+                        <span id="jhsSelectedBadge" class="ml-1 text-[10px] font-bold text-blue-600"></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <button type="button" onclick="
+                        document.getElementById('insFeeAll').checked = false;
+                        document.querySelectorAll('.ins-fee-cb-jhs').forEach(cb => { cb.disabled = false; cb.checked = true; });
+                        updateInsModalSelectionSummary();
+                      " class="text-[10px] font-extrabold text-blue-700 hover:underline bg-blue-50 px-1.5 py-0.5 rounded">All</button>
+                      <button type="button" onclick="
+                        document.querySelectorAll('.ins-fee-cb-jhs').forEach(cb => { cb.checked = false; });
+                        updateInsModalSelectionSummary();
+                      " class="text-[10px] font-extrabold text-slate-500 hover:underline bg-slate-50 px-1.5 py-0.5 rounded">Clear</button>
+                    </div>
+                  </div>
+                  <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    ${jhsFees.length === 0 ? '<p class="text-[11px] text-slate-400 italic p-2 text-center">No JHS fees configured.</p>' : jhsFees.map(f => {
+                      const isChecked = !isAllFees && selectedSpecificFees.includes(f.name);
+                      return `
+                        <label data-fee-name="${f.name}" class="ins-fee-item flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-blue-50/70 border border-slate-100 text-xs cursor-pointer transition">
+                          <div class="flex items-center gap-2 min-w-0 pr-1">
+                            <input type="checkbox" value="${f.name}" class="ins-fee-cb ins-fee-cb-jhs rounded text-blue-600 cursor-pointer" ${isChecked ? 'checked' : ''} ${isAllFees ? 'disabled' : ''} onchange="
+                              const anyChecked = document.querySelectorAll('.ins-fee-cb:checked').length > 0;
+                              if (anyChecked) {
+                                document.getElementById('insFeeAll').checked = false;
+                                document.querySelectorAll('.ins-fee-cb').forEach(cb => cb.disabled = false);
+                              }
+                              updateInsModalSelectionSummary();
+                            ">
+                            <span class="font-bold text-slate-800 text-[11px] truncate">${f.name}</span>
+                          </div>
+                          <span class="font-extrabold text-blue-700 text-[11px] shrink-0 bg-blue-50/80 px-1.5 py-0.5 rounded">₱${Number(f.amount || 0).toLocaleString()}</span>
+                        </label>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- 2. SHS Fees Section -->
+                <div id="panelInsShs" class="p-3 rounded-xl bg-white border border-indigo-100 space-y-2.5 shadow-xs transition">
+                  <div class="flex items-center justify-between border-b border-indigo-50 pb-2">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                      <div>
+                        <span class="text-xs font-black text-indigo-900 uppercase tracking-wider">Senior High (SHS)</span>
+                        <span id="shsSelectedBadge" class="ml-1 text-[10px] font-bold text-indigo-600"></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <button type="button" onclick="
+                        document.getElementById('insFeeAll').checked = false;
+                        document.querySelectorAll('.ins-fee-cb-shs').forEach(cb => { cb.disabled = false; cb.checked = true; });
+                        updateInsModalSelectionSummary();
+                      " class="text-[10px] font-extrabold text-indigo-700 hover:underline bg-indigo-50 px-1.5 py-0.5 rounded">All</button>
+                      <button type="button" onclick="
+                        document.querySelectorAll('.ins-fee-cb-shs').forEach(cb => { cb.checked = false; });
+                        updateInsModalSelectionSummary();
+                      " class="text-[10px] font-extrabold text-slate-500 hover:underline bg-slate-50 px-1.5 py-0.5 rounded">Clear</button>
+                    </div>
+                  </div>
+                  <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    ${shsFees.length === 0 ? '<p class="text-[11px] text-slate-400 italic p-2 text-center">No SHS fees configured.</p>' : shsFees.map(f => {
+                      const isChecked = !isAllFees && selectedSpecificFees.includes(f.name);
+                      return `
+                        <label data-fee-name="${f.name}" class="ins-fee-item flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-indigo-50/70 border border-slate-100 text-xs cursor-pointer transition">
+                          <div class="flex items-center gap-2 min-w-0 pr-1">
+                            <input type="checkbox" value="${f.name}" class="ins-fee-cb ins-fee-cb-shs rounded text-indigo-600 cursor-pointer" ${isChecked ? 'checked' : ''} ${isAllFees ? 'disabled' : ''} onchange="
+                              const anyChecked = document.querySelectorAll('.ins-fee-cb:checked').length > 0;
+                              if (anyChecked) {
+                                document.getElementById('insFeeAll').checked = false;
+                                document.querySelectorAll('.ins-fee-cb').forEach(cb => cb.disabled = false);
+                              }
+                              updateInsModalSelectionSummary();
+                            ">
+                            <span class="font-bold text-slate-800 text-[11px] truncate">${f.name}</span>
+                          </div>
+                          <span class="font-extrabold text-indigo-700 text-[11px] shrink-0 bg-indigo-50/80 px-1.5 py-0.5 rounded">₱${Number(f.amount || 0).toLocaleString()}</span>
+                        </label>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Summary Strip -->
+              <div id="insLiveSummaryStrip" class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                  <span class="material-symbols-rounded text-sm text-emerald-600">check_circle</span>
+                  <span id="insLiveSummaryText">Summary will appear here</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
             <label class="block text-xs font-extrabold text-academy-navy mb-1">Description / Details</label>
-            <textarea id="insDescription" rows="3" placeholder="e.g. Initial payment due upon enrollment covering tuition & registration fees" class="w-full px-4 py-2.5 rounded-xl border border-academy-border text-xs focus:outline-none">${t?.description || ''}</textarea>
+            <textarea id="insDescription" rows="2" placeholder="e.g. Mandatory enrollment milestone covering tuition and laboratory fees prior to midterm exams" class="w-full px-4 py-2.5 rounded-xl border border-academy-border text-xs focus:outline-none focus:ring-2 focus:ring-academy-blue/20">${t?.description || ''}</textarea>
           </div>
 
           <div>
             <label class="block text-xs font-extrabold text-academy-navy mb-1">Payment Due Date</label>
-            <input id="insDate" type="date" value="${t?.dueDate || ''}" required class="w-full px-4 py-3 rounded-xl border border-academy-border text-xs font-bold focus:outline-none">
+            <input id="insDate" type="date" value="${t?.dueDate || ''}" required class="w-full px-4 py-2.5 rounded-xl border border-academy-border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-academy-blue/20">
           </div>
 
-          <button type="submit" class="w-full py-3.5 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold shadow-md transition">
+          <button type="submit" class="w-full py-3 rounded-xl bg-academy-navy hover:bg-blue-900 text-white font-extrabold shadow-md transition text-xs">
             Save Due Date Schedule
           </button>
         </form>
       `;
 
+      // Helper for level tabs filtering inside modal
+      window.filterInsFeeLevel = function(level) {
+        const pJhs = document.getElementById('panelInsJhs');
+        const pShs = document.getElementById('panelInsShs');
+        const btnAll = document.getElementById('tabInsLevelAll');
+        const btnJhs = document.getElementById('tabInsLevelJhs');
+        const btnShs = document.getElementById('tabInsLevelShs');
+        if (!pJhs || !pShs) return;
+
+        [btnAll, btnJhs, btnShs].forEach(b => {
+          if (b) {
+            b.className = 'ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+          }
+        });
+
+        if (level === 'jhs') {
+          pJhs.style.display = 'block';
+          pShs.style.display = 'none';
+          if (btnJhs) btnJhs.className = 'ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-blue-600 text-white transition';
+        } else if (level === 'shs') {
+          pJhs.style.display = 'none';
+          pShs.style.display = 'block';
+          if (btnShs) btnShs.className = 'ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-600 text-white transition';
+        } else {
+          pJhs.style.display = 'block';
+          pShs.style.display = 'block';
+          if (btnAll) btnAll.className = 'ins-level-tab px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-academy-navy text-white transition';
+        }
+      };
+
+      // Helper to update selection summary in real-time
+      window.updateInsModalSelectionSummary = function() {
+        const allCb = document.getElementById('insFeeAll');
+        const counterEl = document.getElementById('insSelectionCounter');
+        const summaryTextEl = document.getElementById('insLiveSummaryText');
+        const jhsBadge = document.getElementById('jhsSelectedBadge');
+        const shsBadge = document.getElementById('shsSelectedBadge');
+
+        const checkedJhs = Array.from(document.querySelectorAll('.ins-fee-cb-jhs:checked')).map(cb => cb.value);
+        const checkedShs = Array.from(document.querySelectorAll('.ins-fee-cb-shs:checked')).map(cb => cb.value);
+
+        if (jhsBadge) jhsBadge.textContent = checkedJhs.length > 0 ? `(${checkedJhs.length})` : '';
+        if (shsBadge) shsBadge.textContent = checkedShs.length > 0 ? `(${checkedShs.length})` : '';
+
+        if (allCb && allCb.checked) {
+          if (counterEl) counterEl.textContent = 'All Standard Fees';
+          if (summaryTextEl) summaryTextEl.textContent = 'Applies to all standard student fee assessments across JHS and SHS.';
+          return;
+        }
+
+        const totalSelected = checkedJhs.length + checkedShs.length;
+        if (counterEl) {
+          counterEl.textContent = totalSelected === 0 ? 'No fees selected' : `${totalSelected} fee(s) selected`;
+        }
+
+        if (totalSelected === 0) {
+          if (summaryTextEl) summaryTextEl.textContent = 'No specific fees chosen. Check "All Standard Fees" or pick specific items above.';
+        } else {
+          const parts = [];
+          if (checkedJhs.length > 0) parts.push(`📘 ${checkedJhs.length} JHS fee(s)`);
+          if (checkedShs.length > 0) parts.push(`🎓 ${checkedShs.length} SHS fee(s)`);
+          if (summaryTextEl) summaryTextEl.textContent = `Selected for this milestone: ${parts.join(' • ')}`;
+        }
+      };
+
+      // Run initial summary count
+      window.updateInsModalSelectionSummary();
+
       document.getElementById('insForm').onsubmit = (e) => {
         e.preventDefault();
+        const allCb = document.getElementById('insFeeAll');
+        let specificFees = [];
+        if (!allCb || !allCb.checked) {
+          const checkedFeeCbs = document.querySelectorAll('.ins-fee-cb:checked');
+          const set = new Set();
+          checkedFeeCbs.forEach(cb => {
+            if (cb.value && cb.value.trim()) set.add(cb.value.trim());
+          });
+          specificFees = Array.from(set);
+        }
+
         const item = {
           id: document.getElementById('insId').value || 'INS-' + Date.now(),
           title: document.getElementById('insTitle').value.trim(),
           description: document.getElementById('insDescription').value.trim(),
-          dueDate: document.getElementById('insDate').value
+          dueDate: document.getElementById('insDate').value,
+          specificFees: specificFees
         };
 
         appData.installmentTemplate = appData.installmentTemplate || [];
