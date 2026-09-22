@@ -4553,9 +4553,18 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
-      syncInstallmentsToSupabase();
-      syncVouchersToSupabase();
-      syncFeeStructuresToSupabase();
+      if (window.paApi && window.paApi.client) {
+        const c = window.paApi.client();
+        if (c && c.auth) {
+          c.auth.getSession().then(({ data }) => {
+            if (data && data.session) {
+              syncInstallmentsToSupabase();
+              syncVouchersToSupabase();
+              syncFeeStructuresToSupabase();
+            }
+          }).catch(() => {});
+        }
+      }
     }
 
     function mergeAccountsState(localAccounts = [], dbAccounts = []) {
@@ -4628,17 +4637,19 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
         try {
           const state = await window.paApi.fetchDatabaseState();
           if (state) {
-            if (state.students && state.students.length > 0) {
-              appData.students = mergeStudentsState(appData.students || [], state.students);
+            if (Array.isArray(state.students)) {
+              appData.students = state.students;
             }
             if (state.accounts) {
               appData.accounts = mergeAccountsState(appData.accounts || [], state.accounts);
             }
             
-            // Primary source of truth is Supabase database state merged with local
-            appData.payments = mergePaymentsState(appData.payments || [], state.payments || []);
-            if (state.certificateRequests) appData.certificateRequests = state.certificateRequests;
-            if (state.teacherClearanceRequests) appData.teacherClearanceRequests = state.teacherClearanceRequests;
+            // Primary source of truth is Supabase database state
+            if (Array.isArray(state.payments)) {
+              appData.payments = state.payments;
+            }
+            if (Array.isArray(state.certificateRequests)) appData.certificateRequests = state.certificateRequests;
+            if (Array.isArray(state.teacherClearanceRequests)) appData.teacherClearanceRequests = state.teacherClearanceRequests;
             if (state.vouchers && state.vouchers.length > 0) appData.vouchers = state.vouchers;
             if (state.installmentTemplate && state.installmentTemplate.length > 0) {
               const cleanInst = state.installmentTemplate.filter(p => !['ins-downpayment-2026', 'ins-q2-2026', 'ins-q3-2027', 'ins-q4-2027'].includes(p.id));
@@ -4722,16 +4733,16 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
         try {
           const state = await window.paApi.fetchDatabaseState();
           if (state) {
-            if (state.students && state.students.length > 0) {
-              appData.students = mergeStudentsState(appData.students || [], state.students);
+            if (Array.isArray(state.students)) {
+              appData.students = state.students;
             }
-            if (state.payments) {
-              appData.payments = mergePaymentsState(appData.payments || [], state.payments);
+            if (Array.isArray(state.payments)) {
+              appData.payments = state.payments;
             }
-            if (state.teacherClearanceRequests) {
+            if (Array.isArray(state.teacherClearanceRequests)) {
               appData.teacherClearanceRequests = state.teacherClearanceRequests;
             }
-            if (state.certificateRequests) {
+            if (Array.isArray(state.certificateRequests)) {
               appData.certificateRequests = state.certificateRequests;
             }
             saveData();

@@ -1045,38 +1045,39 @@
         }
       });
 
-      try {
-        const localReg = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
-        localReg.forEach(lr => {
-          if (lr && (lr.role === "student" || lr.studentId)) {
-            const alreadyInCombined = combinedStudents.some(s =>
-              (s.student_number && (lr.studentId || lr.id) && String(s.student_number).toLowerCase() === String(lr.studentId || lr.id).toLowerCase()) ||
-              (s.email && lr.email && String(s.email).toLowerCase() === String(lr.email).toLowerCase())
-            );
-            if (!alreadyInCombined) {
-              combinedStudents.push({
-                id: lr.studentId || lr.id || "STU-" + Date.now(),
-                auth_user_id: lr.authUserId,
-                student_number: lr.studentId || lr.id || "STU-" + Date.now(),
-                first_name: lr.firstName || (lr.fullName ? lr.fullName.split(' ')[0] : 'Student'),
-                last_name: lr.lastName || (lr.fullName ? lr.fullName.split(' ').slice(1).join(' ') : ''),
-                email: lr.email,
-                education_level: lr.level || "JHS",
-                grade_level: lr.grade || "Grade 7",
-                section_name: lr.section || "N/A",
-                strand: lr.strand || "N/A",
-                school_year: "2026-2027",
-                status: "active"
-              });
+      if (!isSupabaseReady()) {
+        try {
+          const localReg = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
+          localReg.forEach(lr => {
+            if (lr && (lr.role === "student" || lr.studentId)) {
+              const alreadyInCombined = combinedStudents.some(s =>
+                (s.student_number && (lr.studentId || lr.id) && String(s.student_number).toLowerCase() === String(lr.studentId || lr.id).toLowerCase()) ||
+                (s.email && lr.email && String(s.email).toLowerCase() === String(lr.email).toLowerCase())
+              );
+              if (!alreadyInCombined) {
+                combinedStudents.push({
+                  id: lr.studentId || lr.id || "STU-" + Date.now(),
+                  auth_user_id: lr.authUserId,
+                  student_number: lr.studentId || lr.id || "STU-" + Date.now(),
+                  first_name: lr.firstName || (lr.fullName ? lr.fullName.split(' ')[0] : 'Student'),
+                  last_name: lr.lastName || (lr.fullName ? lr.fullName.split(' ').slice(1).join(' ') : ''),
+                  email: lr.email,
+                  education_level: lr.level || "JHS",
+                  grade_level: lr.grade || "Grade 7",
+                  section_name: lr.section || "N/A",
+                  strand: lr.strand || "N/A",
+                  school_year: "2026-2027",
+                  status: "active"
+                });
+              }
             }
-          }
-        });
-      } catch (e) {
-        console.warn("Merging pa_registered_users notice:", e);
+          });
+        } catch (e) {
+          console.warn("Merging pa_registered_users notice:", e);
+        }
       }
 
-      if (combinedStudents.length > 0) {
-        state.students = combinedStudents.map(s => {
+      state.students = combinedStudents.map(s => {
           // Voucher
           const sv = (stdVouchers || []).find(v => v.student_id === s.id);
           const voucherName = sv?.voucher_types?.voucher_name || "None";
@@ -1166,7 +1167,6 @@
             clearanceRemarks: studentClearanceRemarks
           };
         });
-      }
 
       // 6. Teacher Clearance Requests
       if (clApprovals && clRequests && studentsList && profilesList) {
@@ -1225,33 +1225,35 @@
         });
       }
 
-      // Merge local payment transactions from client cache if present
-      try {
-        if (typeof localStorage !== "undefined") {
-          const globalPaymentsRaw = localStorage.getItem("pa_global_payments_v2") || localStorage.getItem("pa_student_payments");
-          if (globalPaymentsRaw) {
-            const parsed = JSON.parse(globalPaymentsRaw);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const map = new Map();
-              (state.payments || []).forEach(p => {
-                const k = String(p.referenceNo || p.id || "").toLowerCase();
-                if (k) map.set(k, p);
-              });
-              parsed.forEach(p => {
-                const k = String(p.referenceNo || p.id || "").toLowerCase();
-                if (k && !map.has(k)) {
-                  map.set(k, p);
-                }
-              });
-              state.payments = Array.from(map.values()).sort((a, b) => {
-                const timeA = new Date(a.paidAt || a.date || 0).getTime();
-                const timeB = new Date(b.paidAt || b.date || 0).getTime();
-                return timeB - timeA;
-              });
+      // Merge local payment transactions from client cache if present (only when offline/no supabase)
+      if (!isSupabaseReady()) {
+        try {
+          if (typeof localStorage !== "undefined") {
+            const globalPaymentsRaw = localStorage.getItem("pa_global_payments_v2") || localStorage.getItem("pa_student_payments");
+            if (globalPaymentsRaw) {
+              const parsed = JSON.parse(globalPaymentsRaw);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const map = new Map();
+                (state.payments || []).forEach(p => {
+                  const k = String(p.referenceNo || p.id || "").toLowerCase();
+                  if (k) map.set(k, p);
+                });
+                parsed.forEach(p => {
+                  const k = String(p.referenceNo || p.id || "").toLowerCase();
+                  if (k && !map.has(k)) {
+                    map.set(k, p);
+                  }
+                });
+                state.payments = Array.from(map.values()).sort((a, b) => {
+                  const timeA = new Date(a.paidAt || a.date || 0).getTime();
+                  const timeB = new Date(b.paidAt || b.date || 0).getTime();
+                  return timeB - timeA;
+                });
+              }
             }
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
 
       // 8. Certificate Requests
       if (certRequests && studentsList) {
@@ -1807,7 +1809,10 @@
       "pa_transactions_v2",
       "pa_students_data",
       "pa_transactions_cleared",
-      "pa_registered_users"
+      "pa_registered_users",
+      "pa_global_payments_v2",
+      "pa_student_payments",
+      "pa_installment_templates"
     ];
     dataKeys.forEach(k => localStorage.removeItem(k));
   }
