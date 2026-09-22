@@ -205,12 +205,6 @@
             <div id="dropdownNotificationList" class="p-3 max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-slate-100">
               <!-- Dynamic Notifications populate here -->
             </div>
-            <div class="p-3 bg-academy-soft border-t border-academy-border text-center">
-              <button onclick="scrollToNotificationsSection()" class="text-xs font-extrabold text-academy-blue hover:underline flex items-center justify-center gap-1 w-full">
-                <span>View Reminders on Dashboard</span>
-                <span class="material-symbols-rounded text-sm">arrow_forward</span>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -256,8 +250,8 @@
           </button>
         </div>
 
-        <!-- 4 Stat Cards -->
-        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <!-- 3 Stat Cards -->
+        <div class="grid sm:grid-cols-3 gap-4">
           <div class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition">
             <div class="flex items-center justify-between">
               <p class="text-sm font-bold text-academy-muted">Net Balance Due</p>
@@ -283,15 +277,6 @@
             </div>
             <h3 id="clearanceProgress" class="mt-3 text-2xl font-extrabold text-green-600">0/0</h3>
             <p class="mt-1 text-xs text-academy-muted">Approvals completed</p>
-          </div>
-
-          <div onclick="scrollToNotificationsSection()" class="bg-white rounded-2xl border border-academy-border p-5 shadow-card hover:border-blue-200 transition cursor-pointer group">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-academy-muted">Reminders & Alerts</p>
-              <span class="p-2 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition"><span class="material-symbols-rounded">notifications_active</span></span>
-            </div>
-            <h3 id="overviewNotificationCount" class="mt-3 text-2xl font-extrabold text-amber-600">0 Active</h3>
-            <p id="overviewNotificationNote" class="mt-1 text-xs text-academy-muted">Due dates & clearance alerts</p>
           </div>
         </div>
 
@@ -328,42 +313,6 @@
             <p class="font-extrabold text-academy-navy">Clearance Certificate</p>
             <p class="text-xs text-academy-muted mt-1">View & download certificate</p>
           </button>
-        </div>
-
-        <!-- Reminders & Notifications Center Widget -->
-        <div id="remindersSection" class="bg-white rounded-2xl border border-academy-border p-5 sm:p-6 shadow-card space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-academy-border">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
-                <span class="material-symbols-rounded text-xl">notifications_active</span>
-              </div>
-              <div>
-                <h3 class="font-extrabold text-base text-academy-navy flex items-center gap-2">
-                  Reminders & Notifications
-                  <span id="centerNotificationBadge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">0 Active</span>
-                </h3>
-                <p class="text-xs text-academy-muted mt-0.5">Real-time alerts for upcoming payment due dates and clearance approval progress</p>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-              <button type="button" onclick="markAllNotificationsRead()" class="px-3 py-2 rounded-xl bg-academy-soft hover:bg-blue-50 text-academy-navy text-xs font-extrabold flex items-center gap-1.5 transition border border-academy-border shadow-xs" title="Mark all notifications as read">
-                <span class="material-symbols-rounded text-base text-academy-blue">done_all</span>
-                <span>Mark all as read</span>
-              </button>
-              <button type="button" onclick="clearAllNotifications()" class="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold flex items-center gap-1.5 transition border border-red-200/80 shadow-xs" title="Clear all notification reminders">
-                <span class="material-symbols-rounded text-base text-red-600">clear_all</span>
-                <span>Clear all</span>
-              </button>
-              <button type="button" onclick="renderAll()" class="px-3 py-2 rounded-xl bg-academy-soft border border-academy-border text-academy-navy hover:bg-academy-light text-xs font-bold flex items-center gap-1.5 transition shadow-xs" title="Refresh Alerts">
-                <span class="material-symbols-rounded text-base">refresh</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Notifications Cards List -->
-          <div id="overviewNotificationsList" class="grid sm:grid-cols-2 gap-3.5">
-            <!-- Dynamic Reminders render here -->
-          </div>
         </div>
 
         <!-- Total Fee Breakdown Card -->
@@ -3480,9 +3429,9 @@
         title: "Reminders & Due Date Alerts",
         subtitle: "Smart payment due date & clearance tracking.",
         icon: "notifications_active",
-        highlightTitle: "Real-time Reminders Center",
+        highlightTitle: "Header Notification Bell",
         highlightText: "Instant alerts for payment due dates & clearance progress.",
-        description: "Stay informed with real-time notifications for upcoming installment due dates, remaining balances, pending teacher sign-offs, and office clearance updates right on your header bell and dashboard.",
+        description: "Stay informed with real-time notifications for upcoming installment due dates, remaining balances, pending teacher sign-offs, and office clearance updates right on your header notification bell.",
         tip: "Click the Notification Bell in the header anytime to view active reminders!"
       },
       {
