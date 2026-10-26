@@ -1,11 +1,14 @@
 {
-  "version": 2,
   "cleanUrls": true,
-  "routes": [
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/student-dashboard", "dest": "/student-dashboard.html" },
-    { "src": "/admin-dashboard", "dest": "/admin-dashboard.html" },
-    { "src": "/clearance-dashboard", "dest": "/clearance-dashboard.html" },
-    { "src": "/certificate", "dest": "/certificate.html" }
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
   ]
 }

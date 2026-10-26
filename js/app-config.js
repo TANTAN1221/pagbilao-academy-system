@@ -65,6 +65,12 @@
     return "student-dashboard.html";
   }
 
+  // Display strings from the database are interpolated into innerHTML by the pages;
+  // strip markup-significant characters so stored values cannot inject HTML.
+  function cleanText(v) {
+    return String(v == null ? "" : v).replace(/[<>"`]/g, "").replace(/&/g, "and");
+  }
+
   function sanitizeSession(session) {
     if (!session || typeof session !== "object") return session;
     const clean = { ...session };
@@ -121,68 +127,8 @@
     if (supabaseClient) {
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) {
-        const users = JSON.parse(localStorage.getItem("pa_registered_users") || "[]");
-        let found = users.find(u => String(u.email || "").toLowerCase() === String(email || "").toLowerCase() && (u.password === password || u.tempPassword === password || !u.password));
-        
-        if (!found) {
-          try {
-            const rawAdmin = localStorage.getItem("pa_full_admin_v2");
-            const adminData = rawAdmin ? JSON.parse(rawAdmin) : null;
-            if (adminData && Array.isArray(adminData.accounts)) {
-              const acc = adminData.accounts.find(a => String(a.email || "").toLowerCase() === String(email || "").toLowerCase() && a.active !== false);
-              if (acc) {
-                const passMatch = acc.tempPassword ? acc.tempPassword === password : acc.password === password;
-                if (!passMatch) {
-                  throw new Error("Invalid email or password.");
-                }
-                found = {
-                  id: acc.id,
-                  email: acc.email,
-                  fullName: acc.name,
-                  name: acc.name,
-                  role: acc.role,
-                  assignments: acc.assignments
-                };
-              }
-            }
-          } catch (e) {
-            if (e.message === "Invalid email or password.") throw e;
-          }
-        }
-
-        if (found) {
-          if (found.active === false || found.status === "disabled" || found.status === "inactive") {
-            throw new Error("Your account has been disabled. Please contact the school administration.");
-          }
-          try {
-            const rawAdmin = localStorage.getItem("pa_full_admin_v2");
-            if (rawAdmin) {
-              const adminData = JSON.parse(rawAdmin);
-              const admStudent = (adminData.students || []).find(s => 
-                (found.studentId && s.id === found.studentId) || 
-                (found.email && String(s.email).toLowerCase() === String(found.email).toLowerCase())
-              );
-              if (admStudent && (admStudent.status === "disabled" || admStudent.status === "inactive" || admStudent.active === false)) {
-                throw new Error("Your student account has been disabled. Please contact the school administration.");
-              }
-            }
-          } catch (e) {
-            if (e.message && e.message.includes("disabled")) throw e;
-          }
-
-          const session = {
-            id: found.id || found.studentId || "USER-" + Date.now(),
-            email: found.email,
-            fullName: `${found.firstName || ''} ${found.lastName || ''}`.trim() || found.name || found.fullName || email,
-            role: normalizeRole(found.role || (email.includes("admin") ? "accounting_admin" : "student")),
-            status: "active",
-            ...found,
-            loginTime: new Date().toISOString(),
-            source: "local"
-          };
-          saveSession(session);
-          return { ...session, dashboard: dashboardForRole(session.role) };
-        }
+        // Offline/localStorage credential fallback removed: it let anyone forge a session
+        // (or log in with any password) by editing browser storage. Supabase Auth is authoritative.
         throw new Error(error.message === "Invalid login credentials" ? "Invalid email or password. Please check your credentials or register a new student account." : error.message);
       }
 
@@ -374,7 +320,7 @@
         email: profile.email,
         role: "student",
         status: "active"
-      }, { onConflict: "email" });
+      }, { onConflict: "email", ignoreDuplicates: true });
 
       const { error: profileError } = await supabaseClient.from("student_registration_requests").insert({
         auth_user_id: data.user.id,
@@ -418,7 +364,6 @@
         studentId: profile.studentId,
         authUserId: data?.user?.id,
         email: profile.email,
-        password: profile.password,
         firstName: profile.firstName,
         lastName: profile.lastName,
         fullName: fullName,
@@ -1155,12 +1100,12 @@
             student_number: s.student_number,
             dbId: s.id,
             authUserId: s.auth_user_id,
-            name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.student_number,
-            email: s.email,
+            name: cleanText(`${s.first_name || ''} ${s.last_name || ''}`.trim() || s.student_number),
+            email: cleanText(s.email),
             level: s.education_level || "JHS",
             grade: s.grade_level || "Grade 7",
-            section: s.section_name || "N/A",
-            strand: s.strand || "N/A",
+            section: cleanText(s.section_name || "N/A"),
+            strand: cleanText(s.strand || "N/A"),
             voucher: voucherName,
             paid: studentPaid,
             clearance: studentClearance,
@@ -1182,13 +1127,13 @@
               key: `${student?.student_number}|${teacher?.id}|${ta?.subject_name || "Subject"}|${ta?.grade_level}|${ta?.section_name}`,
               studentId: student?.student_number,
               teacherId: teacher?.id,
-              teacherName: teacher?.full_name,
-              subject: ta?.subject_name || "Subject",
+              teacherName: cleanText(teacher?.full_name),
+              subject: cleanText(ta?.subject_name || "Subject"),
               grade: student?.grade_level,
               section: student?.section_name,
               strand: student?.strand || "N/A",
               status: ca.status,
-              remarks: ca.remarks || "",
+              remarks: cleanText(ca.remarks || ""),
               requestedAt: ca.approved_at || ca.created_at
             };
           });
@@ -1212,14 +1157,14 @@
             student_number: student?.student_number || null,
             studentDbId: p.student_id,
             student_id: p.student_id,
-            studentName: studentName,
+            studentName: cleanText(studentName),
             date: p.paid_at ? p.paid_at.slice(0, 10) : (p.created_at ? p.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
             paidAt: p.paid_at || p.created_at || new Date().toISOString(),
             amount: Number(p.amount),
             method: p.method || "Online",
             referenceNo: refNo,
             feeBreakdown: p.feeBreakdown || p.fee_breakdown || [],
-            remarks: p.remarks || p.notes || "",
+            remarks: cleanText(p.remarks || p.notes || ""),
             status: p.status || "paid"
           };
         });
@@ -1260,8 +1205,11 @@
         state.certificateRequests = certRequests.map(cr => {
           const student = (studentsList || []).find(s => s.id === cr.student_id);
           return {
+            id: cr.id,
             studentId: student?.student_number || cr.student_id,
+            student_id: cr.student_id,
             status: cr.status,
+            certificateNumber: cr.certificate_number || null,
             requestedAt: cr.requested_at ? cr.requested_at.slice(0, 10) : new Date().toISOString().slice(0, 10)
           };
         });
@@ -1290,8 +1238,11 @@
 
   function mergePaymentsState(localPayments = [], dbPayments = []) {
     const map = new Map();
+    const dbHasData = Array.isArray(dbPayments) && dbPayments.length > 0;
     (localPayments || []).forEach(p => {
       if (p) {
+        // Local-only 'paid' entries are unverified once the database is the source of truth.
+        if (dbHasData && String(p.status || '').toLowerCase() === 'paid' && !p.dbId) return;
         const key = String(p.referenceNo || p.id || '').toLowerCase();
         if (key) map.set(key, { ...p });
       }
@@ -1305,7 +1256,7 @@
 
         if (matchKey) {
           const local = map.get(matchKey);
-          map.set(matchKey, { ...dbP, ...local });
+          map.set(matchKey, { ...local, ...dbP });
         } else {
           const primaryKey = refKey || idKey || `db-${Date.now()}-${Math.random()}`;
           map.set(primaryKey, { ...dbP });
@@ -1413,6 +1364,7 @@
         amount: Number(amt),
         method: mth || "Manual",
         provider_reference: refNo || null,
+        school_year: studentObj?.schoolYear || studentObj?.school_year || "2026-2027",
         status: "paid",
         paid_at: new Date().toISOString()
       })
@@ -1726,21 +1678,46 @@
       .from("clearance_requests")
       .select("id")
       .eq("student_id", student.id)
+      .order("submitted_at", { ascending: false })
       .maybeSingle();
     if (!req) throw new Error("Clearance request not found.");
+
+    const { data: existing } = await supabase
+      .from("clearance_certificate_requests")
+      .select("id, status, certificate_number")
+      .eq("clearance_request_id", req.id)
+      .maybeSingle();
+
+    if (existing && existing.status === "approved") {
+      return existing;
+    }
 
     const { data, error } = await supabase
       .from("clearance_certificate_requests")
       .insert({
         clearance_request_id: req.id,
         student_id: student.id,
-        status: "approved"
+        status: "pending"
       })
       .select()
       .single();
 
     if (error) throw error;
     return data;
+  }
+
+  async function verifyCertificate(certificateNumber) {
+    const supabase = client();
+    if (!supabase || !certificateNumber) return { valid: false };
+    try {
+      const { data, error } = await supabase.rpc("verify_clearance_certificate", {
+        p_certificate_number: certificateNumber.trim()
+      });
+      if (error) return { valid: false, error: error.message };
+      return data || { valid: false };
+    } catch (e) {
+      return { valid: false, error: e.message };
+    }
   }
 
   function showToast(message, type = "info") {
@@ -1846,6 +1823,7 @@
     updateTeacherClearance,
     updateOfficeClearance,
     requestCertificate,
+    verifyCertificate,
     showToast,
     subscribeRealtime,
     clearLocalStorageData

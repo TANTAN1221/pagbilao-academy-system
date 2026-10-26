@@ -630,7 +630,7 @@
                 Password
               </label>
 
-              <a href="forgot-password.html" class="text-xs font-bold text-academy-blue hover:underline">
+              <a href="#" id="forgotPasswordLink" onclick="event.preventDefault(); (async()=>{ const em=(document.getElementById('loginEmail')||{}).value||prompt('Enter your account email:'); if(!em) return; try{ const c=window.paApi&&window.paApi.client&&window.paApi.client(); if(!c){alert('Password reset is unavailable until Supabase is configured.');return;} const {error}=await c.auth.resetPasswordForEmail(em.trim(),{redirectTo:location.origin+'/'}); alert(error?('Could not send reset email: '+error.message):'If that email exists, a password reset link has been sent.'); }catch(e){alert('Could not send reset email.');} })();" class="text-xs font-bold text-academy-blue hover:underline">
                 Forgot password?
               </a>
             </div>

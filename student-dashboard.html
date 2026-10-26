@@ -2420,7 +2420,7 @@
       document.getElementById('statementPrintModal').classList.add('hidden');
     }
 
-    function openCertificate() {
+    async function openCertificate() {
       const s = currentStudent();
       const c = clearanceCounts(s);
       const studentBal = balance(s);
@@ -2433,6 +2433,13 @@
       if (studentBal > 0) {
         showToast('Certificate Locked', `Your clearance certificate is locked because you have an outstanding balance of ${money(studentBal)}. Please settle your balance to unlock.`, 'warning');
         return;
+      }
+      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        try {
+          await window.paApi.requestCertificate(s.id);
+        } catch (e) {
+          console.warn("Certificate issuance notice:", e);
+        }
       }
       window.open(`certificate.html?studentId=${encodeURIComponent(s.id)}&from=student`, '_blank');
     }
@@ -2763,68 +2770,9 @@
     }
 
     async function processDirectPayment(method) {
-      const s = currentStudent();
-      const amountInput = Number(document.getElementById('payAmountInput').value) || 0;
-      if (amountInput <= 0) {
-        showToast('Invalid Payment Amount', 'Please select at least one fee item or enter a valid payment amount greater than 0.', 'warning');
-        return;
-      }
-
-      let refNo = '';
-      if (method === 'GCash') {
-        refNo = 'GC-' + Math.floor(1000000000 + Math.random() * 9000000000);
-      } else if (method === 'Maya') {
-        refNo = 'MY-' + Math.floor(1000000000 + Math.random() * 9000000000);
-      } else {
-        refNo = document.getElementById('instapayRef').value.trim() || ('IP-' + Math.floor(1000000000 + Math.random() * 9000000000));
-      }
-
-      // Collect fee item names if itemized mode was selected
-      let feeBreakdown = [];
-      if (currentPayMode === 'itemized') {
-        const cbs = document.querySelectorAll('.fee-item-cb:checked:not(:disabled)');
-        cbs.forEach(cb => feeBreakdown.push(cb.dataset.name));
-      }
-
-      const paymentObj = {
-        id: 'PAY-' + Date.now(),
-        studentId: s.id,
-        studentName: s.name,
-        amount: amountInput,
-        method: method,
-        referenceNo: refNo,
-        status: 'Paid',
-        feeBreakdown: feeBreakdown,
-        paidAt: new Date().toISOString(),
-        date: new Date().toISOString().slice(0, 10),
-        schoolYear: (appData.settings || {}).schoolYear || '2026-2027'
-      };
-
-      appData.payments = appData.payments || [];
-      appData.payments.unshift(paymentObj);
-
-      const idx = appData.students.findIndex(x => x.id === s.id);
-      if (idx >= 0) {
-        appData.students[idx].paid = Number(appData.students[idx].paid || 0) + amountInput;
-      }
-
-      if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
-        try {
-          await window.paApi.recordPayment({
-            studentId: s.id,
-            amount: amountInput,
-            method: method,
-            referenceNo: refNo
-          });
-        } catch (err) {
-          console.warn('Supabase payment sync skipped:', err);
-        }
-      }
-
-      saveData();
-      renderAll();
-      closePaymentModal();
-      showReceiptModal(paymentObj);
+      // Self-reported payments are not accepted: a paid entry must be verified server-side.
+      showToast('Use Online Checkout', 'Please pay through the PayMongo checkout. Payments are recorded only after PayMongo confirms them.', 'warning');
+      return;
     }
 
     function calculateStudentPaid(studentId, payments = [], student = null) {
@@ -3094,6 +3042,7 @@
       const map = new Map();
       (localPayments || []).forEach(p => {
         if (p) {
+          if (dbPayments.length > 0 && String(p.status || '').toLowerCase() === 'paid' && !p.dbId) return;
           const key = String(p.referenceNo || p.id || '').toLowerCase();
           if (key) map.set(key, { ...p });
         }
@@ -3231,70 +3180,36 @@
         sessionStorage.removeItem('pa_pending_payment');
         localStorage.removeItem('pa_pending_payment');
 
-        const urlAmt = Number(urlParams.get('amount') || 0);
-        let paidAmt = (pending && Number(pending.amount) > 0) ? Number(pending.amount) : (urlAmt > 0 ? urlAmt : 0);
+        showToast('Payment Processing', 'Waiting for PayMongo to confirm your payment. Your balance and receipt will update automatically once it is verified.', 'info');
 
-        if (!s && appData.students && appData.students.length > 0) {
-          s = appData.students[0];
-        }
-
-        if (paidAmt <= 0 && s) {
-          const rem = balance(s);
-          paidAmt = rem > 0 ? rem : 1000;
-        }
-
-        if (paidAmt > 0 && s) {
-          localStorage.removeItem('pa_transactions_cleared');
-          const feeBreakdown = pending?.feeBreakdown || [];
-          const refNo = checkoutSessionId ? `PM-${checkoutSessionId.slice(-10).toUpperCase()}` : ('PM-' + Math.floor(1000000000 + Math.random() * 9000000000));
-
-          const paymentObj = {
-            id: 'PAY-' + Date.now(),
-            studentId: s.id,
-            studentDbId: s.dbId,
-            studentName: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
-            amount: paidAmt,
-            method: 'QR Ph (PayMongo)',
-            referenceNo: refNo,
-            status: 'Paid',
-            feeBreakdown: feeBreakdown,
-            paidAt: new Date().toISOString(),
-            date: new Date().toISOString().slice(0, 10),
-            schoolYear: (appData.settings || {}).schoolYear || '2026-2027'
-          };
-
-          appData.payments = appData.payments || [];
-          const existingIdx = appData.payments.findIndex(p => p.referenceNo === refNo || p.id === refNo);
-          if (existingIdx < 0) {
-            appData.payments.unshift(paymentObj);
-          }
-
-          const idx = appData.students.findIndex(x => x.id === s.id || x.dbId === s.dbId);
-          if (idx >= 0) {
-            appData.students[idx].paid = Number(appData.students[idx].paid || 0) + paidAmt;
-          }
-
-          if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+        // Settlement is performed server-side by the signed PayMongo webhook only.
+        // The browser merely refreshes from the database for a short while.
+        if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+          let attempts = 0;
+          const knownRefs = new Set((appData.payments || []).map(p => p.referenceNo || p.id));
+          const poll = async () => {
+            attempts += 1;
             try {
-              await window.paApi.recordPayment({
-                studentId: s.id || s.dbId,
-                studentNumber: s.studentNumber || s.student_number || s.id,
-                email: s.email,
-                authUserId: s.authUserId || s.auth_user_id,
-                name: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
-                amount: paidAmt,
-                method: 'QR Ph (PayMongo)',
-                referenceNo: refNo,
-                feeBreakdown: feeBreakdown
-              });
+              const state = await window.paApi.fetchDatabaseState();
+              if (state && state.payments) {
+                const fresh = state.payments.find(p => !knownRefs.has(p.referenceNo || p.id) && String(p.status || '').toLowerCase() === 'paid');
+                appData.payments = mergePaymentsState(appData.payments || [], state.payments);
+                if (state.students && state.students.length) {
+                  appData.students = mergeStudentsState(appData.students || [], state.students);
+                }
+                renderAll();
+                if (fresh) {
+                  showReceiptModal(fresh);
+                  showToast('Payment Confirmed', `PHP ${Number(fresh.amount || 0).toLocaleString()} payment verified.`, 'success');
+                  return;
+                }
+              }
             } catch (err) {
-              console.warn('Direct payment sync skipped:', err);
+              console.warn('Payment confirmation refresh failed:', err);
             }
-          }
-          saveData();
-          renderAll();
-          showReceiptModal(paymentObj);
-          showToast('Payment Successful!', `PHP ${paidAmt.toLocaleString()} payment recorded. Proof of payment generated below.`, 'success');
+            if (attempts < 12) setTimeout(poll, 5000);
+          };
+          setTimeout(poll, 3000);
         }
 
         window.history.replaceState({}, document.title, window.location.pathname);

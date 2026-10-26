@@ -1,0 +1,11 @@
+{
+  "name": "pagbilao-academy-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pagbilao Academy payment and clearance system (static site + Supabase)",
+  "scripts": {
+    "test": "node --test tests/",
+    "check": "node scripts/check-project.cjs"
+  },
+  "engines": { "node": ">=18" }
+}

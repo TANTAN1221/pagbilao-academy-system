@@ -71,11 +71,12 @@ Deno.serve(async (req: Request) => {
   const rawBody = await req.text();
   const signatureHeader = req.headers.get("paymongo-signature");
 
-  if (PAYMONGO_WEBHOOK_SECRET_KEY) {
-    const isValid = await verifySignature(rawBody, signatureHeader, PAYMONGO_WEBHOOK_SECRET_KEY);
-    if (!isValid) {
-      return jsonResponse({ error: "Invalid or missing PayMongo webhook signature" }, 401);
-    }
+  if (!PAYMONGO_WEBHOOK_SECRET_KEY) {
+    return jsonResponse({ error: "PAYMONGO_WEBHOOK_SECRET_KEY is not configured." }, 503);
+  }
+  const isValid = await verifySignature(rawBody, signatureHeader, PAYMONGO_WEBHOOK_SECRET_KEY);
+  if (!isValid) {
+    return jsonResponse({ error: "Invalid or missing PayMongo webhook signature" }, 401);
   }
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -195,6 +196,7 @@ Deno.serve(async (req: Request) => {
           method: paymentSource,
           provider: "paymongo",
           checkout_session_id: checkoutId,
+          school_year: metadata.school_year || metadata.schoolYear || "2026-2027",
           status: "paid",
           paid_at: new Date().toISOString()
         });

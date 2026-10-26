@@ -194,3 +194,15 @@ After that, use the Admin dashboard / Edge Function to create other accounts suc
 - Students can request approval from each teacher individually or use **Request All Teachers**.
 - Clearance Head Dashboard only allows teacher approval after the student has submitted a request.
 - `supabase/schema.sql` includes the `student_assigned_teacher_clearance_heads` view and `request_teacher_clearance_approvals()` function for the live Supabase version.
+
+## Security hardening and backend upgrades (Oct 2026)
+
+- Run database migrations in order:
+  1. `supabase/migrations/202610260001_security_hardening.sql` (profile privilege protection, admin-only fee/voucher/student setup, payment insertion restriction, RLS enablement on gateway events).
+  2. `supabase/migrations/202610260002_clearance_authorization.sql` (clearance approval scope checks, lock triggers for Principal and Accounting/Registrar, server-verified certificate issuance, and public certificate verification).
+  3. `supabase/migrations/202610260003_payment_school_year_and_allocation.sql` (`school_year` column on payments, row locking in installment allocations, and prevention of prior-year payment bleed).
+- `PAYMONGO_WEBHOOK_SECRET_KEY` is now **required**; the webhook rejects unsigned requests. Set it with `supabase secrets set PAYMONGO_WEBHOOK_SECRET_KEY=whsk_...` and redeploy `paymongo-webhook`.
+- Online payments are recorded only by the signed webhook; the student page waits for confirmation rather than creating paid transactions in the browser.
+- The Gemini key is no longer embedded; administrators provide their own key in the dashboard (stored only in browser localStorage).
+- Certificate QR codes now only transmit a clean verification URL (`/certificate.html?cert=...`) rather than raw student PII to third-party QR generation endpoints.
+- Pre-deploy automated checks: run `node scripts/check-project.cjs` and `node --test tests/`.

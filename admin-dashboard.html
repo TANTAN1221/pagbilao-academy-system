@@ -1147,19 +1147,6 @@
       );
     }
 
-    function saveData() {
-      ensurePrototypeData(appData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      if (appData.payments && Array.isArray(appData.payments)) {
-        try { localStorage.setItem('pa_global_payments_v2', JSON.stringify(appData.payments)); } catch (_) {}
-      }
-      localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
-      localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
-      localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
-      if (typeof syncInstallmentsToSupabase === 'function') syncInstallmentsToSupabase();
-      if (typeof syncVouchersToSupabase === 'function') syncVouchersToSupabase();
-      if (typeof syncFeeStructuresToSupabase === 'function') syncFeeStructuresToSupabase();
-    }
     function showToast(title, message, type = 'info') {
       const toast = document.getElementById('toast');
       const toastTitle = document.getElementById('toastTitle');
@@ -1923,10 +1910,10 @@
       }
     }
 
-    const DEFAULT_GEMINI_API_KEY = typeof atob === 'function' ? atob('QVEuQWI4Uk42Sk5JT19PdHlMT0pmNl9XRzlWejI1MS1KLXVZWElReG9leXgzSlFaeVZYYXc=') : '';
+    const DEFAULT_GEMINI_API_KEY = '';
 
     async function generateGeminiAiAnalyticsInterpretation() {
-      const apiKey = DEFAULT_GEMINI_API_KEY;
+      const apiKey = (localStorage.getItem('pa_gemini_api_key') || (document.getElementById('geminiApiKeyInput')?.value || '')).trim();
       const btn = document.getElementById('btnGenerateAiReport');
       const box = document.getElementById('geminiAiReportBox');
 
@@ -4600,6 +4587,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       const map = new Map();
       (localPayments || []).forEach(p => {
         if (p) {
+          if (dbPayments.length > 0 && String(p.status || '').toLowerCase() === 'paid' && !p.dbId) return;
           const key = String(p.referenceNo || p.id || '').toLowerCase();
           if (key) map.set(key, { ...p });
         }

@@ -251,6 +251,26 @@
     }
 
     async function loadCertificateData() {
+      const certCode = params.get('cert') || params.get('code');
+      if (certCode && window.paApi && window.paApi.verifyCertificate) {
+        try {
+          const verified = await window.paApi.verifyCertificate(certCode);
+          if (verified && verified.valid) {
+            studentName.textContent = verified.student_name || 'Student';
+            studentId.textContent = verified.certificate_number || certCode;
+            studentClass.textContent = 'Cleared Student';
+            schoolYear.textContent = verified.school_year || '2026-2027';
+            verificationCode.textContent = verified.certificate_number || certCode;
+            if (verified.issued_at) {
+              issuedDate.textContent = new Date(verified.issued_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+            }
+            const verifyUrl = `${window.location.origin}/certificate.html?cert=${encodeURIComponent(verified.certificate_number || certCode)}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(verifyUrl)}`;
+            return;
+          }
+        } catch (_) {}
+      }
+
       let data = {};
       try {
         data = JSON.parse(localStorage.getItem('pa_full_admin_v2') || '{}');
@@ -299,15 +319,21 @@
       const fullName = studentObj.name || `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() || 'Student';
       const classStr = studentObj.level === 'SHS' ? `${studentObj.grade} - ${studentObj.section || 'N/A'} (${studentObj.strand || 'N/A'})` : `${studentObj.grade} - ${studentObj.section || 'N/A'}`;
       const sy = data.settings?.schoolYear || studentObj.school_year || '2026-2027';
-      const vCode = `PAI-CERT-${id}-${sy.replace('-', '')}`;
+
+      const approvedCert = (data.certificateRequests || []).find(r => 
+        (r.studentId === id || r.student_id === studentObj.id || r.student_id === studentObj.dbId) && 
+        r.status === 'approved' && r.certificateNumber
+      );
+      const vCode = approvedCert ? approvedCert.certificateNumber : `PAI-CERT-${id}-${sy.replace('-', '')}`;
 
       studentName.textContent = fullName;
       studentClass.textContent = classStr;
       schoolYear.textContent = sy;
       verificationCode.textContent = vCode;
 
-      const qrContent = encodeURIComponent(`PAGBILAO ACADEMY INC. OFFICIAL CERTIFICATE OF CLEARANCE\nStatus: VERIFIED LEGITIMATE & APPROVED\nStudent Name: ${fullName}\nStudent ID: ${id}\nGrade & Section: ${classStr}\nSchool Year: ${sy}\nVerification Code: ${vCode}\nIssued: ${issuedDate.textContent}`);
-      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${qrContent}`;
+      // Encode only verification URL in the QR code (no sensitive student identity transmitted to 3rd-party QR endpoint)
+      const verifyUrl = `${window.location.origin}/certificate.html?cert=${encodeURIComponent(vCode)}`;
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(verifyUrl)}`;
     }
 
     async function downloadCertificatePDF() {
