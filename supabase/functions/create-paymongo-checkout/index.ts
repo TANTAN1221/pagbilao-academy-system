@@ -17,14 +17,20 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const amount = Number(body.amount);
-    const description = body.description || "Pagbilao Academy Payment";
+    const amount = Math.round(Number(body.amount));
+    const rawDescription = String(body.description || "Pagbilao Academy Payment").trim();
+    const description = rawDescription.slice(0, 255);
     const studentId = body.studentId || body.student_id || "unknown";
+    const studentDbId = body.studentDbId || body.student_db_id || "";
     const studentEmail = body.email || body.studentEmail || body.student_email || "";
     const studentName = body.studentName || body.student_name || body.name || "";
+    const schoolYear = body.schoolYear || body.school_year || "2026-2027";
+    const feeBreakdown = Array.isArray(body.feeBreakdown)
+      ? body.feeBreakdown.join(", ").slice(0, 255)
+      : String(body.fee_breakdown || "");
 
-    if (!amount || amount < 100) {
-      return jsonResponse({ error: "Amount must be in centavos and at least 100." }, 400);
+    if (!Number.isFinite(amount) || amount < 100) {
+      return jsonResponse({ error: "Amount must be in centavos and at least 100 (PHP 1.00)." }, 400);
     }
 
     let callerOrigin = "";
@@ -37,6 +43,14 @@ Deno.serve(async (req: Request) => {
 
     const successUrl = body.success_url || body.successUrl || fallbackSuccess;
     const cancelUrl = body.cancel_url || body.cancelUrl || fallbackFailed;
+
+    const configuredMethods = (Deno.env.get("PAYMONGO_PAYMENT_METHODS") || "")
+      .split(",")
+      .map((m) => m.trim().toLowerCase())
+      .filter(Boolean);
+    const paymentMethodTypes = configuredMethods.length > 0
+      ? configuredMethods
+      : ["qrph", "gcash", "paymaya", "card"];
 
     const auth = btoa(`${PAYMONGO_SECRET_KEY}:`);
 
@@ -57,14 +71,17 @@ Deno.serve(async (req: Request) => {
                 quantity: 1
               }
             ],
-            payment_method_types: ["qrph", "gcash", "paymaya", "card"],
+            payment_method_types: paymentMethodTypes,
             success_url: successUrl,
             cancel_url: cancelUrl,
             description,
             metadata: {
               student_id: String(studentId),
+              student_db_id: String(studentDbId),
               student_email: String(studentEmail),
               student_name: String(studentName),
+              school_year: String(schoolYear),
+              fee_breakdown: feeBreakdown,
               source: "pagbilao_academy_payment_clearance_system"
             }
           }
@@ -75,7 +92,8 @@ Deno.serve(async (req: Request) => {
     const result = await response.json();
 
     if (!response.ok) {
-      return jsonResponse({ error: "PayMongo checkout creation failed", details: result }, response.status);
+      const apiDetail = result?.errors?.[0]?.detail || result?.errors?.[0]?.code || "PayMongo checkout creation failed";
+      return jsonResponse({ error: apiDetail, details: result }, response.status);
     }
 
     return jsonResponse({

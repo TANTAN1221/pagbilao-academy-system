@@ -2363,23 +2363,30 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
           schoolYear: appData.settings?.schoolYear || '2026-2027'
         };
 
-        s.paid = Number(s.paid || 0) + amt;
-        appData.payments = appData.payments || [];
-        appData.payments.unshift(paymentObj);
-
         if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
           try {
-            await window.paApi.recordPayment({
+            const saved = await window.paApi.recordPayment({
               studentId: s.id,
+              email: s.email,
+              schoolYear: appData.settings?.schoolYear || '2026-2027',
               amount: amt,
               method: method,
               referenceNo: refNo
             });
+            if (!saved) {
+              throw new Error('Payment was not saved to Supabase. Verify the student exists and your admin session is active.');
+            }
             const state = await window.paApi.fetchDatabaseState();
             if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
           } catch (err) {
-            console.warn('Supabase OTC payment sync warning:', err);
+            console.warn('Supabase OTC payment sync error:', err);
+            showToast('Payment Save Failed', err?.message || 'Could not record payment in Supabase.', 'error');
+            return;
           }
+        } else {
+          s.paid = Number(s.paid || 0) + amt;
+          appData.payments = appData.payments || [];
+          appData.payments.unshift(paymentObj);
         }
 
         saveData();
@@ -4527,7 +4534,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       }
     }
 
-    function saveData() {
+    function saveData(syncRemote = true) {
       ensurePrototypeData(appData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       if (appData.payments && Array.isArray(appData.payments)) {
@@ -4536,7 +4543,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       localStorage.setItem('pa_app_fees_v2', JSON.stringify(appData.feeStructures || { JHS: [], SHS: [] }));
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
-      if (window.paApi && window.paApi.client) {
+      if (syncRemote && window.paApi && window.paApi.client) {
         const c = window.paApi.client();
         if (c && c.auth) {
           c.auth.getSession().then(({ data }) => {
@@ -4729,7 +4736,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
             if (Array.isArray(state.certificateRequests)) {
               appData.certificateRequests = state.certificateRequests;
             }
-            saveData();
+            saveData(false);
             renderAll();
           }
         } catch (e) {

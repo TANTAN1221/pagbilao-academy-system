@@ -443,7 +443,9 @@
       return data;
     } catch (err) {
       console.warn("PayMongo Edge Function invoke failed:", err);
-      const msg = err.message || (typeof err === "string" ? err : "Failed to connect to PayMongo Edge Function.");
+      const details = await err?.context?.json?.().catch(() => null);
+      const apiDetail = details?.details?.errors?.[0]?.detail;
+      const msg = apiDetail || details?.error || err.message || (typeof err === "string" ? err : "Failed to connect to PayMongo Edge Function.");
       throw new Error(msg);
     }
   }
@@ -1357,19 +1359,36 @@
       if (existing) return existing;
     }
 
-    const { data } = await supabase
+    const paymentRow = {
+      student_id: student.id,
+      amount: Number(amt),
+      method: mth || "Manual",
+      provider_reference: refNo || null,
+      school_year: studentObj?.schoolYear || studentObj?.school_year || "2026-2027",
+      status: "paid",
+      paid_at: new Date().toISOString()
+    };
+
+    let { data, error: insertError } = await supabase
       .from("payments")
-      .insert({
-        student_id: student.id,
-        amount: Number(amt),
-        method: mth || "Manual",
-        provider_reference: refNo || null,
-        school_year: studentObj?.schoolYear || studentObj?.school_year || "2026-2027",
-        status: "paid",
-        paid_at: new Date().toISOString()
-      })
+      .insert(paymentRow)
       .select()
       .maybeSingle();
+
+    if (insertError && /school_year/i.test(insertError.message || "")) {
+      const { school_year: _ignored, ...legacyPaymentRow } = paymentRow;
+      const retry = await supabase
+        .from("payments")
+        .insert(legacyPaymentRow)
+        .select()
+        .maybeSingle();
+      data = retry.data;
+      insertError = retry.error;
+    }
+
+    if (insertError) {
+      throw new Error(insertError.message || "Failed to save payment record.");
+    }
 
     try {
       if (typeof localStorage !== "undefined") {
