@@ -1303,26 +1303,35 @@
       const level = levelFilter?.value || 'all';
       const bf = balanceFilter?.value || 'all';
       let rows = appData.students.filter(s => (level === 'all' || s.level === level) && (bf === 'all' || (bf === 'with_balance' ? balance(s) > 0 : balance(s) === 0)) && (s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)));
-      studentTableBody.innerHTML = rows.map(s => `<tr class="hover:bg-academy-soft">
-        <td class="px-4 py-3"><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${s.id}</p></td>
-        <td class="px-4 py-3">${s.level}</td>
-        <td class="px-4 py-3">${classLabel(s)}</td>
-        <td class="px-4 py-3">${s.voucher === 'None' ? pill('None', 'gray') : `<span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap inline-flex items-center gap-1.5"><span class="material-symbols-rounded text-xs">confirmation_number</span>${s.voucher} (${money(voucherAmount(s))})</span>`}</td>
+      studentTableBody.innerHTML = rows.map(s => {
+        const paidDisplay = (typeof getStudentTotalPaidInAdmin === 'function')
+          ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s))
+          : Number(s.paid || 0);
+        const safeId = String(s.id || '').replaceAll("'", "\\'");
+        return `<tr class="hover:bg-academy-soft">
+        <td class="px-4 py-3"><p class="font-extrabold text-academy-navy">${escapeHtml(s.name)}</p><p class="text-xs text-academy-muted">${escapeHtml(s.id)}</p></td>
+        <td class="px-4 py-3">${escapeHtml(s.level)}</td>
+        <td class="px-4 py-3">${escapeHtml(classLabel(s))}</td>
+        <td class="px-4 py-3">${s.voucher === 'None' ? pill('None', 'gray') : `<span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap inline-flex items-center gap-1.5"><span class="material-symbols-rounded text-xs">confirmation_number</span>${escapeHtml(s.voucher)} (${money(voucherAmount(s))})</span>`}</td>
         <td class="px-4 py-3 font-bold">${money(assessedTotal(s))}</td>
-        <td class="px-4 py-3 font-bold text-green-700">${money(s.paid)}</td>
+        <td class="px-4 py-3 font-bold text-green-700">${money(paidDisplay)}</td>
         <td class="px-4 py-3 font-bold ${balance(s) > 0 ? 'text-red-600' : 'text-green-600'}">${money(balance(s))}</td>
         <td class="px-4 py-3">${pill(dueStatus(s), dueStatus(s) === 'Overdue' ? 'red' : dueStatus(s) === 'Paid' ? 'green' : 'amber')}</td>
         <td class="px-4 py-3">
-          <div class="flex items-center gap-1.5">
-            <button onclick="openInPersonPaymentModal('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 font-extrabold text-xs hover:bg-green-100 transition flex items-center gap-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button onclick="openStudentLedgerModal('${safeId}')" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold text-xs hover:bg-indigo-100 transition flex items-center gap-1" title="View payment history and unpaid fees">
+              <span class="material-symbols-rounded text-[16px]">receipt_long</span>History & Fees
+            </button>
+            <button onclick="openInPersonPaymentModal('${safeId}')" class="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 font-extrabold text-xs hover:bg-green-100 transition flex items-center gap-1">
               <span class="material-symbols-rounded text-[16px]">payments</span>Pay OTC
             </button>
-            <button onclick="openEditStudentFeesModal('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-academy-blue font-extrabold text-xs hover:bg-blue-100 transition flex items-center gap-1">
+            <button onclick="openEditStudentFeesModal('${safeId}')" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-academy-blue font-extrabold text-xs hover:bg-blue-100 transition flex items-center gap-1">
               <span class="material-symbols-rounded text-[16px]">edit_note</span>Edit Fees
             </button>
           </div>
         </td>
-      </tr>`).join('')
+      </tr>`;
+      }).join('');
     }
     function renderFees() {
       feeStructureList.innerHTML = ['JHS', 'SHS'].map(level => `
@@ -4235,19 +4244,286 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       }
     }
 
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function getStudentPaymentsInAdmin(s) {
+      if (!s) return [];
+      const allPayments = appData.payments || [];
+      const sId = String(s.id || s.student_number || s.studentId || '').toLowerCase().trim();
+      const sCleanId = sId.replace(/^stu-/, '').trim();
+      const dbId = String(s.dbId || '').toLowerCase().trim();
+      const authId = String(s.authUserId || s.auth_user_id || '').toLowerCase().trim();
+      const sEmail = String(s.email || '').toLowerCase().trim();
+
+      return allPayments
+        .filter(p => {
+          if (!p) return false;
+          const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase().trim();
+          const pCleanId = pStudentId.replace(/^stu-/, '').trim();
+          const pEmail = String(p.email || p.studentEmail || '').toLowerCase().trim();
+          const pAuthId = String(p.authUserId || p.auth_user_id || '').toLowerCase().trim();
+
+          return (
+            (sId && (pStudentId === sId || pCleanId === sId)) ||
+            (sCleanId && (pCleanId === sCleanId || pStudentId === sCleanId)) ||
+            (dbId && pStudentId === dbId) ||
+            (authId && (pStudentId === authId || pAuthId === authId)) ||
+            (sEmail && pEmail && pEmail === sEmail)
+          );
+        })
+        .sort((a, b) => new Date(b.paidAt || b.date || 0).getTime() - new Date(a.paidAt || a.date || 0).getTime());
+    }
+
+    function getStudentFeeBreakdownStatus(s) {
+      const feeItems = (s && Array.isArray(s.customFees) && s.customFees.length > 0)
+        ? s.customFees
+        : ((appData.feeStructures && appData.feeStructures[s?.level]) || []);
+      const studentPayments = getStudentPaymentsInAdmin(s);
+      const totalPaid = Math.max(Number(s?.paid || 0), getStudentTotalPaidInAdmin(s));
+      const netAssessed = assessedTotal(s);
+      const remainingBalance = balance(s);
+      const voucherCredit = voucherAmount(s) + Number(s?.feeDiscount || 0);
+
+      if (remainingBalance <= 0 && (netAssessed > 0 || feeItems.length > 0)) {
+        return feeItems.map(item => ({
+          name: item.name,
+          amount: Number(item.amount || 0),
+          paidAmount: Number(item.amount || 0),
+          remainingAmount: 0,
+          status: 'paid'
+        }));
+      }
+
+      const explicitItemPaid = {};
+      let totalExplicitPaid = 0;
+      studentPayments.forEach(p => {
+        const statusOk = ['paid', 'succeeded', 'completed', 'active'].includes(String(p.status || 'paid').toLowerCase());
+        if (statusOk && Array.isArray(p.feeBreakdown) && p.feeBreakdown.length > 0) {
+          p.feeBreakdown.forEach(itemName => {
+            const key = String(itemName || '').trim().toLowerCase();
+            const matched = feeItems.find(f => String(f.name || '').trim().toLowerCase() === key);
+            const feeAmt = matched ? Number(matched.amount || 0) : 0;
+            explicitItemPaid[key] = (explicitItemPaid[key] || 0) + feeAmt;
+            totalExplicitPaid += feeAmt;
+          });
+        }
+      });
+
+      let generalPool = Math.max(0, totalPaid + voucherCredit - totalExplicitPaid);
+
+      return feeItems.map(item => {
+        const key = String(item.name || '').trim().toLowerCase();
+        const fullAmt = Number(item.amount || 0);
+        let paidForItem = Math.min(fullAmt, explicitItemPaid[key] || 0);
+
+        if (paidForItem < fullAmt && generalPool > 0) {
+          const alloc = Math.min(generalPool, fullAmt - paidForItem);
+          paidForItem += alloc;
+          generalPool -= alloc;
+        }
+
+        const remainingAmount = Math.max(0, fullAmt - paidForItem);
+        const status = remainingAmount <= 0 ? 'paid' : (paidForItem > 0 ? 'partial' : 'unpaid');
+        return {
+          name: item.name,
+          amount: fullAmt,
+          paidAmount: paidForItem,
+          remainingAmount,
+          status
+        };
+      });
+    }
+
+    function openStudentLedgerModal(id) {
+      const s = (appData.students || []).find(x => x.id === id || x.student_number === id);
+      if (!s) return;
+
+      const payments = getStudentPaymentsInAdmin(s);
+      const totalPaid = Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s));
+      const netAssessed = assessedTotal(s);
+      const remainingBal = balance(s);
+      const feeStatuses = getStudentFeeBreakdownStatus(s);
+      const unpaidFees = feeStatuses.filter(f => f.status !== 'paid');
+      const paidFees = feeStatuses.filter(f => f.status === 'paid');
+      const safeId = String(s.id || '').replaceAll("'", "\\'");
+
+      let unpaidHtml = '';
+      if (remainingBal <= 0) {
+        unpaidHtml = `
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+            <span class="material-symbols-rounded text-emerald-600 text-2xl">verified</span>
+            <div>
+              <p class="font-extrabold text-xs text-emerald-900">All Assessed Fees Paid in Full</p>
+              <p class="text-[11px] text-emerald-700">This student has no remaining unpaid fees.</p>
+            </div>
+          </div>
+        `;
+      } else if (unpaidFees.length > 0) {
+        unpaidHtml = `
+          <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
+            ${unpaidFees.map(f => `
+              <div class="flex items-center justify-between p-3 rounded-xl border ${f.status === 'partial' ? 'border-amber-200 bg-amber-50/50' : 'border-red-200/80 bg-red-50/40'}">
+                <div>
+                  <p class="font-extrabold text-xs text-academy-navy">${escapeHtml(f.name)}</p>
+                  <p class="text-[11px] text-academy-muted">
+                    Fee: ${money(f.amount)}${f.paidAmount > 0 ? ` · Covered: ${money(f.paidAmount)}` : ''}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="font-extrabold text-xs text-red-600">${money(f.remainingAmount)} due</p>
+                  ${pill(f.status === 'partial' ? 'Partial' : 'Unpaid', f.status === 'partial' ? 'amber' : 'red')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        unpaidHtml = `
+          <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50 text-xs flex items-center justify-between">
+            <span class="font-bold text-amber-900">Outstanding Assessed Balance (No itemized fee breakdown configured)</span>
+            <span class="font-extrabold text-red-600">${money(remainingBal)}</span>
+          </div>
+        `;
+      }
+
+      const settledSummaryHtml = paidFees.length > 0
+        ? `
+          <div class="pt-2">
+            <p class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 mb-1.5">Settled / Covered Fees (${paidFees.length})</p>
+            <div class="flex flex-wrap gap-1.5">
+              ${paidFees.map(f => `<span class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold inline-flex items-center gap-1"><span class="material-symbols-rounded text-xs">check_circle</span>${escapeHtml(f.name)} (${money(f.amount)})</span>`).join('')}
+            </div>
+          </div>
+        `
+        : '';
+
+      let historyHtml = '';
+      if (payments.length === 0) {
+        historyHtml = `
+          <div class="p-4 rounded-xl border border-dashed border-academy-border bg-slate-50 text-center text-xs text-academy-muted">
+            ${totalPaid > 0
+              ? `Total recorded paid is <strong>${money(totalPaid)}</strong>, with no individual transaction entries in the ledger.`
+              : 'No payment transactions recorded for this student yet.'}
+          </div>
+        `;
+      } else {
+        historyHtml = `
+          <div class="border border-academy-border rounded-2xl overflow-hidden">
+            <div class="max-h-60 overflow-y-auto">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-900 text-white sticky top-0">
+                  <tr>
+                    <th class="text-left px-3 py-2.5">Ref No.</th>
+                    <th class="text-left px-3 py-2.5">Date</th>
+                    <th class="text-left px-3 py-2.5">Channel</th>
+                    <th class="text-left px-3 py-2.5">Status</th>
+                    <th class="text-right px-3 py-2.5">Amount</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  ${payments.map(p => {
+                    const dateStr = p.paidAt
+                      ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+                      : (p.date || 'N/A');
+                    const statusRaw = String(p.status || 'paid').toLowerCase();
+                    const statusType = ['paid', 'succeeded', 'completed'].includes(statusRaw)
+                      ? 'green'
+                      : (['failed', 'cancelled'].includes(statusRaw) ? 'red' : 'amber');
+                    const breakdown = Array.isArray(p.feeBreakdown) && p.feeBreakdown.length
+                      ? p.feeBreakdown.join(', ')
+                      : (p.remarks || '');
+                    return `
+                      <tr class="hover:bg-academy-soft">
+                        <td class="px-3 py-2.5">
+                          <p class="font-mono font-bold text-academy-navy">${escapeHtml(p.referenceNo || p.id)}</p>
+                          ${breakdown ? `<p class="text-[11px] text-academy-muted">${escapeHtml(breakdown)}</p>` : ''}
+                        </td>
+                        <td class="px-3 py-2.5 text-academy-muted">${escapeHtml(dateStr)}</td>
+                        <td class="px-3 py-2.5 font-semibold text-slate-700">${escapeHtml(p.method || 'Online')}</td>
+                        <td class="px-3 py-2.5">${pill(statusRaw, statusType)}</td>
+                        <td class="px-3 py-2.5 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      formModalLabel.textContent = 'Student Financial Ledger';
+      formModalTitle.textContent = `Payment History & Unpaid Fees — ${s.name}`;
+      formModalContent.innerHTML = `
+        <div class="space-y-5">
+          <div class="p-4 rounded-2xl bg-academy-soft border border-academy-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <p class="font-extrabold text-sm text-academy-navy">${escapeHtml(s.name)}</p>
+              <p class="text-academy-muted">${escapeHtml(classLabel(s))} · ID: ${escapeHtml(s.id)}${s.voucher && s.voucher !== 'None' ? ` · Voucher: ${escapeHtml(s.voucher)}` : ''}</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-right">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-academy-muted">Net Fees</p>
+                <p class="font-extrabold text-academy-navy">${money(netAssessed)}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase text-academy-muted">Total Paid</p>
+                <p class="font-extrabold text-emerald-700">${money(totalPaid)}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase text-academy-muted">Balance</p>
+                <p class="font-extrabold ${remainingBal > 0 ? 'text-red-600' : 'text-emerald-700'}">${money(remainingBal)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-academy-navy">Unpaid / Remaining Fees</h4>
+              <span class="text-xs font-bold ${unpaidFees.length > 0 ? 'text-red-600' : 'text-emerald-700'}">${unpaidFees.length} item(s) pending</span>
+            </div>
+            ${unpaidHtml}
+            ${settledSummaryHtml}
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-academy-navy">Recent / Payment History</h4>
+              <span class="text-xs font-bold text-academy-muted">${payments.length} transaction(s)</span>
+            </div>
+            ${historyHtml}
+          </div>
+
+          <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="closeFormModal(); openEditStudentFeesModal('${safeId}')" class="px-4 py-2.5 rounded-xl bg-blue-50 text-academy-blue font-extrabold text-xs hover:bg-blue-100 transition flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-base">edit_note</span>Edit Fees
+            </button>
+            ${remainingBal > 0 ? `
+              <button type="button" onclick="closeFormModal(); openInPersonPaymentModal('${safeId}')" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 transition flex items-center gap-1.5 shadow-sm">
+                <span class="material-symbols-rounded text-base">payments</span>Record Payment (OTC)
+              </button>
+            ` : ''}
+            <button type="button" onclick="closeFormModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-xs hover:bg-slate-200 transition">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      openFormModal();
+    }
+
     function getStudentTotalPaidInAdmin(s) {
       if (!s) return 0;
-      const allPayments = appData.payments || [];
-      const sId = String(s.id || '').toLowerCase();
-      const dbId = String(s.dbId || '').toLowerCase();
-      const sEmail = String(s.email || '').toLowerCase();
-      const studentPayments = allPayments.filter(p => {
-        if (!p) return false;
-        const pStudentId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase();
-        const pEmail = String(p.email || p.studentEmail || '').toLowerCase();
-        const statusOk = ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase());
-        return statusOk && ((sId && pStudentId === sId) || (dbId && pStudentId === dbId) || (sEmail && pEmail && pEmail === sEmail));
-      });
+      const studentPayments = getStudentPaymentsInAdmin(s).filter(p =>
+        ['paid', 'succeeded', 'completed'].includes(String(p.status || 'paid').toLowerCase())
+      );
 
       if (studentPayments.length > 0) {
         return studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
