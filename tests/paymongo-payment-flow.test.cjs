@@ -11,12 +11,15 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 function loadWebhookHandler({ env = {}, mockSupabase }) {
   let handler = null;
-  let tsSource = read('supabase/functions/paymongo-webhook/index.ts');
-  tsSource = tsSource
+  let settleSource = read('supabase/functions/_shared/paymongo-settle.ts')
     .replace(/import\s*\{[^}]+\}\s*from\s*["']npm:@supabase\/supabase-js@2["'];?\s*/g, '')
-    .replace(/import\s*\{[^}]+\}\s*from\s*["']\.\.\/_shared\/cors\.ts["'];?\s*/g, '');
+    .replace(/export\s+(?=(?:async\s+)?function|interface|type)/g, '');
+  let tsSource = read('supabase/functions/paymongo-webhook/index.ts')
+    .replace(/import\s*\{[^}]+\}\s*from\s*["']npm:@supabase\/supabase-js@2["'];?\s*/g, '')
+    .replace(/import\s*\{[^}]+\}\s*from\s*["']\.\.\/_shared\/cors\.ts["'];?\s*/g, '')
+    .replace(/import\s*\{[^}]+\}\s*from\s*["']\.\.\/_shared\/paymongo-settle\.ts["'];?\s*/g, '');
 
-  const jsSource = stripTypeScriptTypes(tsSource);
+  const jsSource = stripTypeScriptTypes(`${settleSource}\n${tsSource}`);
   const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
   const jsonResponse = (body, status = 200) =>
     new Response(JSON.stringify(body), {
@@ -318,5 +321,45 @@ test('student-dashboard caps payable checkout amount to net remaining balance an
   assert.match(html, /Math\.min\(rawTotal,\s*bal\)/);
   assert.match(html, /statusBadge\(String\(p\.status \|\| 'paid'\)\.toLowerCase\(\)\)/);
   assert.doesNotMatch(html, /statusBadge\('paid'\)/);
+  assert.match(html, /tryShowPendingPayMongoReceipt\(/);
+  assert.match(html, /verifyCheckoutSession\(/);
+});
+
+test('createCheckout persists checkout_session_id and verifyCheckoutSession invokes verify action', async () => {
+  const calls = [];
+  const mockClient = {
+    functions: {
+      invoke: async (fn, opts) => {
+        calls.push({ fn, body: opts.body });
+        if (opts.body.action === 'verify') {
+          return { data: { verified: true, paid: true, checkout_session_id: opts.body.checkout_session_id, amount: 1500 }, error: null };
+        }
+        return { data: { checkout_session_id: 'cs_test_saved_1', checkout_url: 'https://checkout.paymongo.test/cs_test_saved_1' }, error: null };
+      }
+    }
+  };
+
+  const values = new Map([['pa_pending_payment', JSON.stringify({ amount: 1500, feeBreakdown: ['Tuition Fee'] })]]);
+  const context = {
+    window: {
+      supabase: { createClient: () => mockClient },
+      location: { origin: 'https://school.test', pathname: '/student-dashboard.html', href: '' }
+    },
+    navigator: {},
+    console,
+    sessionStorage: { getItem: (k) => values.get(k) || null, setItem: (k, v) => values.set(k, String(v)), removeItem: (k) => values.delete(k) },
+    localStorage: { getItem: (k) => values.get(k) || null, setItem: (k, v) => values.set(k, String(v)), removeItem: (k) => values.delete(k) }
+  };
+  vm.createContext(context);
+  vm.runInContext(read('js/app-config.js'), context);
+
+  await context.window.paApi.createCheckout({ amount: 150000 });
+  const pending = JSON.parse(values.get('pa_pending_payment'));
+  assert.equal(pending.checkout_session_id, 'cs_test_saved_1');
+  assert.equal(context.window.location.href, 'https://checkout.paymongo.test/cs_test_saved_1');
+
+  const verified = await context.window.paApi.verifyCheckoutSession('cs_test_saved_1');
+  assert.equal(verified.paid, true);
+  assert.equal(calls[1].body.action, 'verify');
 });
 

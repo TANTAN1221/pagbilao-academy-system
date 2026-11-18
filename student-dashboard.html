@@ -791,7 +791,10 @@
 
       <div class="flex gap-2 no-print">
         <button onclick="printReceipt()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 flex items-center justify-center gap-1.5">
-          <span class="material-symbols-rounded text-base">print</span>Print Proof of Payment
+          <span class="material-symbols-rounded text-base">print</span>Print Proof
+        </button>
+        <button onclick="closeReceiptModal(); openStatementPrintModal();" class="flex-1 py-2.5 rounded-xl bg-blue-50 text-academy-blue font-bold text-xs hover:bg-blue-100 flex items-center justify-center gap-1.5">
+          <span class="material-symbols-rounded text-base">description</span>Statement
         </button>
         <button onclick="closeReceiptModal()" class="flex-1 py-2.5 rounded-xl bg-academy-navy text-white font-bold text-xs hover:bg-blue-900">Close</button>
       </div>
@@ -3114,6 +3117,49 @@
       });
     }
 
+    let awaitingPayMongoReceipt = null;
+
+    function enrichReceiptWithPendingMeta(payment, meta) {
+      if (!payment) return payment;
+      if ((!payment.feeBreakdown || !payment.feeBreakdown.length) && Array.isArray(meta?.feeBreakdown) && meta.feeBreakdown.length) {
+        return { ...payment, feeBreakdown: meta.feeBreakdown };
+      }
+      return payment;
+    }
+
+    function tryShowPendingPayMongoReceipt(paymentsList) {
+      if (!awaitingPayMongoReceipt || !awaitingPayMongoReceipt.active) return false;
+      const { preFetchKnownRefs, pendingCheckoutMeta, checkoutSessionId } = awaitingPayMongoReceipt;
+      const activeStudent = currentStudent();
+      const studentPayments = activeStudent ? getStudentPayments(activeStudent) : (paymentsList || []);
+
+      const match = (paymentsList || []).find(p => {
+        if (!p || String(p.status || '').toLowerCase() !== 'paid') return false;
+        const ref = p.referenceNo || p.id;
+        if (checkoutSessionId && (ref === checkoutSessionId || p.checkout_session_id === checkoutSessionId)) {
+          return true;
+        }
+        if (ref && !preFetchKnownRefs.has(ref)) {
+          return !activeStudent || studentPayments.some(sp => (sp.referenceNo || sp.id) === ref);
+        }
+        if (pendingCheckoutMeta?.time) {
+          const paidTime = new Date(p.paidAt || p.date || 0).getTime();
+          if (paidTime >= (Number(pendingCheckoutMeta.time) - 60000)) {
+            return !activeStudent || studentPayments.some(sp => (sp.referenceNo || sp.id) === ref);
+          }
+        }
+        return false;
+      });
+
+      if (!match) return false;
+      awaitingPayMongoReceipt.active = false;
+      const enriched = enrichReceiptWithPendingMeta(match, pendingCheckoutMeta);
+      renderAll();
+      showReceiptModal(enriched);
+      showToast('Payment Confirmed', `PHP ${Number(enriched.amount || 0).toLocaleString()} payment verified.`, 'success');
+      return true;
+    }
+
     async function initStudentDashboard() {
       const urlParams = new URLSearchParams(window.location.search);
       const isPaymentReturn = Boolean(urlParams.get('payment') || urlParams.get('checkout_session_id') || urlParams.get('session_id'));
@@ -3229,59 +3275,80 @@
         sessionStorage.removeItem('pa_pending_payment');
         localStorage.removeItem('pa_pending_payment');
 
-        const isPaidMatch = (p) => {
-          if (!p || String(p.status || '').toLowerCase() !== 'paid') return false;
-          const ref = p.referenceNo || p.id;
-          if (ref && !preFetchKnownRefs.has(ref)) {
-            if (!s) return true;
-            return getStudentPayments(s).some(sp => (sp.referenceNo || sp.id) === ref);
-          }
-          if (pendingCheckoutMeta?.time) {
-            const paidTime = new Date(p.paidAt || p.date || 0).getTime();
-            return paidTime >= (Number(pendingCheckoutMeta.time) - 60000);
-          }
-          return false;
+        const sessionIdToVerify = checkoutSessionId || pendingCheckoutMeta?.checkout_session_id || null;
+        awaitingPayMongoReceipt = {
+          active: true,
+          preFetchKnownRefs,
+          pendingCheckoutMeta: pendingCheckoutMeta || pending,
+          checkoutSessionId: sessionIdToVerify
         };
 
-        const alreadySettled = (appData.payments || []).find(isPaidMatch);
-        if (alreadySettled) {
-          renderAll();
-          showReceiptModal(alreadySettled);
-          showToast('Payment Confirmed', `PHP ${Number(alreadySettled.amount || 0).toLocaleString()} payment verified.`, 'success');
-        } else {
+        let shownImmediately = tryShowPendingPayMongoReceipt(appData.payments || []);
+
+        // If webhook hasn't written yet and we have a checkout_session_id, verify directly with PayMongo on the server.
+        if (!shownImmediately && sessionIdToVerify && window.paApi && window.paApi.verifyCheckoutSession) {
+          try {
+            const verifyRes = await window.paApi.verifyCheckoutSession(sessionIdToVerify);
+            if (verifyRes && verifyRes.paid) {
+              const state = await window.paApi.fetchDatabaseState();
+              if (state && state.payments) {
+                appData.payments = mergePaymentsState(appData.payments || [], state.payments);
+                if (state.students && state.students.length) {
+                  appData.students = mergeStudentsState(appData.students || [], state.students);
+                }
+              }
+              shownImmediately = tryShowPendingPayMongoReceipt(appData.payments || []);
+              if (!shownImmediately && verifyRes.payment) {
+                awaitingPayMongoReceipt.active = false;
+                const fallbackReceipt = enrichReceiptWithPendingMeta({
+                  id: verifyRes.payment.id || sessionIdToVerify,
+                  dbId: verifyRes.payment.id,
+                  studentId: s?.id || verifyRes.payment.student_id,
+                  studentName: s?.name || 'Student',
+                  amount: Number(verifyRes.amount || verifyRes.payment.amount || pendingCheckoutMeta?.amount || 0),
+                  method: verifyRes.method || verifyRes.payment.method || 'PayMongo',
+                  referenceNo: verifyRes.provider_reference || sessionIdToVerify,
+                  status: 'paid',
+                  paidAt: verifyRes.payment.paid_at || new Date().toISOString()
+                }, pendingCheckoutMeta);
+                appData.payments = mergePaymentsState(appData.payments || [], [fallbackReceipt]);
+                renderAll();
+                showReceiptModal(fallbackReceipt);
+                showToast('Payment Confirmed', `PHP ${Number(fallbackReceipt.amount || 0).toLocaleString()} payment verified.`, 'success');
+                shownImmediately = true;
+              }
+            }
+          } catch (verifyErr) {
+            console.warn('Direct PayMongo verification notice:', verifyErr);
+          }
+        }
+
+        if (!shownImmediately) {
           showToast('Payment Processing', 'Waiting for PayMongo to confirm your payment. Your balance and receipt will update automatically once it is verified.', 'info');
 
-          // Settlement is performed server-side by the signed PayMongo webhook only.
-          // The browser merely refreshes from the database for a short while.
+          // Fallback polling in case webhook completes asynchronously.
           if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
             let attempts = 0;
             const poll = async () => {
+              if (!awaitingPayMongoReceipt?.active) return;
               attempts += 1;
               try {
+                if (sessionIdToVerify && window.paApi.verifyCheckoutSession) {
+                  await window.paApi.verifyCheckoutSession(sessionIdToVerify);
+                }
                 const state = await window.paApi.fetchDatabaseState();
                 if (state && state.payments) {
                   appData.payments = mergePaymentsState(appData.payments || [], state.payments);
                   if (state.students && state.students.length) {
                     appData.students = mergeStudentsState(appData.students || [], state.students);
                   }
-                  const activeStudent = currentStudent();
-                  const fresh = state.payments.find(p => {
-                    if (String(p.status || '').toLowerCase() !== 'paid') return false;
-                    const ref = p.referenceNo || p.id;
-                    if (!ref || preFetchKnownRefs.has(ref)) return false;
-                    return !activeStudent || getStudentPayments(activeStudent).some(sp => (sp.referenceNo || sp.id) === ref);
-                  });
+                  if (tryShowPendingPayMongoReceipt(appData.payments)) return;
                   renderAll();
-                  if (fresh) {
-                    showReceiptModal(fresh);
-                    showToast('Payment Confirmed', `PHP ${Number(fresh.amount || 0).toLocaleString()} payment verified.`, 'success');
-                    return;
-                  }
                 }
               } catch (err) {
                 console.warn('Payment confirmation refresh failed:', err);
               }
-              if (attempts < 12) setTimeout(poll, 5000);
+              if (attempts < 12 && awaitingPayMongoReceipt?.active) setTimeout(poll, 5000);
             };
             setTimeout(poll, 3000);
           }
@@ -3334,7 +3401,9 @@
               localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate));
             }
             saveData();
-            renderAll();
+            if (!tryShowPendingPayMongoReceipt(appData.payments || [])) {
+              renderAll();
+            }
           }
         } catch (e) {
           console.warn('Realtime refresh notice:', e);

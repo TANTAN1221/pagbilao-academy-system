@@ -433,6 +433,16 @@
         payload.cancel_url = window.location.origin + window.location.pathname + "?payment=failed";
       }
       const data = await invokeFunction("create-paymongo-checkout", payload);
+      if (data && data.checkout_session_id) {
+        try {
+          const existingRaw = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("pa_pending_payment")) ||
+            (typeof localStorage !== "undefined" && localStorage.getItem("pa_pending_payment"));
+          const existing = existingRaw ? JSON.parse(existingRaw) : {};
+          const updatedPending = JSON.stringify({ ...existing, checkout_session_id: data.checkout_session_id });
+          if (typeof sessionStorage !== "undefined") sessionStorage.setItem("pa_pending_payment", updatedPending);
+          if (typeof localStorage !== "undefined") localStorage.setItem("pa_pending_payment", updatedPending);
+        } catch (_) {}
+      }
       if (data && data.checkout_url) {
         window.location.href = data.checkout_url;
         return data;
@@ -447,6 +457,21 @@
       const apiDetail = details?.details?.errors?.[0]?.detail;
       const msg = apiDetail || details?.error || err.message || (typeof err === "string" ? err : "Failed to connect to PayMongo Edge Function.");
       throw new Error(msg);
+    }
+  }
+
+  async function verifyCheckoutSession(checkoutSessionId) {
+    if (!checkoutSessionId) return { verified: false, paid: false };
+    try {
+      const data = await invokeFunction("create-paymongo-checkout", {
+        action: "verify",
+        checkout_session_id: checkoutSessionId
+      });
+      return data || { verified: false, paid: false };
+    } catch (err) {
+      const details = await err?.context?.json?.().catch(() => null);
+      console.warn("PayMongo checkout verification notice:", details?.error || err?.message || err);
+      return { verified: false, paid: false, error: details?.error || err?.message };
     }
   }
 
@@ -1165,6 +1190,7 @@
             amount: Number(p.amount),
             method: p.method || "Online",
             referenceNo: refNo,
+            checkout_session_id: p.checkout_session_id || null,
             feeBreakdown: p.feeBreakdown || p.fee_breakdown || [],
             remarks: cleanText(p.remarks || p.notes || ""),
             status: p.status || "paid"
@@ -1833,6 +1859,7 @@
     deleteStaffAccount,
     invokeFunction,
     createCheckout,
+    verifyCheckoutSession,
     createSchoolAccount,
     logout,
     fetchDatabaseState,

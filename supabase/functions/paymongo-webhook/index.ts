@@ -1,9 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
-
-function isUuid(val: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || "").trim());
-}
+import { settlePaymongoPayment } from "../_shared/paymongo-settle.ts";
 
 async function verifySignature(
   rawBody: string,
@@ -110,10 +107,6 @@ Deno.serve(async (req: Request) => {
     const amountInPesos = amountInCentavos > 0 ? amountInCentavos / 100 : 0;
     const paymentSource = paymentAttr.source?.type || resource?.attributes?.source?.type || "paymongo";
     const providerRef = paymentObj?.id || checkoutId || null;
-    const studentDbId = metadata.student_db_id || metadata.studentDbId || null;
-    const studentId = metadata.student_id || metadata.studentId || null;
-    const studentEmail = metadata.student_email || metadata.email || null;
-    const studentName = metadata.student_name || metadata.name || null;
 
     // Log event into database (best-effort audit log)
     const { error: eventLogErr } = await supabaseAdmin.from("payment_gateway_events").insert({
@@ -134,129 +127,13 @@ Deno.serve(async (req: Request) => {
       String(eventType).toLowerCase().includes("paid");
 
     if (isPaidEvent) {
-      if (checkoutId) {
-        const { error: updateErr } = await supabaseAdmin
-          .from("payments")
-          .update({
-            status: "paid",
-            method: paymentSource,
-            provider_reference: providerRef,
-            paid_at: new Date().toISOString()
-          })
-          .eq("checkout_session_id", checkoutId);
-        if (updateErr) {
-          throw new Error(`Failed updating existing payment: ${updateErr.message}`);
-        }
-      }
-
-      let student = null;
-
-      if (studentDbId && isUuid(studentDbId)) {
-        const { data: foundByDbId } = await supabaseAdmin
-          .from("students")
-          .select("id, student_number, email")
-          .eq("id", String(studentDbId).trim())
-          .maybeSingle();
-        if (foundByDbId) student = foundByDbId;
-      }
-
-      if (!student && studentId) {
-        const cleanSid = String(studentId).trim();
-        let studentQuery = supabaseAdmin.from("students").select("id, student_number, email");
-        if (isUuid(cleanSid)) {
-          studentQuery = studentQuery.or(`student_number.eq.${cleanSid},id.eq.${cleanSid},auth_user_id.eq.${cleanSid}`);
-        } else {
-          studentQuery = studentQuery.eq("student_number", cleanSid);
-        }
-
-        const { data: foundStudent, error: studentErr } = await studentQuery.limit(1).maybeSingle();
-        if (studentErr) console.warn("Student lookup by studentId error:", studentErr.message);
-        if (foundStudent) student = foundStudent;
-      }
-
-      if (!student && studentEmail) {
-        const { data: foundByEmail, error: emailErr } = await supabaseAdmin
-          .from("students")
-          .select("id, student_number, email")
-          .ilike("email", String(studentEmail).trim())
-          .limit(1)
-          .maybeSingle();
-        if (emailErr) console.warn("Student lookup by email error:", emailErr.message);
-        if (foundByEmail) student = foundByEmail;
-      }
-
-      // If student not found in students table, check student_registration_requests and auto-sync
-      if (!student && (studentId || studentEmail)) {
-        let reqQuery = supabaseAdmin.from("student_registration_requests").select("*");
-        if (studentEmail) {
-          reqQuery = reqQuery.ilike("email", String(studentEmail).trim());
-        } else if (isUuid(String(studentId))) {
-          reqQuery = reqQuery.or(`student_number.eq.${studentId},auth_user_id.eq.${studentId}`);
-        } else {
-          reqQuery = reqQuery.eq("student_number", String(studentId).trim());
-        }
-
-        const { data: regReq } = await reqQuery.limit(1).maybeSingle();
-        if (regReq) {
-          const { data: newS, error: regSyncErr } = await supabaseAdmin
-            .from("students")
-            .insert({
-              student_number: regReq.student_number || `STU-${Date.now()}`,
-              auth_user_id: regReq.auth_user_id || null,
-              first_name: regReq.first_name || (studentName ? studentName.split(" ")[0] : "Student"),
-              last_name: regReq.last_name || (studentName ? studentName.split(" ").slice(1).join(" ") : "Account"),
-              email: regReq.email || studentEmail || `${regReq.student_number || "stu"}@pagbilao.edu.ph`,
-              education_level: regReq.education_level || "JHS",
-              grade_level: regReq.grade_level || "Grade 7",
-              section_name: regReq.section_name || "N/A",
-              strand: regReq.strand || "N/A",
-              school_year: metadata.school_year || metadata.schoolYear || "2026-2027",
-              status: "active"
-            })
-            .select("id, student_number, email")
-            .maybeSingle();
-          if (regSyncErr) console.warn("Auto-sync student from registration error:", regSyncErr.message);
-          if (newS) student = newS;
-        }
-      }
-
-      let existingPayment = null;
-      if (checkoutId) {
-        const { data: foundPayment } = await supabaseAdmin
-          .from("payments")
-          .select("id")
-          .eq("checkout_session_id", checkoutId)
-          .maybeSingle();
-        existingPayment = foundPayment;
-      }
-
-      if (!existingPayment && amountInPesos > 0) {
-        if (!student) {
-          throw new Error(`Unable to match payment to a student record (studentId=${studentId}, email=${studentEmail}).`);
-        }
-
-        const basePayload = {
-          student_id: student.id,
-          amount: amountInPesos,
-          method: paymentSource,
-          provider: "paymongo",
-          provider_reference: providerRef,
-          checkout_session_id: checkoutId,
-          school_year: metadata.school_year || metadata.schoolYear || "2026-2027",
-          status: "paid",
-          paid_at: new Date().toISOString()
-        };
-
-        let { error: insertErr } = await supabaseAdmin.from("payments").insert(basePayload);
-        if (insertErr && /school_year/i.test(insertErr.message || "")) {
-          const { school_year: _ignored, ...legacyPayload } = basePayload;
-          const retryRes = await supabaseAdmin.from("payments").insert(legacyPayload);
-          insertErr = retryRes.error;
-        }
-        if (insertErr) {
-          throw new Error(`Failed inserting payment record: ${insertErr.message}`);
-        }
-      }
+      await settlePaymongoPayment(supabaseAdmin, {
+        checkoutId,
+        providerRef,
+        amountInPesos,
+        paymentSource,
+        metadata
+      });
     }
 
     return jsonResponse({ received: true });

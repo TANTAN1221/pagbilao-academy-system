@@ -1,4 +1,6 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { settlePaymongoPayment } from "../_shared/paymongo-settle.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -17,6 +19,76 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
+    const auth = btoa(`${PAYMONGO_SECRET_KEY}:`);
+
+    if (body?.action === "verify") {
+      const checkoutSessionId = String(body.checkout_session_id || body.checkoutSessionId || "").trim();
+      if (!checkoutSessionId) {
+        return jsonResponse({ error: "checkout_session_id is required." }, 400);
+      }
+
+      const verifyRes = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${encodeURIComponent(checkoutSessionId)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Basic ${auth}`
+        }
+      });
+
+      const verifyJson = await verifyRes.json();
+      if (!verifyRes.ok) {
+        const apiDetail = verifyJson?.errors?.[0]?.detail || verifyJson?.errors?.[0]?.code || "PayMongo session lookup failed";
+        return jsonResponse({ error: apiDetail, details: verifyJson }, verifyRes.status);
+      }
+
+      const sessionData = verifyJson?.data;
+      const sessionAttr = sessionData?.attributes || {};
+      const paymentsArr = sessionAttr?.payments || [];
+      const paidPayment = paymentsArr.find((p: { attributes?: { status?: string } }) =>
+        ["paid", "succeeded", "completed"].includes(String(p?.attributes?.status || "").toLowerCase())
+      ) || paymentsArr[0] || null;
+      const paymentAttr = paidPayment?.attributes || {};
+      const rawStatus = String(paymentAttr?.status || sessionAttr?.payment_intent?.attributes?.status || sessionAttr?.status || "").toLowerCase();
+      const isPaid = ["paid", "succeeded", "completed"].includes(rawStatus);
+
+      if (!isPaid) {
+        return jsonResponse({ verified: true, paid: false, status: rawStatus || "pending" });
+      }
+
+      const amountInCentavos = Number(
+        paymentAttr?.amount ||
+        sessionAttr?.line_items?.[0]?.amount ||
+        0
+      );
+      const amountInPesos = amountInCentavos > 0 ? amountInCentavos / 100 : 0;
+      const paymentSource = paymentAttr?.source?.type || "paymongo";
+      const providerRef = paidPayment?.id || checkoutSessionId;
+
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      let settledRecord = null;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        settledRecord = await settlePaymongoPayment(supabaseAdmin, {
+          checkoutId: checkoutSessionId,
+          providerRef,
+          amountInPesos,
+          paymentSource,
+          metadata: sessionAttr?.metadata || {}
+        });
+      }
+
+      return jsonResponse({
+        verified: true,
+        paid: true,
+        status: rawStatus,
+        checkout_session_id: checkoutSessionId,
+        amount: amountInPesos,
+        method: paymentSource,
+        provider_reference: providerRef,
+        payment: settledRecord
+      });
+    }
     const amount = Math.round(Number(body.amount));
     const rawDescription = String(body.description || "Pagbilao Academy Payment").trim();
     const description = rawDescription.slice(0, 255);
@@ -51,8 +123,6 @@ Deno.serve(async (req: Request) => {
     const paymentMethodTypes = configuredMethods.length > 0
       ? configuredMethods
       : ["qrph", "gcash", "paymaya", "card"];
-
-    const auth = btoa(`${PAYMONGO_SECRET_KEY}:`);
 
     const response = await fetch("https://api.paymongo.com/v1/checkout_sessions", {
       method: "POST",
