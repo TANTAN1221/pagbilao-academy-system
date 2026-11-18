@@ -94,3 +94,68 @@ test('admin analytics includes specific fee breakdown, grade compliance, and JHS
   assert.match(adminHtml, /computeLevelComparisonStats/, 'admin-dashboard.html contains computeLevelComparisonStats function');
   assert.match(adminHtml, /generateGeminiAiAnalyticsInterpretation/, 'admin-dashboard.html contains generateGeminiAiAnalyticsInterpretation function');
 });
+
+test('every analytics chart renders a live analysis/summary box', () => {
+  const adminHtml = fs.readFileSync(path.resolve(__dirname, '..', 'admin-dashboard.html'), 'utf8');
+  const extractFn = (name) => {
+    const offset = adminHtml.indexOf(`function ${name}(`);
+    assert.ok(offset >= 0, `Function ${name} not found`);
+    const start = adminHtml.lastIndexOf('\n', offset) + 1;
+    const indent = adminHtml.slice(start, offset).replace('async ', '');
+    const rest = adminHtml.slice(start);
+    const bodyStart = rest.indexOf('{') + 1;
+    const next = new RegExp(`\n${indent}(?:async )?function `).exec(rest.slice(bodyStart));
+    const end = next ? bodyStart + next.index : rest.indexOf('</script>');
+    return rest.slice(0, end);
+  };
+
+  const boxes = {
+    feeTypeChartSummary: { innerHTML: '' },
+    gradeComplianceChartSummary: { innerHTML: '' },
+    levelComparisonChartSummary: { innerHTML: '' },
+    collectionDoughnutChartSummary: { innerHTML: '' }
+  };
+
+  const context = vm.createContext({
+    document: { getElementById: (id) => boxes[id] || null },
+    appData: {
+      feeStructures: {
+        JHS: [{ name: 'Tuition Fee', amount: 12000 }, { name: 'Lab Fee', amount: 2000 }],
+        SHS: [{ name: 'SHS Tuition', amount: 18000 }]
+      },
+      vouchers: [
+        { name: 'ESC Voucher', appliesTo: 'JHS', amount: 9000, active: true },
+        { name: 'SHS Voucher', appliesTo: 'SHS', amount: 14000, active: true }
+      ],
+      students: [
+        { id: 'STU-1', name: 'Juan', level: 'JHS', grade: 'Grade 7', voucher: 'ESC Voucher', paid: 5000 },
+        { id: 'STU-2', name: 'Ana', level: 'SHS', grade: 'Grade 11', voucher: 'SHS Voucher', paid: 1000 }
+      ],
+      payments: []
+    },
+    money: (n) => `₱${Number(n || 0).toLocaleString()}`
+  });
+
+  [
+    'feeTotal',
+    'voucherAmount',
+    'assessedTotal',
+    'balance',
+    'escapeHtml',
+    'getStudentPaymentsInAdmin',
+    'getStudentTotalPaidInAdmin',
+    'computeFeeTypeCollectionStats',
+    'computeGradeComplianceStats',
+    'computeLevelComparisonStats',
+    'renderAnalyticsChartSummaries'
+  ].forEach((fn) => vm.runInContext(extractFn(fn), context));
+
+  context.renderAnalyticsChartSummaries();
+
+  assert.match(boxes.feeTypeChartSummary.innerHTML, /Fee Category Analysis/);
+  assert.match(boxes.feeTypeChartSummary.innerHTML, /100% Gross Settled|Gross Settled/);
+  assert.match(boxes.gradeComplianceChartSummary.innerHTML, /Grade 7/);
+  assert.match(boxes.gradeComplianceChartSummary.innerHTML, /Grade 11/);
+  assert.match(boxes.levelComparisonChartSummary.innerHTML, /JHS 100% · SHS 25%/);
+  assert.match(boxes.collectionDoughnutChartSummary.innerHTML, /67% Net Collected/);
+});

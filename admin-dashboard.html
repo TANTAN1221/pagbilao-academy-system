@@ -622,59 +622,71 @@
         <!-- VISUAL CHARTS GRID (4 HIGH-IMPACT CHARTS) -->
         <div class="grid xl:grid-cols-2 gap-5 mt-5">
           <!-- 1. Fee Collection by Specific Fee Type -->
-          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="font-extrabold text-academy-navy text-base">Collections by Specific Fee Type</h4>
-                <p class="text-xs text-academy-muted">Collected amounts vs uncollected balance across specific fee categories (Tuition, Lab, Misc, etc.)</p>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-extrabold text-academy-navy text-base">Collections by Specific Fee Type</h4>
+                  <p class="text-xs text-academy-muted">Collected amounts vs uncollected balance across specific fee categories (Tuition, Lab, Misc, etc.)</p>
+                </div>
+                <span class="material-symbols-rounded text-academy-blue">view_list</span>
               </div>
-              <span class="material-symbols-rounded text-academy-blue">view_list</span>
+              <div class="h-64 relative">
+                <canvas id="feeTypeCollectionBarChart"></canvas>
+              </div>
             </div>
-            <div class="h-64 relative">
-              <canvas id="feeTypeCollectionBarChart"></canvas>
-            </div>
+            <div id="feeTypeChartSummary" class="p-3.5 rounded-xl bg-academy-soft border border-academy-border text-xs space-y-1.5"></div>
           </section>
 
           <!-- 2. Grade-Level Collection & Due Date Compliance -->
-          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="font-extrabold text-academy-navy text-base">Grade-Level Compliance & Balance Distribution</h4>
-                <p class="text-xs text-academy-muted">Comparing total collections vs remaining dues across Grades 7 to 12</p>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-extrabold text-academy-navy text-base">Grade-Level Compliance & Balance Distribution</h4>
+                  <p class="text-xs text-academy-muted">Comparing total collections vs remaining dues across Grades 7 to 12</p>
+                </div>
+                <span class="material-symbols-rounded text-academy-blue">stacked_bar_chart</span>
               </div>
-              <span class="material-symbols-rounded text-academy-blue">stacked_bar_chart</span>
+              <div class="h-64 relative">
+                <canvas id="gradeLevelComplianceBarChart"></canvas>
+              </div>
             </div>
-            <div class="h-64 relative">
-              <canvas id="gradeLevelComplianceBarChart"></canvas>
-            </div>
+            <div id="gradeComplianceChartSummary" class="p-3.5 rounded-xl bg-academy-soft border border-academy-border text-xs space-y-1.5"></div>
           </section>
 
           <!-- 3. JHS vs SHS Level Financial Comparison -->
-          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="font-extrabold text-academy-navy text-base">JHS vs SHS Financial Comparison</h4>
-                <p class="text-xs text-academy-muted">Comparing total collections, remaining balances, and voucher assistance between JHS & SHS</p>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-extrabold text-academy-navy text-base">JHS vs SHS Financial Comparison</h4>
+                  <p class="text-xs text-academy-muted">Comparing total collections, remaining balances, and voucher assistance between JHS & SHS</p>
+                </div>
+                <span class="material-symbols-rounded text-academy-blue">compare_arrows</span>
               </div>
-              <span class="material-symbols-rounded text-academy-blue">compare_arrows</span>
+              <div class="h-64 relative">
+                <canvas id="levelComparisonBarChart"></canvas>
+              </div>
             </div>
-            <div class="h-64 relative">
-              <canvas id="levelComparisonBarChart"></canvas>
-            </div>
+            <div id="levelComparisonChartSummary" class="p-3.5 rounded-xl bg-academy-soft border border-academy-border text-xs space-y-1.5"></div>
           </section>
 
           <!-- 4. Overall Collection & Voucher Impact -->
-          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h4 class="font-extrabold text-academy-navy text-base">Overall Collection & Subsidy Distribution</h4>
-                <p class="text-xs text-academy-muted">Total collected revenue vs uncollected balances vs ESC/SHS government vouchers</p>
+          <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-extrabold text-academy-navy text-base">Overall Collection & Subsidy Distribution</h4>
+                  <p class="text-xs text-academy-muted">Total collected revenue vs uncollected balances vs ESC/SHS government vouchers</p>
+                </div>
+                <span class="material-symbols-rounded text-academy-blue">pie_chart</span>
               </div>
-              <span class="material-symbols-rounded text-academy-blue">pie_chart</span>
+              <div class="h-64 relative flex items-center justify-center">
+                <canvas id="collectionDoughnutChart"></canvas>
+              </div>
             </div>
-            <div class="h-64 relative flex items-center justify-center">
-              <canvas id="collectionDoughnutChart"></canvas>
-            </div>
+            <div id="collectionDoughnutChartSummary" class="p-3.5 rounded-xl bg-academy-soft border border-academy-border text-xs space-y-1.5"></div>
           </section>
         </div>
 
@@ -2102,6 +2114,152 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       }
     }
 
+    function renderAnalyticsChartSummaries() {
+      const students = appData.students || [];
+      const feeStats = computeFeeTypeCollectionStats();
+      const gradeStats = computeGradeComplianceStats();
+      const levelStats = computeLevelComparisonStats();
+
+      // 1. Collections by Specific Fee Type summary
+      const feeBox = document.getElementById('feeTypeChartSummary');
+      if (feeBox) {
+        const activeFees = feeStats.filter(f => f.totalAssessed > 0);
+        if (!students.length || !activeFees.length) {
+          feeBox.innerHTML = `
+            <p class="font-extrabold text-academy-navy flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Chart Analysis
+            </p>
+            <p class="text-academy-muted">No assessed fee item data yet. Add students and fee structure items to view per-category collection analysis.</p>
+          `;
+        } else {
+          const totalAssessed = activeFees.reduce((s, f) => s + f.totalAssessed, 0);
+          const totalCollected = activeFees.reduce((s, f) => s + f.totalCollected, 0);
+          const totalUncollected = activeFees.reduce((s, f) => s + f.uncollected, 0);
+          const topFee = [...activeFees].sort((a, b) => b.ratePct - a.ratePct || b.totalCollected - a.totalCollected)[0];
+          const laggingFee = [...activeFees].sort((a, b) => b.uncollected - a.uncollected || a.ratePct - b.ratePct)[0];
+          const overallPct = totalAssessed > 0 ? Math.round((totalCollected / totalAssessed) * 100) : 0;
+
+          feeBox.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-academy-navy flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Fee Category Analysis
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-academy-navy font-extrabold text-[11px]">${overallPct}% Gross Settled</span>
+            </div>
+            <p class="text-slate-700 leading-5">
+              Across <strong>${activeFees.length}</strong> active fee categories, <strong>${money(Math.round(totalCollected))}</strong> has been collected with <strong>${money(Math.round(totalUncollected))}</strong> remaining uncollected.
+              <strong>${escapeHtml(topFee.name)}</strong> leads at <strong>${topFee.ratePct}%</strong> settled, while <strong>${escapeHtml(laggingFee.name)}</strong> carries the largest uncollected share (<strong>${money(Math.round(laggingFee.uncollected))}</strong>).
+            </p>
+          `;
+        }
+      }
+
+      // 2. Grade-Level Compliance summary
+      const gradeBox = document.getElementById('gradeComplianceChartSummary');
+      if (gradeBox) {
+        const activeGrades = gradeStats.filter(g => g.count > 0);
+        if (!activeGrades.length) {
+          gradeBox.innerHTML = `
+            <p class="font-extrabold text-academy-navy flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Grade Compliance Analysis
+            </p>
+            <p class="text-academy-muted">No enrolled students found across Grades 7–12 yet.</p>
+          `;
+        } else {
+          const bestGrade = [...activeGrades].sort((a, b) => b.ratePct - a.ratePct || b.collected - a.collected)[0];
+          const riskGrade = [...activeGrades].sort((a, b) => b.outstanding - a.outstanding || a.ratePct - b.ratePct)[0];
+          const totalPaidStudents = activeGrades.reduce((s, g) => s + g.paidCount, 0);
+          const totalStudents = activeGrades.reduce((s, g) => s + g.count, 0);
+
+          gradeBox.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-academy-navy flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Grade Compliance Analysis
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[11px]">${totalPaidStudents}/${totalStudents} Fully Paid</span>
+            </div>
+            <p class="text-slate-700 leading-5">
+              <strong>${escapeHtml(bestGrade.grade)}</strong> shows the strongest compliance at <strong>${bestGrade.ratePct}%</strong> (${bestGrade.paidCount}/${bestGrade.count} fully settled).
+              ${riskGrade.outstanding > 0
+                ? `<strong>${escapeHtml(riskGrade.grade)}</strong> holds the highest remaining balance at <strong>${money(riskGrade.outstanding)}</strong> across ${riskGrade.overdueCount} account(s) needing follow-up.`
+                : 'All active grade levels currently have zero outstanding balances.'}
+            </p>
+          `;
+        }
+      }
+
+      // 3. JHS vs SHS Financial Comparison summary
+      const levelBox = document.getElementById('levelComparisonChartSummary');
+      if (levelBox) {
+        const jhs = levelStats.find(l => l.level.includes('JHS')) || { count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0, ratePct: 0 };
+        const shs = levelStats.find(l => l.level.includes('SHS')) || { count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0, ratePct: 0 };
+        if (!jhs.count && !shs.count) {
+          levelBox.innerHTML = `
+            <p class="font-extrabold text-academy-navy flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Level Comparison Analysis
+            </p>
+            <p class="text-academy-muted">Enroll JHS or SHS students to compare collections, balances, and voucher subsidies.</p>
+          `;
+        } else {
+          const leader = jhs.ratePct >= shs.ratePct ? 'JHS' : 'SHS';
+          const higherBal = jhs.balance >= shs.balance ? 'JHS' : 'SHS';
+          levelBox.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-academy-navy flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Level Comparison Analysis
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-academy-navy font-extrabold text-[11px]">JHS ${jhs.ratePct}% · SHS ${shs.ratePct}%</span>
+            </div>
+            <p class="text-slate-700 leading-5">
+              <strong>${leader}</strong> leads collection efficiency (${leader === 'JHS' ? jhs.ratePct : shs.ratePct}% settled).
+              JHS collected <strong>${money(jhs.collected)}</strong> (${jhs.count} students, ${money(jhs.vouchers)} vouchers) vs. SHS <strong>${money(shs.collected)}</strong> (${shs.count} students, ${money(shs.vouchers)} vouchers).
+              ${(jhs.balance + shs.balance) > 0 ? `<strong>${higherBal}</strong> carries the larger uncollected balance (${money(higherBal === 'JHS' ? jhs.balance : shs.balance)}).` : 'Both departments are fully settled.'}
+            </p>
+          `;
+        }
+      }
+
+      // 4. Overall Collection & Subsidy Distribution summary
+      const doughnutBox = document.getElementById('collectionDoughnutChartSummary');
+      if (doughnutBox) {
+        const billed = students.reduce((sum, x) => sum + assessedTotal(x), 0);
+        const collected = students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+        const outstanding = students.reduce((sum, x) => sum + balance(x), 0);
+        const vouchers = students.reduce((sum, x) => sum + voucherAmount(x), 0);
+        const totalPool = collected + outstanding + vouchers;
+
+        if (!students.length || totalPool <= 0) {
+          doughnutBox.innerHTML = `
+            <p class="font-extrabold text-academy-navy flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Overall Distribution Analysis
+            </p>
+            <p class="text-academy-muted">No financial distribution data available yet.</p>
+          `;
+        } else {
+          const netRatePct = billed > 0 ? Math.round((collected / billed) * 100) : 0;
+          const collectedShare = Math.round((collected / totalPool) * 100);
+          const outstandingShare = Math.round((outstanding / totalPool) * 100);
+          const voucherShare = Math.max(0, 100 - collectedShare - outstandingShare);
+          const badgeCls = netRatePct >= 80
+            ? 'bg-emerald-100 text-emerald-800'
+            : (netRatePct >= 50 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700');
+
+          doughnutBox.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-academy-navy flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-academy-blue">summarize</span>Overall Distribution Analysis
+              </span>
+              <span class="px-2 py-0.5 rounded-full ${badgeCls} font-extrabold text-[11px]">${netRatePct}% Net Collected</span>
+            </div>
+            <p class="text-slate-700 leading-5">
+              Of the <strong>${money(totalPool)}</strong> gross billing pool, <strong>${collectedShare}%</strong> (${money(collected)}) is collected cash,
+              <strong>${voucherShare}%</strong> (${money(vouchers)}) is covered by vouchers, and <strong>${outstandingShare}%</strong> (${money(outstanding)}) remains collectible.
+            </p>
+          `;
+        }
+      }
+    }
+
     function renderAnalytics() {
       const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
       const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
@@ -2114,14 +2272,15 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       collectionByLevel.innerHTML = levels.map(level => {
         const ss = appData.students.filter(s => s.level === level);
         const total = ss.reduce((n, s) => n + assessedTotal(s), 0);
-        const paid = ss.reduce((n, s) => n + Number(s.paid || 0), 0);
+        const paid = ss.reduce((n, s) => n + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
         const pct = total ? Math.round(paid / total * 100) : 0;
         return `<div><div class="flex justify-between text-sm mb-2"><strong>${level}</strong><span>${money(paid)} / ${money(total)} (${pct}%)</span></div><div class="h-3 bg-academy-light rounded-full overflow-hidden"><div class="h-full bg-academy-blue" style="width:${pct}%"></div></div></div>`;
       }).join('');
 
-      overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${s.name}</p><p class="text-xs text-academy-muted">${classLabel(s)} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
+      overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${escapeHtml(s.name)}</p><p class="text-xs text-academy-muted">${escapeHtml(classLabel(s))} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
 
       renderAdminPayments();
+      renderAnalyticsChartSummaries();
       renderAnalyticsCharts();
     }
 
