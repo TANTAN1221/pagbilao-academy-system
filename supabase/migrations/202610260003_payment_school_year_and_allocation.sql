@@ -31,36 +31,44 @@ create or replace function public.allocate_payment_installments_fn()
 returns trigger as $$
 declare
   r_inst record;
-  v_remaining_amount numeric(12,2) := new.amount;
+  v_remaining_amount numeric(12,2) := coalesce(new.amount, 0);
   v_allocated numeric(12,2);
   v_sy text := coalesce(new.school_year, '2026-2027');
 begin
   if new.status = 'paid' and (tg_op = 'INSERT' or old.status is null or old.status <> 'paid') then
-    for r_inst in 
-      select id, due_amount, amount_paid 
-      from public.student_installments 
-      where student_id = new.student_id 
-        and (school_year = v_sy or v_sy is null)
-        and status <> 'paid'
-      order by due_date asc, created_at asc
-      for update
-    loop
-      exit when v_remaining_amount <= 0;
+    begin
+      for r_inst in 
+        select id, due_amount, coalesce(amount_paid, 0) as amount_paid 
+        from public.student_installments 
+        where student_id = new.student_id 
+          and (school_year = v_sy or v_sy is null or school_year is null)
+          and status <> 'paid'
+        order by due_date asc, created_at asc
+        for update
+      loop
+        exit when v_remaining_amount <= 0;
 
-      v_allocated := least(v_remaining_amount, r_inst.due_amount - r_inst.amount_paid);
+        v_allocated := least(v_remaining_amount, greatest(0, r_inst.due_amount - r_inst.amount_paid));
+        if v_allocated <= 0 then
+          continue;
+        end if;
 
-      -- Record allocation
-      insert into public.payment_allocations (payment_id, student_installment_id, amount_applied)
-      values (new.id, r_inst.id, v_allocated);
+        -- Record allocation
+        insert into public.payment_allocations (payment_id, student_installment_id, amount_applied)
+        values (new.id, r_inst.id, v_allocated);
 
-      -- Update installment totals
-      update public.student_installments
-      set amount_paid = amount_paid + v_allocated,
-          status = case when (amount_paid + v_allocated) >= due_amount then 'paid' else 'partial' end
-      where id = r_inst.id;
+        -- Update installment totals
+        update public.student_installments
+        set amount_paid = coalesce(amount_paid, 0) + v_allocated,
+            status = case when (coalesce(amount_paid, 0) + v_allocated) >= due_amount then 'paid' else 'partial' end
+        where id = r_inst.id;
 
-      v_remaining_amount := v_remaining_amount - v_allocated;
-    end loop;
+        v_remaining_amount := v_remaining_amount - v_allocated;
+      end loop;
+    exception when others then
+      -- Safeguard: Never fail the payment record insertion if allocation or lock fails
+      raise warning 'allocate_payment_installments_fn failed safely: % (SQLSTATE %)', sqlerrm, sqlstate;
+    end;
   end if;
   return new;
 end;

@@ -363,3 +363,16 @@ test('createCheckout persists checkout_session_id and verifyCheckoutSession invo
   assert.equal(calls[1].body.action, 'verify');
 });
 
+test('payment_allocations schema migration exists and guards against missing student_installment_id', () => {
+  const mig = read('supabase/migrations/202611190001_fix_payment_allocations_and_trigger.sql');
+  assert.match(mig, /alter table public\.payment_allocations/i);
+  assert.match(mig, /student_installment_id/);
+  assert.match(mig, /allocate_payment_installments_fn/);
+  assert.match(mig, /exception\s+when\s+others\s+then/i);
+
+  const schema = read('supabase/schema.sql');
+  assert.match(schema, /student_installment_id uuid references student_installments/);
+  assert.match(schema, /exception\s+when\s+others\s+then/i);
+});
+
+
