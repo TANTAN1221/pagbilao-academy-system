@@ -18,11 +18,29 @@
       </button>
     </div>
   </div>
-<header class="h-16 bg-white border-b border-academy-border px-6 flex items-center justify-between"><div class="flex items-center gap-3"><img src="assets/logo.png" class="w-10 h-10 rounded-full object-contain border"><div><h1 class="font-extrabold text-academy-navy">Pagbilao Academy Inc.</h1><p class="text-xs text-academy-muted">Clearance Head Portal</p></div></div><div class="flex items-center gap-3"><div class="text-right"><p id="teacherNameLabel" class="text-sm font-extrabold">Teacher</p><p id="teacherRoleLabel" class="text-xs text-academy-muted">Teacher Clearance Head</p></div><button onclick="logoutToIndex()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-extrabold hover:bg-red-100 transition"><span class="material-symbols-rounded text-[18px]">logout</span>Logout</button></div></header>
-<main class="max-w-7xl mx-auto p-6 space-y-5">
+<header class="h-16 bg-white border-b border-academy-border px-4 sm:px-6 flex items-center justify-between">
+  <div class="flex items-center gap-2.5 sm:gap-3">
+    <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-contain border p-0.5">
+    <div>
+      <h1 class="font-extrabold text-sm sm:text-base text-academy-navy leading-tight">Pagbilao Academy</h1>
+      <p class="text-[10px] sm:text-xs text-academy-muted">Clearance Head Portal</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 sm:gap-3">
+    <div class="text-right">
+      <p id="teacherNameLabel" class="text-xs sm:text-sm font-extrabold truncate max-w-[120px] sm:max-w-none">Teacher</p>
+      <p id="teacherRoleLabel" class="text-[10px] sm:text-xs text-academy-muted hidden sm:block">Teacher Clearance Head</p>
+    </div>
+    <button onclick="logoutToIndex()" class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-extrabold hover:bg-red-100 transition shadow-xs">
+      <span class="material-symbols-rounded text-[18px]">logout</span>
+      <span class="hidden sm:inline">Logout</span>
+    </button>
+  </div>
+</header>
+<main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
   <!-- Clearance Period Closed Notice Banner -->
-  <div id="clearancePeriodClosedBanner" class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex items-center justify-between gap-4 shadow-xs">
-    <div class="flex items-center gap-3.5">
+  <div id="clearancePeriodClosedBanner" class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+    <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
         <span class="material-symbols-rounded text-2xl">lock</span>
       </div>
@@ -33,21 +51,84 @@
         </p>
       </div>
     </div>
-    <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-200 text-amber-900 shrink-0">Period Inactive</span>
+    <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-200 text-amber-900 shrink-0 self-start sm:self-auto">Period Inactive</span>
   </div>
-  <section><h2 class="text-2xl font-extrabold text-academy-navy">Assigned Clearance Requests</h2><p class="text-sm text-academy-muted mt-1">This shows the students who match the teacher's assigned grade/section/subject. Students must request approval before the teacher approves.</p></section><section class="grid md:grid-cols-3 gap-4"><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Requested / Pending</p><h3 id="pendingCount" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Approved</p><h3 id="approvedCount" class="text-3xl font-extrabold text-green-600 mt-2">0</h3></div><div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><p class="text-sm text-academy-muted">Assignments</p><h3 id="assignmentCount" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3></div></section><section class="bg-white border border-academy-border rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-academy-navy mb-3">My Teaching Assignments</h3><div id="assignmentPills" class="flex flex-wrap gap-2"></div></section><section class="bg-white border border-academy-border rounded-2xl shadow-card overflow-hidden">
+  <section>
+    <h2 class="text-xl sm:text-2xl font-extrabold text-academy-navy">Assigned Clearance Requests</h2>
+    <p class="text-xs sm:text-sm text-academy-muted mt-1">This shows the students who match the teacher's assigned grade/section/subject. Students must request approval before the teacher approves.</p>
+  </section>
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card">
+      <p class="text-sm text-academy-muted">Requested / Pending</p>
+      <h3 id="pendingCount" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3>
+    </div>
+    <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card">
+      <p class="text-sm text-academy-muted">Approved</p>
+      <h3 id="approvedCount" class="text-3xl font-extrabold text-green-600 mt-2">0</h3>
+    </div>
+    <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-card">
+      <p class="text-sm text-academy-muted">Assignments</p>
+      <h3 id="assignmentCount" class="text-3xl font-extrabold text-academy-navy mt-2">0</h3>
+    </div>
+  </section>
+  <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-card">
+    <h3 class="font-extrabold text-academy-navy mb-3">My Teaching Assignments</h3>
+    <div id="assignmentPills" class="flex flex-wrap gap-2"></div>
+  </section>
+  <section class="bg-white border border-academy-border rounded-2xl shadow-card overflow-hidden">
   <!-- Filter & Search Toolbar -->
-  <div class="p-5 border-b border-academy-border bg-academy-soft/40 space-y-4">
+  <div class="p-4 sm:p-5 border-b border-academy-border bg-academy-soft/40 space-y-4">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <!-- Search Input -->
       <div class="relative flex-1 max-w-md">
         <span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-academy-muted text-xl pointer-events-none">search</span>
-        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search by student name, ID, or subject..."
+        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search by student ID or surname (A–Z)..."
           class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-academy-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-academy-blue transition">
       </div>
 
       <!-- Controls: Filters & Sorting -->
       <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Surname Range Filter -->
+        <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
+          <span class="material-symbols-rounded text-academy-muted text-base">sort_by_alpha</span>
+          <label for="clearanceSurnameFilter" class="text-xs font-bold text-academy-muted">Surname:</label>
+          <select id="clearanceSurnameFilter" onchange="renderTable()" class="text-xs font-bold text-academy-navy bg-transparent focus:outline-none cursor-pointer">
+            <option value="all">All (A–Z)</option>
+            <option value="A-D">A to D</option>
+            <option value="E-H">E to H</option>
+            <option value="I-L">I to L</option>
+            <option value="M-P">M to P</option>
+            <option value="Q-T">Q to T</option>
+            <option value="U-Z">U to Z</option>
+            <option value="A">Letter A</option>
+            <option value="B">Letter B</option>
+            <option value="C">Letter C</option>
+            <option value="D">Letter D</option>
+            <option value="E">Letter E</option>
+            <option value="F">Letter F</option>
+            <option value="G">Letter G</option>
+            <option value="H">Letter H</option>
+            <option value="I">Letter I</option>
+            <option value="J">Letter J</option>
+            <option value="K">Letter K</option>
+            <option value="L">Letter L</option>
+            <option value="M">Letter M</option>
+            <option value="N">Letter N</option>
+            <option value="O">Letter O</option>
+            <option value="P">Letter P</option>
+            <option value="Q">Letter Q</option>
+            <option value="R">Letter R</option>
+            <option value="S">Letter S</option>
+            <option value="T">Letter T</option>
+            <option value="U">Letter U</option>
+            <option value="V">Letter V</option>
+            <option value="W">Letter W</option>
+            <option value="X">Letter X</option>
+            <option value="Y">Letter Y</option>
+            <option value="Z">Letter Z</option>
+          </select>
+        </div>
+
         <!-- Grade Filter -->
         <div class="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-academy-border shadow-xs">
           <span class="material-symbols-rounded text-academy-muted text-base">filter_alt</span>
@@ -622,12 +703,14 @@ function toggleSortColumn(col) {
 
 function resetFilters() {
   const searchInput = document.getElementById('searchInput');
+  const surnameFilter = document.getElementById('clearanceSurnameFilter');
   const gradeFilter = document.getElementById('gradeFilter');
   const sectionFilter = document.getElementById('sectionFilter');
   const statusFilter = document.getElementById('statusFilter');
   const sortBy = document.getElementById('sortBy');
 
   if (searchInput) searchInput.value = '';
+  if (surnameFilter) surnameFilter.value = 'all';
   if (gradeFilter) gradeFilter.value = 'all';
   updateSectionFilterOptions();
   if (sectionFilter) sectionFilter.value = 'all';
@@ -646,9 +729,53 @@ function getRowStatus(r) {
   return r.student.clearance?.[r.field] || 'pending';
 }
 
+function getStudentSurname(s) {
+  if (typeof window.getStudentSurname === 'function') return window.getStudentSurname(s);
+  if (!s) return '';
+  if (s.lastName || s.last_name || s.surname) return String(s.lastName || s.last_name || s.surname).trim();
+  const raw = String(s.name || s.fullName || '').trim();
+  if (raw.includes(',')) return raw.split(',')[0].trim();
+  const parts = raw.split(/\s+/);
+  if (parts.length <= 1) return raw;
+  const compound = ['dela', 'delos', 'de', 'del', 'san', 'santa', 'sta.', 'st.', 'van', 'von', 'mc', 'mac', 'al', 'di'];
+  for (let i = parts.length - 2; i >= 1; i--) {
+    if (compound.includes(parts[i].toLowerCase())) return parts.slice(i).join(' ');
+  }
+  return parts[parts.length - 1];
+}
+
+function matchesSurnameLetterRange(surname, rangeVal) {
+  if (typeof window.matchesSurnameLetterRange === 'function') return window.matchesSurnameLetterRange(surname, rangeVal);
+  if (!rangeVal || rangeVal === 'all') return true;
+  const clean = String(surname || '').trim().replace(/^[^a-zA-Z]+/, '');
+  if (!clean) return false;
+  const firstLetter = clean.charAt(0).toUpperCase();
+  const m = String(rangeVal).trim().match(/^([a-zA-Z])\s*(?:-|to|_)\s*([a-zA-Z])$/i);
+  if (m) return firstLetter >= m[1].toUpperCase() && firstLetter <= m[2].toUpperCase();
+  return /^[a-zA-Z]$/.test(String(rangeVal).trim()) ? firstLetter === String(rangeVal).trim().toUpperCase() : true;
+}
+
+function matchesStudentIdOrSurname(s, query, letterRange) {
+  if (typeof window.matchesStudentIdOrSurname === 'function') {
+    return window.matchesStudentIdOrSurname(s, query, letterRange);
+  }
+  if (!s) return false;
+  if (letterRange && letterRange !== 'all') {
+    if (!matchesSurnameLetterRange(getStudentSurname(s), letterRange)) return false;
+  }
+  const rawQ = String(query || '').trim();
+  if (!rawQ) return true;
+  const q = rawQ.toLowerCase();
+  const surname = getStudentSurname(s).toLowerCase();
+  const sId = String(s.id || s.studentId || s.student_id || s.studentNumber || s.student_number || '').toLowerCase();
+  const sName = String(s.name || '').toLowerCase();
+  return sId.includes(q) || surname.includes(q) || sName.includes(q);
+}
+
 function renderTable() {
   const allRows = teacherRows();
   const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const surnameFilter = document.getElementById('clearanceSurnameFilter')?.value || 'all';
   const grade = document.getElementById('gradeFilter')?.value || 'all';
   const section = document.getElementById('sectionFilter')?.value || 'all';
   const status = document.getElementById('statusFilter')?.value || 'all';
@@ -677,15 +804,20 @@ function renderTable() {
       return false;
     }
 
-    // Search query
+    // Surname range filter
+    if (surnameFilter !== 'all') {
+      const surname = getStudentSurname(r.student);
+      if (!matchesSurnameLetterRange(surname, surnameFilter)) return false;
+    }
+
+    // Search query: ID, Surname (initial, range or text), name, subject, or class
     if (search) {
-      const sName = String(r.student?.name || '').toLowerCase();
-      const sId = String(r.student?.id || '').toLowerCase();
-      const sNum = String(r.student?.student_number || '').toLowerCase();
+      const matchStd = matchesStudentIdOrSurname(r.student, search, 'all');
       const sSubj = String(r.assignment?.subject || '').toLowerCase();
       const sClass = String(classLabel(r.student) || '').toLowerCase();
-      const match = sName.includes(search) || sId.includes(search) || sNum.includes(search) || sSubj.includes(search) || sClass.includes(search);
-      if (!match) return false;
+      if (!matchStd && !sSubj.includes(search) && !sClass.includes(search)) {
+        return false;
+      }
     }
 
     return true;

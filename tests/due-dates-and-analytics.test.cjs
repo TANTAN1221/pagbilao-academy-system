@@ -159,3 +159,106 @@ test('every analytics chart renders a live analysis/summary box', () => {
   assert.match(boxes.levelComparisonChartSummary.innerHTML, /JHS 100% · SHS 25%/);
   assert.match(boxes.collectionDoughnutChartSummary.innerHTML, /67% Net Collected/);
 });
+
+test('analytics and reports feature responsive multi-criteria retrieval and filtering', () => {
+  const adminHtml = fs.readFileSync(path.resolve(__dirname, '..', 'admin-dashboard.html'), 'utf8');
+  assert.match(adminHtml, /id="analyticsSyFilter"/, 'contains school year filter');
+  assert.match(adminHtml, /id="analyticsLevelFilter"/, 'contains level filter');
+  assert.match(adminHtml, /id="analyticsGradeFilter"/, 'contains grade filter');
+  assert.match(adminHtml, /id="analyticsStatusFilter"/, 'contains settlement status filter');
+  assert.match(adminHtml, /id="analyticsStrandFilter"/, 'contains strand filter');
+  assert.match(adminHtml, /id="analyticsChannelFilter"/, 'contains payment channel filter');
+  assert.match(adminHtml, /id="analyticsDateFilter"/, 'contains timeline date filter');
+  assert.match(adminHtml, /id="analyticsSearchInput"/, 'contains student search input');
+  assert.match(adminHtml, /getFilteredAnalyticsData\(/, 'contains getFilteredAnalyticsData function');
+  assert.match(adminHtml, /applyAnalyticsFilters\(/, 'contains applyAnalyticsFilters function');
+  assert.match(adminHtml, /resetAnalyticsFilters\(/, 'contains resetAnalyticsFilters function');
+  assert.match(adminHtml, /onAnalyticsLevelChange\(/, 'contains onAnalyticsLevelChange function');
+
+  // Verify mobile responsive features
+  assert.ok(adminHtml.includes("document.getElementById('mobileDrawer')?.classList.add('hidden')"), 'admin showPage auto-closes mobile drawer');
+  const studentHtml = fs.readFileSync(path.resolve(__dirname, '..', 'student-dashboard.html'), 'utf8');
+  assert.ok(studentHtml.includes("document.getElementById('mobileDrawer')?.classList.add('hidden')"), 'student showPage auto-closes mobile drawer');
+  assert.match(studentHtml, /max-w-\[calc\(100vw-2rem\)\]/, 'student notification dropdown has mobile viewport safety constraint');
+
+  const clearanceHtml = fs.readFileSync(path.resolve(__dirname, '..', 'clearance-dashboard.html'), 'utf8');
+  assert.match(clearanceHtml, /grid-cols-1 sm:grid-cols-3/, 'clearance dashboard cards are responsive on mobile');
+});
+
+test('all search filters support ID, surname, single-letter, and first-letter range filtering', () => {
+  const adminHtml = fs.readFileSync(path.resolve(__dirname, '..', 'admin-dashboard.html'), 'utf8');
+  const clearanceHtml = fs.readFileSync(path.resolve(__dirname, '..', 'clearance-dashboard.html'), 'utf8');
+  const appConfigJs = fs.readFileSync(path.resolve(__dirname, '..', 'js', 'app-config.js'), 'utf8');
+
+  // Verify dropdown selectors in admin dashboard
+  assert.match(adminHtml, /id="studentSurnameRangeFilter"/, 'contains dashboard studentSurnameRangeFilter');
+  assert.match(adminHtml, /id="studentAccountSurnameFilter"/, 'contains studentAccountSurnameFilter');
+  assert.match(adminHtml, /id="analyticsSurnameFilter"/, 'contains analyticsSurnameFilter');
+
+  // Verify dropdown selector in clearance dashboard
+  assert.match(clearanceHtml, /id="clearanceSurnameFilter"/, 'contains clearanceSurnameFilter');
+
+  // Load appConfig functions in VM
+  const windowObj = {};
+  const context = vm.createContext({
+    window: windowObj,
+    navigator: {},
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    console: { log: () => {}, warn: () => {}, error: () => {} }
+  });
+  vm.runInContext(appConfigJs, context);
+
+  const getStudentSurname = windowObj.getStudentSurname;
+  const matchesSurnameLetterRange = windowObj.matchesSurnameLetterRange;
+  const matchesStudentIdOrSurname = windowObj.matchesStudentIdOrSurname;
+
+  assert.equal(typeof getStudentSurname, 'function');
+  assert.equal(typeof matchesSurnameLetterRange, 'function');
+  assert.equal(typeof matchesStudentIdOrSurname, 'function');
+
+  // Test surname extraction
+  assert.equal(getStudentSurname('Juan Dela Cruz'), 'Dela Cruz');
+  assert.equal(getStudentSurname('Maria Delos Santos'), 'Delos Santos');
+  assert.equal(getStudentSurname('Cruz, Juan'), 'Cruz');
+  assert.equal(getStudentSurname({ name: 'Jose Rizal' }), 'Rizal');
+  assert.equal(getStudentSurname({ lastName: 'Bonifacio' }), 'Bonifacio');
+  assert.equal(getStudentSurname({ last_name: 'Mabini' }), 'Mabini');
+
+  // Test surname letter range matching
+  assert.ok(matchesSurnameLetterRange('Cruz', 'A to D'));
+  assert.ok(matchesSurnameLetterRange('Dela Cruz', 'A-D'));
+  assert.ok(!matchesSurnameLetterRange('Santos', 'A to D'));
+  assert.ok(matchesSurnameLetterRange('Santos', 'Q to T'));
+  assert.ok(matchesSurnameLetterRange('Santos', 'S'));
+  assert.ok(!matchesSurnameLetterRange('Santos', 'A'));
+
+  // Test student ID and surname searching
+  const s1 = { id: 'STU-2026-001', student_number: '2026-001', name: 'Juan Dela Cruz', email: 'juan@example.com' };
+  const s2 = { id: 'STU-2026-002', student_number: '2026-002', name: 'Maria Santos', email: 'maria@example.com' };
+
+  // 1. By ID
+  assert.ok(matchesStudentIdOrSurname(s1, '2026-001'));
+  assert.ok(!matchesStudentIdOrSurname(s2, '2026-001'));
+
+  // 2. By Surname
+  assert.ok(matchesStudentIdOrSurname(s1, 'Cruz'));
+  assert.ok(matchesStudentIdOrSurname(s1, 'Dela Cruz'));
+  assert.ok(!matchesStudentIdOrSurname(s2, 'Cruz'));
+  assert.ok(matchesStudentIdOrSurname(s2, 'Santos'));
+
+  // 3. By single letter surname initial
+  assert.ok(matchesStudentIdOrSurname(s1, 'D'));
+  assert.ok(matchesStudentIdOrSurname(s2, 'S'));
+
+  // 4. By typed letter range (e.g. "A to D")
+  assert.ok(matchesStudentIdOrSurname(s1, 'A to D'));
+  assert.ok(!matchesStudentIdOrSurname(s2, 'A to D'));
+  assert.ok(matchesStudentIdOrSurname(s2, 'Q to T'));
+
+  // 5. By dropdown letter range with empty query
+  assert.ok(matchesStudentIdOrSurname(s1, '', 'A to D'));
+  assert.ok(!matchesStudentIdOrSurname(s2, '', 'A to D'));
+  assert.ok(matchesStudentIdOrSurname(s2, '', 'Q to T'));
+});
+
+

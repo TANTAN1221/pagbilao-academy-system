@@ -165,19 +165,58 @@
               <h3 class="font-extrabold text-academy-navy">Student Accounts</h3>
               <p class="text-sm text-academy-muted">JHS and SHS balances with vouchers and partial payments.</p>
             </div>
-            <div class="grid sm:grid-cols-3 gap-2"><input id="studentSearch" oninput="renderStudents()"
-                placeholder="Search student..." class="px-4 py-3 rounded-xl border border-academy-border"><select
-                id="levelFilter" onchange="renderStudents()"
-                class="px-4 py-3 rounded-xl border border-academy-border bg-white">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <input id="studentSearch" oninput="renderStudents()"
+                placeholder="Search by ID or Surname (A–Z)..." class="px-4 py-3 rounded-xl border border-academy-border text-xs">
+              <select id="studentSurnameRangeFilter" onchange="renderStudents()"
+                class="px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold text-academy-navy">
+                <option value="all">All Surnames (A–Z)</option>
+                <option value="A-D">Surname: A to D</option>
+                <option value="E-H">Surname: E to H</option>
+                <option value="I-L">Surname: I to L</option>
+                <option value="M-P">Surname: M to P</option>
+                <option value="Q-T">Surname: Q to T</option>
+                <option value="U-Z">Surname: U to Z</option>
+                <option value="A">Letter A</option>
+                <option value="B">Letter B</option>
+                <option value="C">Letter C</option>
+                <option value="D">Letter D</option>
+                <option value="E">Letter E</option>
+                <option value="F">Letter F</option>
+                <option value="G">Letter G</option>
+                <option value="H">Letter H</option>
+                <option value="I">Letter I</option>
+                <option value="J">Letter J</option>
+                <option value="K">Letter K</option>
+                <option value="L">Letter L</option>
+                <option value="M">Letter M</option>
+                <option value="N">Letter N</option>
+                <option value="O">Letter O</option>
+                <option value="P">Letter P</option>
+                <option value="Q">Letter Q</option>
+                <option value="R">Letter R</option>
+                <option value="S">Letter S</option>
+                <option value="T">Letter T</option>
+                <option value="U">Letter U</option>
+                <option value="V">Letter V</option>
+                <option value="W">Letter W</option>
+                <option value="X">Letter X</option>
+                <option value="Y">Letter Y</option>
+                <option value="Z">Letter Z</option>
+              </select>
+              <select id="levelFilter" onchange="renderStudents()"
+                class="px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold text-academy-navy">
                 <option value="all">All levels</option>
                 <option>JHS</option>
                 <option>SHS</option>
-              </select><select id="balanceFilter" onchange="renderStudents()"
-                class="px-4 py-3 rounded-xl border border-academy-border bg-white">
+              </select>
+              <select id="balanceFilter" onchange="renderStudents()"
+                class="px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold text-academy-navy">
                 <option value="all">All balances</option>
                 <option value="with_balance">With balance</option>
                 <option value="fully_paid">Fully paid</option>
-              </select></div>
+              </select>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[1080px] text-sm">
@@ -514,11 +553,47 @@
           <div class="bg-white border border-academy-border rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="relative flex-1">
               <span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-              <input id="studentAccountSearchInput" type="text" placeholder="Search student by name, student number, or email..."
+              <input id="studentAccountSearchInput" type="text" placeholder="Search by student ID, surname, name, or email..."
                 oninput="renderStudentAccounts()"
                 class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-academy-border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-academy-blue/20">
             </div>
             <div class="flex flex-wrap items-center gap-2">
+              <select id="studentAccountSurnameFilter" onchange="renderStudentAccounts()"
+                class="px-3 py-2 rounded-xl border border-academy-border text-xs font-bold bg-white text-academy-navy">
+                <option value="all">All Surnames (A–Z)</option>
+                <option value="A-D">Surname: A to D</option>
+                <option value="E-H">Surname: E to H</option>
+                <option value="I-L">Surname: I to L</option>
+                <option value="M-P">Surname: M to P</option>
+                <option value="Q-T">Surname: Q to T</option>
+                <option value="U-Z">Surname: U to Z</option>
+                <option value="A">Letter A</option>
+                <option value="B">Letter B</option>
+                <option value="C">Letter C</option>
+                <option value="D">Letter D</option>
+                <option value="E">Letter E</option>
+                <option value="F">Letter F</option>
+                <option value="G">Letter G</option>
+                <option value="H">Letter H</option>
+                <option value="I">Letter I</option>
+                <option value="J">Letter J</option>
+                <option value="K">Letter K</option>
+                <option value="L">Letter L</option>
+                <option value="M">Letter M</option>
+                <option value="N">Letter N</option>
+                <option value="O">Letter O</option>
+                <option value="P">Letter P</option>
+                <option value="Q">Letter Q</option>
+                <option value="R">Letter R</option>
+                <option value="S">Letter S</option>
+                <option value="T">Letter T</option>
+                <option value="U">Letter U</option>
+                <option value="V">Letter V</option>
+                <option value="W">Letter W</option>
+                <option value="X">Letter X</option>
+                <option value="Y">Letter Y</option>
+                <option value="Z">Letter Z</option>
+              </select>
               <select id="studentAccountGradeFilter" onchange="renderStudentAccounts()"
                 class="px-3 py-2 rounded-xl border border-academy-border text-xs font-bold bg-white text-academy-navy">
                 <option value="all">All Grades</option>
@@ -571,11 +646,169 @@
               <p class="text-sm text-academy-muted mt-1">Reports that help the institution track collections, balances,
                 voucher impact, overdue accounts, and clearance blocks.</p>
             </div>
-            <div class="flex gap-2"><button onclick="exportCollectionReport()"
-                class="px-4 py-3 rounded-xl bg-academy-navy text-white font-bold text-sm">Export Collections
-                CSV</button><button onclick="exportOutstandingReport()"
-                class="px-4 py-3 rounded-xl bg-white border border-academy-border text-academy-navy font-bold text-sm">Export
-                Outstanding CSV</button></div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <button onclick="exportCollectionReport()"
+                class="px-4 py-3 rounded-xl bg-academy-navy text-white font-bold text-sm hover:bg-blue-900 transition shadow-xs flex items-center justify-center gap-2">
+                <span class="material-symbols-rounded text-base">download</span>Export Collections CSV
+              </button>
+              <button onclick="exportOutstandingReport()"
+                class="px-4 py-3 rounded-xl bg-white border border-academy-border text-academy-navy font-bold text-sm hover:bg-slate-50 transition shadow-xs flex items-center justify-center gap-2">
+                <span class="material-symbols-rounded text-base">download</span>Export Outstanding CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYTICS RETRIEVAL & FILTER TOOLBAR -->
+        <div class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-academy-border/70 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-academy-blue border border-blue-100 flex items-center justify-center shrink-0">
+                <span class="material-symbols-rounded text-lg">filter_alt</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-extrabold text-academy-navy">Filter & Scope Analytics</h4>
+                <p class="text-xs text-academy-muted">Scope metrics, visual charts, analysis summaries, and export data</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="analyticsFilterScopeBadge" class="px-3 py-1 rounded-full bg-blue-50 text-academy-navy border border-blue-200 text-xs font-bold">
+                All Records
+              </span>
+              <button type="button" onclick="resetAnalyticsFilters()" class="px-3 py-1.5 rounded-xl border border-academy-border text-slate-600 hover:text-red-600 hover:bg-red-50 text-xs font-bold transition flex items-center gap-1">
+                <span class="material-symbols-rounded text-sm">restart_alt</span>Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <!-- School Year Filter -->
+            <div class="space-y-1">
+              <label for="analyticsSyFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">School Year</label>
+              <select id="analyticsSyFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All School Years</option>
+                <option value="2026-2027" selected>2026–2027 (Active)</option>
+                <option value="2025-2026">2025–2026</option>
+              </select>
+            </div>
+
+            <!-- Education Level Filter -->
+            <div class="space-y-1">
+              <label for="analyticsLevelFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Education Level</label>
+              <select id="analyticsLevelFilter" onchange="onAnalyticsLevelChange()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Levels (JHS & SHS)</option>
+                <option value="JHS">Junior High School (JHS)</option>
+                <option value="SHS">Senior High School (SHS)</option>
+              </select>
+            </div>
+
+            <!-- Grade Level Filter -->
+            <div class="space-y-1">
+              <label for="analyticsGradeFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Grade Level</label>
+              <select id="analyticsGradeFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Grades (7–12)</option>
+                <option value="Grade 7">Grade 7</option>
+                <option value="Grade 8">Grade 8</option>
+                <option value="Grade 9">Grade 9</option>
+                <option value="Grade 10">Grade 10</option>
+                <option value="Grade 11">Grade 11</option>
+                <option value="Grade 12">Grade 12</option>
+              </select>
+            </div>
+
+            <!-- Account Balance / Risk Filter -->
+            <div class="space-y-1">
+              <label for="analyticsStatusFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Settlement Status</label>
+              <select id="analyticsStatusFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Balance Statuses</option>
+                <option value="with_balance">With Outstanding Balance / Due</option>
+                <option value="fully_paid">Fully Paid / Cleared</option>
+              </select>
+            </div>
+
+            <!-- Strand Filter (SHS) -->
+            <div class="space-y-1">
+              <label for="analyticsStrandFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">SHS Strand</label>
+              <select id="analyticsStrandFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Strands</option>
+                <option value="STEM">STEM</option>
+                <option value="ABM">ABM</option>
+                <option value="HUMSS">HUMSS</option>
+                <option value="GAS">GAS</option>
+                <option value="TVL">TVL</option>
+              </select>
+            </div>
+
+            <!-- Payment Channel Filter -->
+            <div class="space-y-1">
+              <label for="analyticsChannelFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Payment Channel</label>
+              <select id="analyticsChannelFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Channels (Online & Cash)</option>
+                <option value="online">Online (PayMongo / QR Ph / GCash / Maya)</option>
+                <option value="cash">Cash / Over-The-Counter</option>
+              </select>
+            </div>
+
+            <!-- Payment Timeline Filter -->
+            <div class="space-y-1">
+              <label for="analyticsDateFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Payment Timeline</label>
+              <select id="analyticsDateFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <option value="all">All Recorded Transactions</option>
+                <option value="today">Today Only</option>
+                <option value="week">Past 7 Days</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+
+            <!-- Surname Range Filter -->
+            <div class="space-y-1">
+              <label for="analyticsSurnameFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Surname (A–Z)</label>
+              <select id="analyticsSurnameFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue text-xs">
+                <option value="all">All Surnames (A–Z)</option>
+                <option value="A-D">Surname: A to D</option>
+                <option value="E-H">Surname: E to H</option>
+                <option value="I-L">Surname: I to L</option>
+                <option value="M-P">Surname: M to P</option>
+                <option value="Q-T">Surname: Q to T</option>
+                <option value="U-Z">Surname: U to Z</option>
+                <option value="A">Letter A</option>
+                <option value="B">Letter B</option>
+                <option value="C">Letter C</option>
+                <option value="D">Letter D</option>
+                <option value="E">Letter E</option>
+                <option value="F">Letter F</option>
+                <option value="G">Letter G</option>
+                <option value="H">Letter H</option>
+                <option value="I">Letter I</option>
+                <option value="J">Letter J</option>
+                <option value="K">Letter K</option>
+                <option value="L">Letter L</option>
+                <option value="M">Letter M</option>
+                <option value="N">Letter N</option>
+                <option value="O">Letter O</option>
+                <option value="P">Letter P</option>
+                <option value="Q">Letter Q</option>
+                <option value="R">Letter R</option>
+                <option value="S">Letter S</option>
+                <option value="T">Letter T</option>
+                <option value="U">Letter U</option>
+                <option value="V">Letter V</option>
+                <option value="W">Letter W</option>
+                <option value="X">Letter X</option>
+                <option value="Y">Letter Y</option>
+                <option value="Z">Letter Z</option>
+              </select>
+            </div>
+
+            <!-- Keyword Search -->
+            <div class="space-y-1">
+              <label for="analyticsSearchInput" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Search ID / Surname</label>
+              <div class="relative">
+                <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">search</span>
+                <input id="analyticsSearchInput" oninput="applyAnalyticsFilters()" placeholder="Filter by ID or Surname (A–Z)..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-academy-border bg-white text-xs text-academy-navy focus:outline-none focus:ring-2 focus:ring-academy-blue">
+              </div>
+            </div>
           </div>
         </div>
 
@@ -682,7 +915,7 @@
                 </div>
                 <span class="material-symbols-rounded text-academy-blue">pie_chart</span>
               </div>
-              <div class="h-64 relative flex items-center justify-center">
+              <div class="h-60 sm:h-64 relative flex items-center justify-center">
                 <canvas id="collectionDoughnutChart"></canvas>
               </div>
             </div>
@@ -690,8 +923,8 @@
           </section>
         </div>
 
-        <section class="grid md:grid-cols-4 gap-4 mt-5" id="analyticsCards"></section>
-        <div class="grid xl:grid-cols-2 gap-5">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5" id="analyticsCards"></section>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <section class="bg-white border border-academy-border rounded-2xl p-5 shadow-sm">
             <h4 class="font-extrabold text-academy-navy mb-4">Collection Progress by Level</h4>
             <div id="collectionByLevel" class="space-y-4"></div>
@@ -1299,7 +1532,33 @@
       document.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => showPage(btn.dataset.page));
       showPage('dashboardPage');
     }
-    function showPage(id) { document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-white', 'text-academy-navy'); b.classList.add('text-blue-50') }); const active = document.querySelector(`[data-page="${id}"]`); if (active) { active.classList.add('bg-white', 'text-academy-navy'); active.classList.remove('text-blue-50') } const item = navItems.find(x => x[0] === id); if (item) { pageTitle.textContent = item[2]; pageSubtitle.textContent = item[3] } if (typeof renderAll === 'function') renderAll(); }
+    function showPage(id) {
+      document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+      const targetEl = document.getElementById(id);
+      if (targetEl) targetEl.classList.remove('hidden');
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-academy-navy');
+        b.classList.add('text-blue-50');
+      });
+      const active = document.querySelector(`[data-page="${id}"]`);
+      if (active) {
+        active.classList.add('bg-white', 'text-academy-navy');
+        active.classList.remove('text-blue-50');
+      }
+      const item = navItems.find(x => x[0] === id);
+      if (item) {
+        pageTitle.textContent = item[2];
+        pageSubtitle.textContent = item[3];
+      }
+      // Auto-close mobile navigation drawer on mobile viewports
+      document.getElementById('mobileDrawer')?.classList.add('hidden');
+
+      if (id === 'analyticsPage' && typeof applyAnalyticsFilters === 'function') {
+        applyAnalyticsFilters();
+      } else if (typeof renderAll === 'function') {
+        renderAll();
+      }
+    }
     function renderDashboard() {
       totalStudents.textContent = appData.students.length;
       const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
@@ -1310,11 +1569,60 @@
       voucherTotal.textContent = money(vouchers);
       renderAdminPayments();
     }
+    function getStudentSurname(s) {
+      if (typeof window.getStudentSurname === 'function') return window.getStudentSurname(s);
+      if (!s) return '';
+      if (s.lastName || s.last_name || s.surname) return String(s.lastName || s.last_name || s.surname).trim();
+      const raw = String(s.name || s.fullName || '').trim();
+      if (raw.includes(',')) return raw.split(',')[0].trim();
+      const parts = raw.split(/\s+/);
+      if (parts.length <= 1) return raw;
+      const compound = ['dela', 'delos', 'de', 'del', 'san', 'santa', 'sta.', 'st.', 'van', 'von', 'mc', 'mac', 'al', 'di'];
+      for (let i = parts.length - 2; i >= 1; i--) {
+        if (compound.includes(parts[i].toLowerCase())) return parts.slice(i).join(' ');
+      }
+      return parts[parts.length - 1];
+    }
+
+    function matchesSurnameLetterRange(surname, rangeVal) {
+      if (typeof window.matchesSurnameLetterRange === 'function') return window.matchesSurnameLetterRange(surname, rangeVal);
+      if (!rangeVal || rangeVal === 'all') return true;
+      const clean = String(surname || '').trim().replace(/^[^a-zA-Z]+/, '');
+      if (!clean) return false;
+      const firstLetter = clean.charAt(0).toUpperCase();
+      const m = String(rangeVal).trim().match(/^([a-zA-Z])\s*(?:-|to|_)\s*([a-zA-Z])$/i);
+      if (m) return firstLetter >= m[1].toUpperCase() && firstLetter <= m[2].toUpperCase();
+      return /^[a-zA-Z]$/.test(String(rangeVal).trim()) ? firstLetter === String(rangeVal).trim().toUpperCase() : true;
+    }
+
+    function matchesStudentIdOrSurname(s, query, letterRange) {
+      if (typeof window.matchesStudentIdOrSurname === 'function') {
+        return window.matchesStudentIdOrSurname(s, query, letterRange);
+      }
+      if (!s) return false;
+      if (letterRange && letterRange !== 'all') {
+        if (!matchesSurnameLetterRange(getStudentSurname(s), letterRange)) return false;
+      }
+      const rawQ = String(query || '').trim();
+      if (!rawQ) return true;
+      const q = rawQ.toLowerCase();
+      const surname = getStudentSurname(s).toLowerCase();
+      const sId = String(s.id || s.studentId || s.student_id || s.studentNumber || s.student_number || '').toLowerCase();
+      const sName = String(s.name || '').toLowerCase();
+      return sId.includes(q) || surname.includes(q) || sName.includes(q);
+    }
+
     function renderStudents() {
-      const q = (studentSearch?.value || '').toLowerCase();
+      const q = (studentSearch?.value || '').toLowerCase().trim();
+      const surnameRange = studentSurnameRangeFilter?.value || 'all';
       const level = levelFilter?.value || 'all';
       const bf = balanceFilter?.value || 'all';
-      let rows = appData.students.filter(s => (level === 'all' || s.level === level) && (bf === 'all' || (bf === 'with_balance' ? balance(s) > 0 : balance(s) === 0)) && (s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)));
+      let rows = appData.students.filter(s => {
+        if (level !== 'all' && s.level !== level) return false;
+        if (bf === 'with_balance' && balance(s) <= 0) return false;
+        if (bf === 'fully_paid' && balance(s) !== 0) return false;
+        return matchesStudentIdOrSurname(s, q, surnameRange);
+      });
       studentTableBody.innerHTML = rows.map(s => {
         const paidDisplay = (typeof getStudentTotalPaidInAdmin === 'function')
           ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s))
@@ -1653,14 +1961,252 @@
     let gradeComplianceChartInstance = null;
     let levelComparisonChartInstance = null;
 
-    function computeFeeTypeCollectionStats() {
+    // --- ACCOUNTING ANALYTICS RETRIEVAL & FILTERING ENGINE ---
+    function getFilteredAnalyticsData() {
+      const sy = document.getElementById('analyticsSyFilter')?.value || 'all';
+      const level = document.getElementById('analyticsLevelFilter')?.value || 'all';
+      const grade = document.getElementById('analyticsGradeFilter')?.value || 'all';
+      const status = document.getElementById('analyticsStatusFilter')?.value || 'all';
+      const strand = document.getElementById('analyticsStrandFilter')?.value || 'all';
+      const channel = document.getElementById('analyticsChannelFilter')?.value || 'all';
+      const dateRange = document.getElementById('analyticsDateFilter')?.value || 'all';
+      const surnameRange = document.getElementById('analyticsSurnameFilter')?.value || 'all';
+      const query = (document.getElementById('analyticsSearchInput')?.value || '').toLowerCase().trim();
+
+      const activeSy = appData.settings?.schoolYear || '2026-2027';
+
+      // 1. Filter students
+      const students = (appData.students || []).filter(s => {
+        if (sy !== 'all') {
+          const sSy = s.schoolYear || activeSy;
+          if (sSy !== sy) return false;
+        }
+        if (level !== 'all' && s.level !== level) return false;
+        if (grade !== 'all' && String(s.grade || '').toLowerCase() !== grade.toLowerCase()) return false;
+        if (strand !== 'all') {
+          const sStrand = String(s.strand || '').toLowerCase();
+          if (!sStrand || sStrand === 'n/a' || !sStrand.includes(strand.toLowerCase())) return false;
+        }
+        if (status === 'with_balance' && balance(s) <= 0) return false;
+        if (status === 'fully_paid' && balance(s) > 0) return false;
+        if (!matchesStudentIdOrSurname(s, query, surnameRange)) return false;
+        return true;
+      });
+
+      // 2. Filter payments
+      const isStaffPayment = (p) => {
+        if (!p) return false;
+        const email = String(p.email || p.studentEmail || '').toLowerCase().trim();
+        return email === 'admin@pagbilao.edu.ph' || email === 'accounting@pagbilao.edu.ph';
+      };
+
+      const allBasePayments = (appData.payments || []).filter(p => !isStaffPayment(p));
+      const hasStudentFilter = (sy !== 'all' || level !== 'all' || grade !== 'all' || status !== 'all' || strand !== 'all' || surnameRange !== 'all' || query !== '');
+
+      const studentIdSet = new Set(students.map(s => String(s.id || '').toLowerCase()));
+      const studentNoSet = new Set(students.map(s => String(s.studentNumber || '').toLowerCase()).filter(Boolean));
+      const studentNameSet = new Set(students.map(s => String(s.name || '').toLowerCase()));
+
+      const payments = allBasePayments.filter(p => {
+        if (hasStudentFilter) {
+          const pId = String(p.studentId || '').toLowerCase();
+          const pName = String(p.studentName || '').toLowerCase();
+          const matched = studentIdSet.has(pId) || studentNoSet.has(pId) || studentNameSet.has(pName);
+          if (!matched) return false;
+        }
+
+        if (channel !== 'all') {
+          const m = String(p.method || '').toLowerCase();
+          if (channel === 'online') {
+            const isOnline = m.includes('paymongo') || m.includes('qr') || m.includes('gcash') || m.includes('maya');
+            if (!isOnline) return false;
+          } else if (channel === 'cash') {
+            const isCash = m.includes('cash') || m.includes('manual') || m.includes('counter');
+            if (!isCash) return false;
+          }
+        }
+
+        if (dateRange !== 'all') {
+          const pDate = p.paidAt ? new Date(p.paidAt) : (p.date ? new Date(p.date) : null);
+          if (pDate && !isNaN(pDate.getTime())) {
+            const now = new Date();
+            if (dateRange === 'today') {
+              if (pDate.toDateString() !== now.toDateString()) return false;
+            } else if (dateRange === 'week') {
+              const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              if (pDate < weekAgo) return false;
+            } else if (dateRange === 'month') {
+              if (pDate.getMonth() !== now.getMonth() || pDate.getFullYear() !== now.getFullYear()) return false;
+            }
+          }
+        }
+
+        if (query) {
+          const pRef = String(p.referenceNo || p.id || '').toLowerCase();
+          const pName = String(p.studentName || '').toLowerCase();
+          const pRemarks = String(p.remarks || '').toLowerCase();
+          if (!pRef.includes(query) && !pName.includes(query) && !pRemarks.includes(query)) return false;
+        }
+
+        return true;
+      });
+
+      return {
+        students,
+        payments,
+        filters: { sy, level, grade, status, strand, channel, dateRange, query },
+        isFiltered: students.length !== (appData.students || []).length || payments.length !== allBasePayments.length
+      };
+    }
+
+    function onAnalyticsLevelChange() {
+      const lvl = document.getElementById('analyticsLevelFilter')?.value || 'all';
+      const gradeSel = document.getElementById('analyticsGradeFilter');
+      const strandSel = document.getElementById('analyticsStrandFilter');
+
+      if (gradeSel) {
+        if (lvl === 'JHS') {
+          gradeSel.innerHTML = `
+            <option value="all">All JHS Grades (7–10)</option>
+            <option value="Grade 7">Grade 7</option>
+            <option value="Grade 8">Grade 8</option>
+            <option value="Grade 9">Grade 9</option>
+            <option value="Grade 10">Grade 10</option>
+          `;
+          if (strandSel) {
+            strandSel.value = 'all';
+            strandSel.disabled = true;
+          }
+        } else if (lvl === 'SHS') {
+          gradeSel.innerHTML = `
+            <option value="all">All SHS Grades (11–12)</option>
+            <option value="Grade 11">Grade 11</option>
+            <option value="Grade 12">Grade 12</option>
+          `;
+          if (strandSel) strandSel.disabled = false;
+        } else {
+          gradeSel.innerHTML = `
+            <option value="all">All Grades (7–12)</option>
+            <option value="Grade 7">Grade 7</option>
+            <option value="Grade 8">Grade 8</option>
+            <option value="Grade 9">Grade 9</option>
+            <option value="Grade 10">Grade 10</option>
+            <option value="Grade 11">Grade 11</option>
+            <option value="Grade 12">Grade 12</option>
+          `;
+          if (strandSel) strandSel.disabled = false;
+        }
+      }
+      applyAnalyticsFilters();
+    }
+
+    function resetAnalyticsFilters() {
+      const sy = document.getElementById('analyticsSyFilter');
+      if (sy) sy.value = 'all';
+      const lvl = document.getElementById('analyticsLevelFilter');
+      if (lvl) lvl.value = 'all';
+      const gr = document.getElementById('analyticsGradeFilter');
+      if (gr) {
+        gr.innerHTML = `
+          <option value="all">All Grades (7–12)</option>
+          <option value="Grade 7">Grade 7</option>
+          <option value="Grade 8">Grade 8</option>
+          <option value="Grade 9">Grade 9</option>
+          <option value="Grade 10">Grade 10</option>
+          <option value="Grade 11">Grade 11</option>
+          <option value="Grade 12">Grade 12</option>
+        `;
+        gr.value = 'all';
+      }
+      const st = document.getElementById('analyticsStatusFilter');
+      if (st) st.value = 'all';
+      const str = document.getElementById('analyticsStrandFilter');
+      if (str) { str.disabled = false; str.value = 'all'; }
+      const ch = document.getElementById('analyticsChannelFilter');
+      if (ch) ch.value = 'all';
+      const dt = document.getElementById('analyticsDateFilter');
+      if (dt) dt.value = 'all';
+      const sn = document.getElementById('analyticsSurnameFilter');
+      if (sn) sn.value = 'all';
+      const srch = document.getElementById('analyticsSearchInput');
+      if (srch) srch.value = '';
+      applyAnalyticsFilters();
+    }
+
+    function applyAnalyticsFilters() {
+      const data = getFilteredAnalyticsData();
+      const badge = document.getElementById('analyticsFilterScopeBadge');
+      if (badge) {
+        const total = (appData.students || []).length;
+        if (data.isFiltered) {
+          badge.textContent = `Filtered Scope: ${data.students.length} of ${total} Students (${data.payments.length} Tx)`;
+          badge.className = 'px-3 py-1 rounded-full bg-blue-600 text-white border border-blue-700 text-xs font-bold';
+        } else {
+          badge.textContent = `All Records: ${total} Students (${data.payments.length} Tx)`;
+          badge.className = 'px-3 py-1 rounded-full bg-blue-50 text-academy-navy border border-blue-200 text-xs font-bold';
+        }
+      }
+
+      const billed = data.students.reduce((sum, x) => sum + assessedTotal(x), 0);
+      const collected = data.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+      const outstanding = data.students.reduce((sum, x) => sum + balance(x), 0);
+      const vouchers = data.students.reduce((sum, x) => sum + voucherAmount(x), 0);
+
+      const cardsEl = document.getElementById('analyticsCards');
+      if (cardsEl) {
+        cardsEl.innerHTML = [
+          ['Total Assessed', billed, 'text-academy-navy'],
+          ['Total Collected', collected, 'text-green-700'],
+          ['Outstanding', outstanding, 'text-red-600'],
+          ['Voucher Impact', vouchers, 'text-academy-navy']
+        ].map(c => `
+          <div class="rounded-2xl bg-white border border-academy-border p-5 shadow-xs">
+            <p class="text-xs sm:text-sm text-academy-muted">${c[0]}</p>
+            <h3 class="mt-2 sm:mt-3 text-xl sm:text-2xl font-extrabold ${c[2]}">${money(c[1])}</h3>
+          </div>
+        `).join('');
+      }
+
+      const levels = (data.filters.level === 'JHS') ? ['JHS'] : ((data.filters.level === 'SHS') ? ['SHS'] : ['JHS', 'SHS']);
+      const levelEl = document.getElementById('collectionByLevel');
+      if (levelEl) {
+        levelEl.innerHTML = levels.map(level => {
+          const ss = data.students.filter(s => s.level === level);
+          const total = ss.reduce((n, s) => n + assessedTotal(s), 0);
+          const paid = ss.reduce((n, s) => n + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
+          const pct = total ? Math.round(paid / total * 100) : 0;
+          return `<div><div class="flex justify-between text-sm mb-2"><strong>${level} (${ss.length} students)</strong><span>${money(paid)} / ${money(total)} (${pct}%)</span></div><div class="h-3 bg-academy-light rounded-full overflow-hidden"><div class="h-full bg-academy-blue" style="width:${pct}%"></div></div></div>`;
+        }).join('') || '<p class="text-xs text-academy-muted">No students in selected scope.</p>';
+      }
+
+      const overdueEl = document.getElementById('overdueList');
+      if (overdueEl) {
+        const overdueStudents = data.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a));
+        overdueEl.innerHTML = overdueStudents.map(s => `
+          <div class="p-3.5 sm:p-4 rounded-2xl border border-academy-border flex justify-between items-center gap-2">
+            <div class="min-w-0">
+              <p class="font-extrabold text-xs sm:text-sm text-academy-navy truncate">${escapeHtml(s.name)}</p>
+              <p class="text-[11px] sm:text-xs text-academy-muted truncate">${escapeHtml(classLabel(s))} · ${dueStatus(s)}</p>
+            </div>
+            <strong class="text-red-600 text-xs sm:text-sm shrink-0">${money(balance(s))}</strong>
+          </div>
+        `).join('') || '<p class="text-sm text-academy-muted">No outstanding balances in selected scope.</p>';
+      }
+
+      renderAdminPayments(data.payments);
+      renderAnalyticsChartSummaries(data.students);
+      renderAnalyticsCharts(data.students);
+    }
+
+    function computeFeeTypeCollectionStats(targetStudents = null) {
+      const students = targetStudents || ((typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []));
       const feeNames = new Set();
       ['JHS', 'SHS'].forEach(lvl => {
         (appData.feeStructures[lvl] || []).forEach(f => {
           if (f && f.name) feeNames.add(f.name.trim());
         });
       });
-      (appData.students || []).forEach(s => {
+      students.forEach(s => {
         if (s.customFees && Array.isArray(s.customFees)) {
           s.customFees.forEach(f => { if (f && f.name) feeNames.add(f.name.trim()); });
         }
@@ -1675,7 +2221,7 @@
         let totalAssessed = 0;
         let totalCollected = 0;
 
-        (appData.students || []).forEach(s => {
+        students.forEach(s => {
           const sFees = (s.customFees && Array.isArray(s.customFees) && s.customFees.length > 0)
             ? s.customFees
             : (appData.feeStructures[s.level] || []);
@@ -1704,10 +2250,11 @@
       });
     }
 
-    function computeGradeComplianceStats() {
+    function computeGradeComplianceStats(targetStudents = null) {
+      const students = targetStudents || ((typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []));
       const grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
       return grades.map(gr => {
-        const matching = (appData.students || []).filter(s => String(s.grade || '').trim().toLowerCase() === gr.toLowerCase());
+        const matching = students.filter(s => String(s.grade || '').trim().toLowerCase() === gr.toLowerCase());
         const count = matching.length;
         const assessed = matching.reduce((sum, s) => sum + assessedTotal(s), 0);
         const collected = matching.reduce((sum, s) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
@@ -1728,11 +2275,12 @@
       });
     }
 
-    function computeLevelComparisonStats() {
+    function computeLevelComparisonStats(targetStudents = null) {
+      const students = targetStudents || ((typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []));
       const jhs = { level: 'Junior High (JHS)', count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0 };
       const shs = { level: 'Senior High (SHS)', count: 0, assessed: 0, collected: 0, balance: 0, vouchers: 0 };
 
-      (appData.students || []).forEach(s => {
+      students.forEach(s => {
         const isJhs = s.level === 'JHS' || String(s.grade || '').match(/^(Grade )?(7|8|9|10)/i);
         const target = isJhs ? jhs : shs;
         target.count += 1;
@@ -1748,7 +2296,7 @@
       return [jhs, shs];
     }
 
-    function computePaymentMethodStats() {
+    function computePaymentMethodStats(targetPayments = null) {
       const methods = {
         'QR Ph / PayMongo': 0,
         'GCash': 0,
@@ -1756,7 +2304,7 @@
         'Cash / Over-the-counter': 0
       };
 
-      const allPayments = (appData.payments && Array.isArray(appData.payments)) ? appData.payments : [];
+      const allPayments = targetPayments || ((appData.payments && Array.isArray(appData.payments)) ? appData.payments : []);
       if (allPayments.length > 0) {
         allPayments.forEach(p => {
           const amt = Number(p.amount || 0);
@@ -1778,18 +2326,19 @@
       return methods;
     }
 
-    function renderAnalyticsCharts() {
+    function renderAnalyticsCharts(targetStudents = null) {
       if (typeof Chart === 'undefined') return;
 
-      const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
-      const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
-      const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
-      const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
+      const students = targetStudents || ((typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []));
+      const billed = students.reduce((sum, x) => sum + assessedTotal(x), 0);
+      const collected = students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+      const outstanding = students.reduce((sum, x) => sum + balance(x), 0);
+      const vouchers = students.reduce((sum, x) => sum + voucherAmount(x), 0);
 
       // 1. Fee Collection by Specific Fee Type (Bar Chart)
       const feeTypeCtx = document.getElementById('feeTypeCollectionBarChart')?.getContext('2d');
       if (feeTypeCtx) {
-        const feeStats = computeFeeTypeCollectionStats();
+        const feeStats = computeFeeTypeCollectionStats(students);
         if (feeTypeChartInstance) feeTypeChartInstance.destroy();
         feeTypeChartInstance = new Chart(feeTypeCtx, {
           type: 'bar',
@@ -1826,7 +2375,7 @@
       // 2. Grade-Level Compliance (Stacked Bar Chart)
       const gradeCtx = document.getElementById('gradeLevelComplianceBarChart')?.getContext('2d');
       if (gradeCtx) {
-        const gradeStats = computeGradeComplianceStats();
+        const gradeStats = computeGradeComplianceStats(students);
         if (gradeComplianceChartInstance) gradeComplianceChartInstance.destroy();
         gradeComplianceChartInstance = new Chart(gradeCtx, {
           type: 'bar',
@@ -1864,7 +2413,7 @@
       // 3. JHS vs SHS Level Financial Comparison (Grouped Bar Chart)
       const levelCtx = document.getElementById('levelComparisonBarChart')?.getContext('2d');
       if (levelCtx) {
-        const levelStats = computeLevelComparisonStats();
+        const levelStats = computeLevelComparisonStats(students);
         if (levelComparisonChartInstance) levelComparisonChartInstance.destroy();
         levelComparisonChartInstance = new Chart(levelCtx, {
           type: 'bar',
@@ -1948,17 +2497,20 @@
           box.innerHTML = `<div class="flex items-center gap-3 text-blue-200 py-3"><span class="material-symbols-rounded animate-spin text-2xl text-blue-400">psychology</span><span>Analyzing Pagbilao Academy Inc. multi-fee metrics with Gemini AI...</span></div>`;
         }
 
-        const totalStudentsCount = appData.students.length;
-        const grossBilled = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
-        const totalPaid = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
-        const totalBalance = appData.students.reduce((sum, x) => sum + balance(x), 0);
-        const totalVouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
-        const collectionRatePct = grossBilled > 0 ? Math.round((totalPaid / grossBilled) * 100) : 0;
-        const overdueStudentsCount = appData.students.filter(s => balance(s) > 0).length;
+        const dataScope = (typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData() : { students: appData.students || [], filters: {}, isFiltered: false };
+        const students = dataScope.students || [];
 
-        const feeStats = computeFeeTypeCollectionStats();
-        const gradeStats = computeGradeComplianceStats();
-        const levelStats = computeLevelComparisonStats();
+        const totalStudentsCount = students.length;
+        const grossBilled = students.reduce((sum, x) => sum + assessedTotal(x), 0);
+        const totalPaid = students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+        const totalBalance = students.reduce((sum, x) => sum + balance(x), 0);
+        const totalVouchers = students.reduce((sum, x) => sum + voucherAmount(x), 0);
+        const collectionRatePct = grossBilled > 0 ? Math.round((totalPaid / grossBilled) * 100) : 0;
+        const overdueStudentsCount = students.filter(s => balance(s) > 0).length;
+
+        const feeStats = computeFeeTypeCollectionStats(students);
+        const gradeStats = computeGradeComplianceStats(students);
+        const levelStats = computeLevelComparisonStats(students);
 
         const jhsData = levelStats.find(l => l.level.includes('JHS')) || { collected: 0, balance: 0, assessed: 0, ratePct: 0 };
         const shsData = levelStats.find(l => l.level.includes('SHS')) || { collected: 0, balance: 0, assessed: 0, ratePct: 0 };
@@ -1967,11 +2519,17 @@
         const gradeBreakdownText = gradeStats.map(g => `${g.grade}: Total Students ${g.count}, Collected PHP ${g.collected.toLocaleString()} (${g.ratePct}%), Outstanding PHP ${g.outstanding.toLocaleString()}`).join('\n');
         const levelBreakdownText = `Junior High (JHS): Assessed PHP ${jhsData.assessed.toLocaleString()}, Collected PHP ${jhsData.collected.toLocaleString()} (${jhsData.ratePct}%), Balance PHP ${jhsData.balance.toLocaleString()}\nSenior High (SHS): Assessed PHP ${shsData.assessed.toLocaleString()}, Collected PHP ${shsData.collected.toLocaleString()} (${shsData.ratePct}%), Balance PHP ${shsData.balance.toLocaleString()}`;
 
+        const scopeLabel = dataScope.isFiltered
+          ? `[Target Cohort: ${totalStudentsCount} Students — SY ${dataScope.filters.sy || 'All'}, Level ${dataScope.filters.level || 'All'}, Grade ${dataScope.filters.grade || 'All'}]`
+          : '[Target Cohort: Institutional Total — All Students]';
+
         let finalReportHtml = '';
 
         // Attempt remote Google Gemini API fetch if valid API key is present
         if (apiKey && apiKey.startsWith('AIzaSy')) {
           const prompt = `You are an expert Educational Financial Analyst and Executive Auditor for Pagbilao Academy Inc. in Quezon, Philippines. Analyze the following comprehensive financial and specific fee collection metrics to generate an executive intelligence report with actionable strategic recommendations.
+
+Active Analysis Scope: ${scopeLabel}
 
 Institutional Financial Metrics:
 - Total Enrolled Students: ${totalStudentsCount}
@@ -2050,7 +2608,10 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
           const lowestGrade = [...gradeStats].sort((a, b) => a.ratePct - b.ratePct)[0];
 
           finalReportHtml = `
-            <div class="font-extrabold ${healthColor} text-sm mb-1">INSTITUTIONAL HEALTH RATING: ${healthRating} (${collectionRatePct}% Overall Collection Rate)</div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-extrabold ${healthColor} text-sm">INSTITUTIONAL HEALTH RATING: ${healthRating} (${collectionRatePct}% Overall Collection Rate)</div>
+              ${dataScope.isFiltered ? `<span class="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30 text-[10px] font-bold">Filtered Cohort</span>` : ''}
+            </div>
             
             <h5 class="font-bold text-white text-xs mt-2.5 mb-1 flex items-center gap-1.5">
               <span class="material-symbols-rounded text-sm text-blue-400">analytics</span> Specific Fee Item Performance:
@@ -2114,11 +2675,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       }
     }
 
-    function renderAnalyticsChartSummaries() {
-      const students = appData.students || [];
-      const feeStats = computeFeeTypeCollectionStats();
-      const gradeStats = computeGradeComplianceStats();
-      const levelStats = computeLevelComparisonStats();
+    function renderAnalyticsChartSummaries(targetStudents = null) {
+      const students = targetStudents || ((typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []));
+      const feeStats = computeFeeTypeCollectionStats(students);
+      const gradeStats = computeGradeComplianceStats(students);
+      const levelStats = computeLevelComparisonStats(students);
 
       // 1. Collections by Specific Fee Type summary
       const feeBox = document.getElementById('feeTypeChartSummary');
@@ -2261,30 +2822,34 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
     }
 
     function renderAnalytics() {
-      const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
-      const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
-      const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
-      const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
+      if (typeof applyAnalyticsFilters === 'function') {
+        applyAnalyticsFilters();
+      } else {
+        const billed = appData.students.reduce((sum, x) => sum + assessedTotal(x), 0);
+        const collected = appData.students.reduce((sum, x) => sum + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(x.paid || 0), getStudentTotalPaidInAdmin(x)) : Number(x.paid || 0)), 0);
+        const outstanding = appData.students.reduce((sum, x) => sum + balance(x), 0);
+        const vouchers = appData.students.reduce((sum, x) => sum + voucherAmount(x), 0);
 
-      analyticsCards.innerHTML = [['Total Assessed', billed, 'text-academy-navy'], ['Total Collected', collected, 'text-green-700'], ['Outstanding', outstanding, 'text-red-600'], ['Voucher Impact', vouchers, 'text-academy-navy']].map(c => `<div class="rounded-2xl bg-white border border-academy-border p-5"><p class="text-sm text-academy-muted">${c[0]}</p><h3 class="mt-3 text-2xl font-extrabold ${c[2]}">${money(c[1])}</h3></div>`).join('');
-      
-      const levels = ['JHS', 'SHS'];
-      collectionByLevel.innerHTML = levels.map(level => {
-        const ss = appData.students.filter(s => s.level === level);
-        const total = ss.reduce((n, s) => n + assessedTotal(s), 0);
-        const paid = ss.reduce((n, s) => n + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
-        const pct = total ? Math.round(paid / total * 100) : 0;
-        return `<div><div class="flex justify-between text-sm mb-2"><strong>${level}</strong><span>${money(paid)} / ${money(total)} (${pct}%)</span></div><div class="h-3 bg-academy-light rounded-full overflow-hidden"><div class="h-full bg-academy-blue" style="width:${pct}%"></div></div></div>`;
-      }).join('');
+        analyticsCards.innerHTML = [['Total Assessed', billed, 'text-academy-navy'], ['Total Collected', collected, 'text-green-700'], ['Outstanding', outstanding, 'text-red-600'], ['Voucher Impact', vouchers, 'text-academy-navy']].map(c => `<div class="rounded-2xl bg-white border border-academy-border p-5"><p class="text-sm text-academy-muted">${c[0]}</p><h3 class="mt-3 text-2xl font-extrabold ${c[2]}">${money(c[1])}</h3></div>`).join('');
+        
+        const levels = ['JHS', 'SHS'];
+        collectionByLevel.innerHTML = levels.map(level => {
+          const ss = appData.students.filter(s => s.level === level);
+          const total = ss.reduce((n, s) => n + assessedTotal(s), 0);
+          const paid = ss.reduce((n, s) => n + (typeof getStudentTotalPaidInAdmin === 'function' ? Math.max(Number(s.paid || 0), getStudentTotalPaidInAdmin(s)) : Number(s.paid || 0)), 0);
+          const pct = total ? Math.round(paid / total * 100) : 0;
+          return `<div><div class="flex justify-between text-sm mb-2"><strong>${level}</strong><span>${money(paid)} / ${money(total)} (${pct}%)</span></div><div class="h-3 bg-academy-light rounded-full overflow-hidden"><div class="h-full bg-academy-blue" style="width:${pct}%"></div></div></div>`;
+        }).join('');
 
-      overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${escapeHtml(s.name)}</p><p class="text-xs text-academy-muted">${escapeHtml(classLabel(s))} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
+        overdueList.innerHTML = appData.students.filter(s => balance(s) > 0).sort((a, b) => balance(b) - balance(a)).map(s => `<div class="p-4 rounded-2xl border border-academy-border flex justify-between"><div><p class="font-extrabold text-academy-navy">${escapeHtml(s.name)}</p><p class="text-xs text-academy-muted">${escapeHtml(classLabel(s))} · ${dueStatus(s)}</p></div><strong class="text-red-600">${money(balance(s))}</strong></div>`).join('') || '<p class="text-sm text-academy-muted">No outstanding balance.</p>';
 
-      renderAdminPayments();
-      renderAnalyticsChartSummaries();
-      renderAnalyticsCharts();
+        renderAdminPayments();
+        renderAnalyticsChartSummaries();
+        renderAnalyticsCharts();
+      }
     }
 
-    function renderAdminPayments() {
+    function renderAdminPayments(customAnalyticsPayments = null) {
       const isStaffPayment = (p) => {
         if (!p) return false;
         const email = String(p.email || p.studentEmail || '').toLowerCase().trim();
@@ -2294,19 +2859,13 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       const allPayments = (appData.payments || []).filter(p => !isStaffPayment(p));
       const txBadge = document.getElementById('adminTxCountBadge');
       if (txBadge) txBadge.textContent = `${allPayments.length} Transaction(s)`;
-      const analyticsTxBadge = document.getElementById('analyticsTxCountBadge');
-      if (analyticsTxBadge) analyticsTxBadge.textContent = `${allPayments.length} Transaction(s)`;
 
-      const txBodies = [
-        document.getElementById('adminPaymentsBody'),
-        document.getElementById('analyticsPaymentsBody')
-      ].filter(Boolean);
-
-      txBodies.forEach(txBody => {
+      const adminTxBody = document.getElementById('adminPaymentsBody');
+      if (adminTxBody) {
         if (!allPayments.length) {
-          txBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No payment transactions recorded yet.</td></tr>`;
+          adminTxBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No payment transactions recorded yet.</td></tr>`;
         } else {
-          txBody.innerHTML = allPayments.map(p => {
+          adminTxBody.innerHTML = allPayments.map(p => {
             const dateStr = p.paidAt ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : (p.date || 'Today');
             const feeItems = p.feeBreakdown && p.feeBreakdown.length ? p.feeBreakdown.join(', ') : (p.remarks || 'Tuition / Assessment Fee');
             return `
@@ -2321,7 +2880,33 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
             `;
           }).join('');
         }
-      });
+      }
+
+      const analyticsPayments = customAnalyticsPayments || allPayments;
+      const analyticsTxBadge = document.getElementById('analyticsTxCountBadge');
+      if (analyticsTxBadge) analyticsTxBadge.textContent = `${analyticsPayments.length} Transaction(s)`;
+
+      const analyticsTxBody = document.getElementById('analyticsPaymentsBody');
+      if (analyticsTxBody) {
+        if (!analyticsPayments.length) {
+          analyticsTxBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-academy-muted text-xs font-bold">No payment transactions match the active filter criteria.</td></tr>`;
+        } else {
+          analyticsTxBody.innerHTML = analyticsPayments.map(p => {
+            const dateStr = p.paidAt ? new Date(p.paidAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : (p.date || 'Today');
+            const feeItems = p.feeBreakdown && p.feeBreakdown.length ? p.feeBreakdown.join(', ') : (p.remarks || 'Tuition / Assessment Fee');
+            return `
+              <tr class="hover:bg-academy-soft">
+                <td class="px-4 py-3 font-mono text-xs font-bold text-slate-800">${p.referenceNo || p.id}</td>
+                <td class="px-4 py-3 font-extrabold text-academy-navy">${p.studentName || p.studentId || 'Student'}</td>
+                <td class="px-4 py-3">${pill(p.method || 'Online', 'green')}</td>
+                <td class="px-4 py-3 text-xs text-academy-muted">${dateStr}</td>
+                <td class="px-4 py-3 text-xs text-slate-600">${feeItems}</td>
+                <td class="px-4 py-3 text-right font-extrabold text-emerald-700">${money(p.amount)}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
     }
     function renderCertificates() { certificateBody.innerHTML = appData.students.map(s => { const complete = clearanceComplete(s); const req = appData.certificateRequests.find(r => r.studentId === s.id); return `<tr class="hover:bg-academy-soft"><td class="px-4 py-3 font-extrabold text-academy-navy">${s.name}</td><td class="px-4 py-3">${classLabel(s)}</td><td class="px-4 py-3">${complete ? pill('Completed', 'green') : pill('Incomplete', 'amber')}</td><td class="px-4 py-3">${req ? pill(req.status, req.status === 'approved' ? 'green' : 'amber') : 'No request'}</td><td class="px-4 py-3"><button ${complete ? '' : 'disabled'} onclick="openCertificate('${s.id}')" class="px-3 py-1.5 rounded-lg ${complete ? 'bg-academy-navy text-white' : 'bg-slate-100 text-slate-400'} font-bold text-xs">Open Certificate</button></td></tr>` }).join('') }
     function renderAll() { renderDashboard(); renderStudents(); renderFees(); renderDueDates(); renderClearance(); renderAccounts(); renderAnalytics(); renderCertificates(); }
@@ -3804,9 +4389,11 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
 
     function resetStudentAccountFilters() {
       const searchInput = document.getElementById('studentAccountSearchInput');
+      const surnameFilter = document.getElementById('studentAccountSurnameFilter');
       const gradeFilter = document.getElementById('studentAccountGradeFilter');
       const statusFilter = document.getElementById('studentAccountStatusFilter');
       if (searchInput) searchInput.value = '';
+      if (surnameFilter) surnameFilter.value = 'all';
       if (gradeFilter) gradeFilter.value = 'all';
       if (statusFilter) statusFilter.value = 'all';
       renderStudentAccounts();
@@ -3867,6 +4454,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       if (badgeStudent) badgeStudent.textContent = totalCount;
 
       const searchVal = (document.getElementById('studentAccountSearchInput')?.value || '').trim().toLowerCase();
+      const surnameVal = document.getElementById('studentAccountSurnameFilter')?.value || 'all';
       const gradeVal = document.getElementById('studentAccountGradeFilter')?.value || 'all';
       const statusVal = document.getElementById('studentAccountStatusFilter')?.value || 'all';
 
@@ -3875,13 +4463,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
         const isAct = s.status !== 'disabled' && s.status !== 'inactive';
         if (statusVal === 'active' && !isAct) return false;
         if (statusVal === 'disabled' && isAct) return false;
-        if (searchVal) {
-          const matchName = String(s.name || '').toLowerCase().includes(searchVal);
-          const matchId = String(s.id || s.student_number || '').toLowerCase().includes(searchVal);
-          const matchEmail = String(s.email || '').toLowerCase().includes(searchVal);
-          if (!matchName && !matchId && !matchEmail) return false;
-        }
-        return true;
+        return matchesStudentIdOrSurname(s, searchVal, surnameVal);
       });
 
       if (filtered.length === 0) {
@@ -4372,8 +4954,14 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
     }
 
     function exportCsv(filename, headers, rows) { const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(','))].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href) }
-    function exportCollectionReport() { exportCsv('collections-report.csv', ['Student', 'Level', 'Assessed', 'Paid', 'Balance'], appData.students.map(s => [s.name, s.level, assessedTotal(s), s.paid, balance(s)])) }
-    function exportOutstandingReport() { exportCsv('outstanding-report.csv', ['Student', 'Class', 'Balance', 'Due Status'], appData.students.filter(s => balance(s) > 0).map(s => [s.name, classLabel(s), balance(s), dueStatus(s)])) }
+    function exportCollectionReport() {
+      const targetStudents = (typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []);
+      exportCsv('collections-report.csv', ['Student', 'Level', 'Grade', 'Section', 'Assessed', 'Paid', 'Balance'], targetStudents.map(s => [s.name, s.level, s.grade || '', s.section || '', assessedTotal(s), s.paid, balance(s)]));
+    }
+    function exportOutstandingReport() {
+      const targetStudents = (typeof getFilteredAnalyticsData === 'function') ? getFilteredAnalyticsData().students : (appData.students || []);
+      exportCsv('outstanding-report.csv', ['Student', 'Class', 'Level', 'Balance', 'Due Status'], targetStudents.filter(s => balance(s) > 0).map(s => [s.name, classLabel(s), s.level, balance(s), dueStatus(s)]));
+    }
     function downloadBackup() { const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pagbilao-backup.json'; a.click(); URL.revokeObjectURL(a.href) }
     document.getElementById('settingsForm')?.addEventListener('submit', e => { e.preventDefault(); appData.settings.schoolName = document.getElementById('schoolNameInput').value; appData.settings.schoolYear = document.getElementById('schoolYearInput').value; saveData(); showToast('Settings saved', 'Prototype settings updated.') });
     async function syncStudentVoucherToSupabase(studentId, voucherName) {

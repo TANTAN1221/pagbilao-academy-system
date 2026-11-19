@@ -1839,13 +1839,112 @@
     dataKeys.forEach(k => localStorage.removeItem(k));
   }
 
-  // Do not purge localStorage cache automatically on page load/logout so admin-configured schedules persist
-  // If manual purge is ever needed for development, invoke window.paApi.clearLocalStorageData()
-  /*
-  if (isSupabaseReady()) {
-    clearLocalStorageData();
+  function getStudentSurname(s) {
+    if (!s) return '';
+    if (typeof s === 'string') {
+      const raw = s.trim();
+      if (raw.includes(',')) {
+        return raw.split(',')[0].trim();
+      }
+      const parts = raw.split(/\s+/);
+      if (parts.length <= 1) return raw;
+      const compoundPrefixes = ['dela', 'delos', 'de', 'del', 'san', 'santa', 'sta.', 'st.', 'van', 'von', 'mc', 'mac', 'al', 'di'];
+      for (let i = parts.length - 2; i >= 1; i--) {
+        if (compoundPrefixes.includes(parts[i].toLowerCase())) {
+          return parts.slice(i).join(' ');
+        }
+      }
+      return parts[parts.length - 1];
+    }
+    if (s.lastName || s.last_name || s.surname) {
+      return String(s.lastName || s.last_name || s.surname).trim();
+    }
+    const name = String(s.name || s.fullName || s.full_name || '').trim();
+    if (!name) return '';
+    if (name.includes(',')) {
+      return name.split(',')[0].trim();
+    }
+    const parts = name.split(/\s+/);
+    if (parts.length <= 1) return name;
+    const compoundPrefixes = ['dela', 'delos', 'de', 'del', 'san', 'santa', 'sta.', 'st.', 'van', 'von', 'mc', 'mac', 'al', 'di'];
+    for (let i = parts.length - 2; i >= 1; i--) {
+      if (compoundPrefixes.includes(parts[i].toLowerCase())) {
+        return parts.slice(i).join(' ');
+      }
+    }
+    return parts[parts.length - 1];
   }
-  */
+
+  function matchesSurnameLetterRange(surname, rangeVal) {
+    if (!rangeVal || rangeVal === 'all') return true;
+    if (!surname) return false;
+    const cleanSurname = String(surname).trim().replace(/^[^a-zA-Z]+/, '');
+    if (!cleanSurname) return false;
+    const firstLetter = cleanSurname.charAt(0).toUpperCase();
+
+    const str = String(rangeVal).trim();
+    const rangeMatch = str.match(/^([a-zA-Z])\s*(?:-|to|_)\s*([a-zA-Z])$/i);
+    if (rangeMatch) {
+      const start = rangeMatch[1].toUpperCase();
+      const end = rangeMatch[2].toUpperCase();
+      return firstLetter >= start && firstLetter <= end;
+    }
+    if (/^[a-zA-Z]$/.test(str)) {
+      return firstLetter === str.toUpperCase();
+    }
+    return true;
+  }
+
+  function matchesStudentIdOrSurname(s, query, letterRange) {
+    if (!s) return false;
+
+    if (letterRange && letterRange !== 'all') {
+      const surname = getStudentSurname(s);
+      if (!matchesSurnameLetterRange(surname, letterRange)) {
+        return false;
+      }
+    }
+
+    const rawQ = String(query || '').trim();
+    if (!rawQ) return true;
+
+    const q = rawQ.toLowerCase();
+    const surname = getStudentSurname(s);
+    const surnameLower = surname.toLowerCase();
+
+    const rangeMatch = rawQ.match(/^([a-zA-Z])\s*(?:-|to|_)\s*([a-zA-Z])$/i);
+    if (rangeMatch) {
+      return matchesSurnameLetterRange(surname, rawQ);
+    }
+
+    const sId = String(s.id || s.studentId || s.student_id || s.studentNumber || s.student_number || '').toLowerCase();
+    if (sId && sId.includes(q)) return true;
+
+    if (q.length === 1 && /[a-z]/i.test(q)) {
+      const cleanSurname = surname.replace(/^[^a-zA-Z]+/, '');
+      if (cleanSurname.charAt(0).toLowerCase() === q) return true;
+    }
+
+    if (surnameLower && surnameLower.includes(q)) return true;
+
+    const fullName = String(s.name || s.fullName || s.full_name || '').toLowerCase();
+    if (fullName && fullName.includes(q)) return true;
+
+    const email = String(s.email || '').toLowerCase();
+    if (email && email.includes(q)) return true;
+
+    const section = String(s.section || '').toLowerCase();
+    if (section && section.includes(q)) return true;
+
+    return false;
+  }
+
+  // Export to window
+  if (typeof window !== "undefined") {
+    window.getStudentSurname = getStudentSurname;
+    window.matchesSurnameLetterRange = matchesSurnameLetterRange;
+    window.matchesStudentIdOrSurname = matchesStudentIdOrSurname;
+  }
 
   window.PA_CONFIG = config;
   window.paApi = {
@@ -1872,7 +1971,10 @@
     verifyCertificate,
     showToast,
     subscribeRealtime,
-    clearLocalStorageData
+    clearLocalStorageData,
+    getStudentSurname,
+    matchesSurnameLetterRange,
+    matchesStudentIdOrSurname
   };
 
   window.logoutToIndex = function () {

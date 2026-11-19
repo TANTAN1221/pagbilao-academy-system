@@ -181,7 +181,7 @@
           </button>
 
           <!-- Dropdown Popover Panel -->
-          <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white border border-academy-border shadow-2xl z-50 overflow-hidden transition-all duration-200">
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] rounded-2xl bg-white border border-academy-border shadow-2xl z-50 overflow-hidden transition-all duration-200">
             <div class="p-4 bg-academy-navy text-white flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="material-symbols-rounded text-[20px] text-amber-400">notifications_active</span>
@@ -698,8 +698,8 @@
   </div>
 
   <!-- PAYMENT MODAL (SPECIFIC FEE SELECTION / PARTIAL PAYMENT) -->
-  <div id="paymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl border border-academy-border max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+  <div id="paymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl sm:rounded-3xl border border-academy-border max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-extrabold text-lg text-academy-navy">Make Tuition Payment</h3>
@@ -772,8 +772,8 @@
   </div>
 
   <!-- PROOF OF PAYMENT MODAL -->
-  <div id="receiptModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div id="receiptPrintArea" class="bg-white rounded-3xl border border-academy-border max-w-md w-full p-6 shadow-2xl text-slate-800 space-y-4">
+  <div id="receiptModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div id="receiptPrintArea" class="bg-white rounded-2xl sm:rounded-3xl border border-academy-border max-w-md w-full p-4 sm:p-6 shadow-2xl text-slate-800 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-200 pb-3">
         <div class="flex items-center gap-3">
           <img src="assets/logo.png" alt="Pagbilao Academy Logo" class="w-10 h-10 object-contain rounded-full border p-0.5 bg-white">
@@ -789,7 +789,7 @@
 
       <p class="text-[10px] text-slate-400 italic text-center">Note: This document serves as an electronic acknowledgment and proof of payment.</p>
 
-      <div class="flex gap-2 no-print">
+      <div class="flex flex-col sm:flex-row gap-2 no-print">
         <button onclick="printReceipt()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 flex items-center justify-center gap-1.5">
           <span class="material-symbols-rounded text-base">print</span>Print Proof
         </button>
@@ -802,8 +802,8 @@
   </div>
 
   <!-- PRINTABLE STATEMENT OF ACCOUNT MODAL -->
-  <div id="statementPrintModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl border border-academy-border max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
+  <div id="statementPrintModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl sm:rounded-3xl border border-academy-border max-w-3xl w-full p-4 sm:p-8 shadow-2xl space-y-4 sm:space-y-6 max-h-[92vh] overflow-y-auto">
       <!-- Modal Action Bar -->
       <div class="flex justify-between items-center pb-4 border-b border-slate-200 no-print">
         <div class="flex items-center gap-2">
@@ -1334,6 +1334,9 @@
         document.getElementById('pageTitle').textContent = item[2];
         document.getElementById('pageSubtitle').textContent = item[3];
       }
+      // Auto-close mobile drawer on small screens
+      document.getElementById('mobileDrawer')?.classList.add('hidden');
+
       renderSideNav();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
