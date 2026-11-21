@@ -314,13 +314,19 @@
     if (error) throw error;
 
     if (data.user) {
-      await supabaseClient.from("profiles").upsert({
-        auth_user_id: data.user.id,
-        full_name: `${profile.firstName} ${profile.lastName}`.trim(),
-        email: profile.email,
-        role: "student",
-        status: "active"
-      }, { onConflict: "email", ignoreDuplicates: true });
+      if (data.session) {
+        try {
+          await supabaseClient.from("profiles").upsert({
+            auth_user_id: data.user.id,
+            full_name: `${profile.firstName} ${profile.lastName}`.trim(),
+            email: profile.email,
+            role: "student",
+            status: "active"
+          }, { onConflict: "email", ignoreDuplicates: true });
+        } catch (profErr) {
+          console.warn("profiles upsert notice:", profErr);
+        }
+      }
 
       const { error: profileError } = await supabaseClient.from("student_registration_requests").insert({
         auth_user_id: data.user.id,
@@ -336,22 +342,24 @@
       });
       if (profileError) console.warn("student_registration_requests insert notice:", profileError);
 
-      try {
-        await supabaseClient.from("students").upsert({
-          auth_user_id: data.user.id,
-          first_name: profile.firstName,
-          last_name: profile.lastName,
-          student_number: profile.studentId,
-          education_level: profile.educationLevel,
-          grade_level: profile.gradeLevel,
-          section_name: profile.section,
-          strand: profile.strand || "N/A",
-          email: profile.email,
-          school_year: "2026-2027",
-          status: "active"
-        }, { onConflict: "student_number" });
-      } catch (e) {
-        console.warn("Direct students table insert notice:", e);
+      if (data.session) {
+        try {
+          await supabaseClient.from("students").upsert({
+            auth_user_id: data.user.id,
+            first_name: profile.firstName,
+            last_name: profile.lastName,
+            student_number: profile.studentId,
+            education_level: profile.educationLevel,
+            grade_level: profile.gradeLevel,
+            section_name: profile.section,
+            strand: profile.strand || "N/A",
+            email: profile.email,
+            school_year: "2026-2027",
+            status: "active"
+          }, { onConflict: "student_number" });
+        } catch (e) {
+          console.warn("Direct students table insert notice:", e);
+        }
       }
     }
 
