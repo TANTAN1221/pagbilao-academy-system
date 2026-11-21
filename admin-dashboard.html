@@ -5441,13 +5441,28 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       localStorage.setItem('pa_installment_templates', JSON.stringify(appData.installmentTemplate || []));
       localStorage.setItem('pa_clearance_period_open', String(isClearancePeriodOpen()));
       if (syncRemote && window.paApi && window.paApi.client) {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+        let currentSessionRole = '';
+        try {
+          const sess = JSON.parse(localStorage.getItem('pa_user_session') || localStorage.getItem('pa_current_user') || '{}');
+          currentSessionRole = String(sess.role || localStorage.getItem('pa_user_role') || '').toLowerCase();
+        } catch (_) {}
         const c = window.paApi.client();
         if (c && c.auth) {
           c.auth.getSession().then(({ data }) => {
             if (data && data.session) {
-              syncInstallmentsToSupabase();
-              syncVouchersToSupabase();
-              syncFeeStructuresToSupabase();
+              const user = data.session.user;
+              const metaRole = String(user?.user_metadata?.role || '').toLowerCase();
+              const email = String(user?.email || '').toLowerCase();
+              const isAdminEmail = email.includes('admin') || email.includes('accounting') || email.includes('accountant') || email.includes('registrar');
+              const isAdminRole = ['super_admin', 'accounting_admin', 'registrar'].includes(currentSessionRole) ||
+                                  ['super_admin', 'accounting_admin', 'registrar'].includes(metaRole) ||
+                                  isAdminEmail;
+              if (isAdminRole) {
+                syncInstallmentsToSupabase();
+                syncVouchersToSupabase();
+                syncFeeStructuresToSupabase();
+              }
             }
           }).catch(() => {});
         }
@@ -5621,6 +5636,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       let isRefreshing = false;
       const refreshFromDatabase = async () => {
         if (isRefreshing) return;
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
         isRefreshing = true;
         try {
           const state = await window.paApi.fetchDatabaseState();

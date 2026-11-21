@@ -16,37 +16,49 @@ Deno.serve(async (req: Request) => {
     const { data: caller, error: authError } = await admin.auth.getUser(token);
     if (authError || !caller.user) return jsonResponse({ error: "Please sign in as an administrator." }, 401);
     let { data: callerProfile, error: callerError } = await admin.from("profiles")
-      .select("role,status").eq("auth_user_id", caller.user.id).maybeSingle();
+      .select("id,role,status,auth_user_id").eq("auth_user_id", caller.user.id).maybeSingle();
     if (callerError) throw callerError;
-    if (!callerProfile) {
-      const email = caller.user.email || "";
-      const lower = email.toLowerCase();
-      const metaRole = caller.user.user_metadata?.role;
-      let detectedRole: string | null = null;
-      if (adminRoles.includes(metaRole)) {
-        detectedRole = metaRole;
-      } else if (lower.includes("admin")) {
-        detectedRole = "super_admin";
-      } else if (lower.includes("accounting") || lower.includes("accountant")) {
-        detectedRole = "accounting_admin";
-      } else if (lower.includes("registrar")) {
-        detectedRole = "registrar";
+    if (!callerProfile && caller.user.email) {
+      const { data: emailProfile } = await admin.from("profiles")
+        .select("id,role,status,auth_user_id").ilike("email", caller.user.email).maybeSingle();
+      if (emailProfile) {
+        callerProfile = emailProfile;
       }
-
-      if (detectedRole) {
-        const fullName = caller.user.user_metadata?.full_name || email;
+    }
+    const callerEmail = (caller.user.email || "").toLowerCase();
+    const callerMetaRole = caller.user.user_metadata?.role;
+    let detectedAdminRole: string | null = null;
+    if (adminRoles.includes(callerMetaRole)) {
+      detectedAdminRole = callerMetaRole;
+    } else if (callerEmail.includes("admin")) {
+      detectedAdminRole = "super_admin";
+    } else if (callerEmail.includes("accounting") || callerEmail.includes("accountant")) {
+      detectedAdminRole = "accounting_admin";
+    } else if (callerEmail.includes("registrar")) {
+      detectedAdminRole = "registrar";
+    }
+    if (detectedAdminRole && (!callerProfile || !adminRoles.includes(callerProfile.role) || callerProfile.status !== "active" || callerProfile.auth_user_id !== caller.user.id)) {
+      const fullName = caller.user.user_metadata?.full_name || caller.user.email || "Admin";
+      if (callerProfile?.id) {
+        const { data: updatedProfile } = await admin.from("profiles").update({
+          auth_user_id: caller.user.id,
+          role: adminRoles.includes(callerProfile.role) ? callerProfile.role : detectedAdminRole,
+          status: "active"
+        }).eq("id", callerProfile.id).select("id,role,status,auth_user_id").maybeSingle();
+        if (updatedProfile) callerProfile = updatedProfile;
+      } else {
         const { data: newProfile } = await admin.from("profiles").upsert({
           auth_user_id: caller.user.id,
           full_name: fullName,
-          email: email,
-          role: detectedRole,
+          email: caller.user.email,
+          role: detectedAdminRole,
           status: "active"
-        }, { onConflict: "auth_user_id" }).select("role,status").maybeSingle();
+        }, { onConflict: "email" }).select("id,role,status,auth_user_id").maybeSingle();
         if (newProfile) callerProfile = newProfile;
       }
     }
     if (!callerProfile || !adminRoles.includes(callerProfile.role) || callerProfile.status !== "active") {
-      return jsonResponse({ error: "Only active admin, accounting, or registrar accounts can save staff accounts." }, 403);
+      return jsonResponse({ error: `Signed in as ${caller.user.email || "non-admin"} (${callerProfile?.role || "student"}). Only active admin, accounting, or registrar accounts can save staff accounts.` }, 403);
     }
     const body = await req.json();
     const action = body.action || "create";

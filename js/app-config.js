@@ -793,6 +793,7 @@
   async function fetchDatabaseState() {
     const supabase = client();
     if (!supabase) return null;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
 
     try {
       const safeQuery = async (query) => {
