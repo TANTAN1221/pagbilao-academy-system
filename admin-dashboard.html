@@ -1390,10 +1390,10 @@
     function teacherRequestFor(row) { return (appData.teacherClearanceRequests || []).find(r => r.key === row.key) }
     function allTeacherApprovalsApproved(s) { const rows = teacherRowsForStudent(s); if (s.clearance.Teacher === 'approved' && rows.length > 0) return true; return rows.length > 0 && rows.every(r => teacherRequestFor(r)?.status === 'approved') }
     function teacherApprovedCount(s) { const rows = teacherRowsForStudent(s); if (s.clearance.Teacher === 'approved' && rows.length > 0) return rows.length; return rows.filter(r => teacherRequestFor(r)?.status === 'approved').length }
-    function teacherOverallStatus(s) { const rows = teacherRowsForStudent(s); if (!rows.length) return 'no teacher assigned'; if (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') return 'approved'; if (rows.some(r => teacherRequestFor(r)?.status === 'requested')) return 'requested'; return 'not requested' }
-    function clearanceComplete(s) { return (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') && ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].every(k => s.clearance[k] === 'approved') }
+    function teacherOverallStatus(s) { const rows = teacherRowsForStudent(s); if (!rows.length) return s.clearance.Teacher === 'approved' ? 'approved' : 'no teacher assigned'; if (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') return 'approved'; if (rows.some(r => teacherRequestFor(r)?.status === 'requested')) return 'requested'; return 'not requested' }
+    function clearanceComplete(s) { const rows = teacherRowsForStudent(s); const teachersOk = rows.length === 0 || allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved'; return teachersOk && ['Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].every(k => s.clearance[k] === 'approved') }
     function officeApproved(s) { return ['Guidance', 'Prefect', 'Library'].every(k => s.clearance[k] === 'approved') }
-    function principalUnlocked(s) { return (allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') && officeApproved(s) }
+    function principalUnlocked(s) { const rows = teacherRowsForStudent(s); return (rows.length === 0 || allTeacherApprovalsApproved(s) || s.clearance.Teacher === 'approved') && officeApproved(s) }
     function finalUnlocked(s) { return s.clearance.Principal === 'approved' && balance(s) === 0 }
     function dueStatus(student) { const due = studentInstallments(student); const today = new Date('2026-02-01'); let status = 'Paid'; for (const row of due) { if (row.paid < row.amount) { status = new Date(row.dueDate) < today ? 'Overdue' : 'Upcoming'; break } } return status }
     function studentInstallments(student) {
@@ -3272,23 +3272,38 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
 
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
-          for (const k of order) {
-            if (k === 'Teacher' && s.clearance.Teacher !== 'approved') {
-              const rows = teacherRowsForStudent(s);
-              if (!rows.length) {
-                showToast('No teacher assigned', 'Please assign teacher clearance heads to this grade/section first.', 'error');
-                return;
-              }
-              await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
-              for (const row of rows) {
-                await window.paApi.updateTeacherClearance(s.id, row.teacher.id, row.assignment.subject, 'approved', 'Approved by Admin');
-              }
-              const state = await window.paApi.fetchDatabaseState();
-              if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
-              renderAll();
-              showToast('Teacher approvals updated', `All assigned teacher approvals were marked approved for ${s.name}.`);
-              return;
+        for (const k of order) {
+          if (k === 'Teacher' && !allTeacherApprovalsApproved(s) && s.clearance.Teacher !== 'approved') {
+            const rows = teacherRowsForStudent(s);
+            if (rows.length > 0) {
+              rows.forEach(row => {
+                let req = teacherRequestFor(row);
+                if (!req) {
+                  req = { key: row.key, studentId: s.id, teacherId: row.teacher.id, teacherName: row.teacher.name, subject: row.assignment.subject || 'Subject', grade: s.grade, section: s.section, strand: s.strand, status: 'requested', requestedAt: new Date().toISOString() };
+                  appData.teacherClearanceRequests.push(req);
+                }
+                req.status = 'approved';
+                req.approvedAt = new Date().toISOString();
+              });
             }
+            s.clearance.Teacher = 'approved';
+            saveData();
+            if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
+              try {
+                await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
+                if (rows.length > 0) {
+                  for (const row of rows) {
+                    await window.paApi.updateTeacherClearance(s.id, row.teacher.id, row.assignment.subject, 'approved', 'Approved by Admin');
+                  }
+                } else {
+                  await window.paApi.updateOfficeClearance(s.id, 'Teacher', 'approved', 'Approved by Admin');
+                }
+              } catch (e) { console.warn('Teacher clearance DB sync notice:', e); }
+            }
+            renderAll();
+            showToast('Teacher approvals updated', `Teacher clearance was marked approved for ${s.name}.`);
+            return;
+          }
 
             if (k !== 'Teacher' && s.clearance[k] !== 'approved') {
               await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
@@ -3340,27 +3355,40 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
     function refreshClearanceApprovals() { renderClearance(); showToast('Requirements refreshed', 'Teacher approval requirements were generated from account assignments.') }
     async function requestCertificate(id) {
       const s = appData.students.find(x => x.id === id);
+      if (!s) return;
       if (!clearanceComplete(s)) {
         showToast('Not eligible', 'Certificate can only be requested after all approvals are complete.', 'error');
         return;
       }
+      // Open certificate window synchronously during user click gesture so popup blockers don't block it
+      const certUrl = `certificate.html?studentId=${encodeURIComponent(id)}&from=admin`;
+      const certWin = window.open(certUrl, '_blank');
+
+      if (!appData.certificateRequests.find(r => r.studentId === id)) {
+        appData.certificateRequests.push({ studentId: id, status: 'approved', requestedAt: new Date().toISOString().slice(0, 10) });
+      }
+      saveData();
+
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
           await window.paApi.requestCertificate(s.id);
           const state = await window.paApi.fetchDatabaseState();
           if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+          saveData(false);
         } catch (err) {
-          showToast('Error requesting certificate', err.message || 'Database error.', 'error');
-          return;
+          console.warn('Certificate DB sync notice:', err);
         }
-      } else {
-        if (!appData.certificateRequests.find(r => r.studentId === id)) appData.certificateRequests.push({ studentId: id, status: 'approved', requestedAt: new Date().toISOString().slice(0, 10) });
-        saveData();
       }
       renderAll();
-      openCertificate(id);
+      if (!certWin) {
+        window.location.href = certUrl;
+      }
     }
-    function openCertificate(id) { window.open(`certificate.html?studentId=${encodeURIComponent(id)}&from=admin`, '_blank') }
+    function openCertificate(id) {
+      const certUrl = `certificate.html?studentId=${encodeURIComponent(id)}&from=admin`;
+      const certWin = window.open(certUrl, '_blank');
+      if (!certWin) window.location.href = certUrl;
+    }
     function findFeeItemIndex(level, feeIdOrKey) {
       const items = appData.feeStructures[level] || [];
       if (!items.length || feeIdOrKey === undefined || feeIdOrKey === null || feeIdOrKey === 'undefined' || feeIdOrKey === 'null') return -1;

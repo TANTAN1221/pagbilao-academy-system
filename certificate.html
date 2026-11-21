@@ -213,16 +213,61 @@
 
     function calculateStudentPaid(studentId, payments, studentObj) {
       const allPayments = payments || [];
-      const matching = allPayments.filter(p =>
-        p.studentId === studentId ||
-        p.studentId === studentObj?.authUserId ||
-        p.studentId === studentObj?.dbId ||
-        String(p.studentId || '').toLowerCase() === String(studentId || '').toLowerCase()
-      );
+      const sId = String(studentObj?.id || studentId || '').toLowerCase().trim();
+      const sCleanId = sId.replace(/^stu-/, '').trim();
+      const sDbId = String(studentObj?.dbId || '').toLowerCase().trim();
+      const sAuthId = String(studentObj?.authUserId || studentObj?.auth_user_id || '').toLowerCase().trim();
+      const sEmail = String(studentObj?.email || '').toLowerCase().trim();
+      const sName = String(studentObj?.name || studentObj?.fullName || '').toLowerCase().trim();
+
+      const matching = allPayments.filter(p => {
+        if (!p) return false;
+        const pId = String(p.studentId || p.student_id || p.studentDbId || '').toLowerCase().trim();
+        const pCleanId = pId.replace(/^stu-/, '').trim();
+        const pEmail = String(p.email || p.studentEmail || '').toLowerCase().trim();
+        const pAuthId = String(p.authUserId || p.auth_user_id || '').toLowerCase().trim();
+        const pName = String(p.studentName || p.student_name || '').toLowerCase().trim();
+
+        return (
+          (sId && (pId === sId || pCleanId === sId)) ||
+          (sCleanId && (pCleanId === sCleanId || pId === sCleanId)) ||
+          (sDbId && (pId === sDbId || pCleanId === sDbId)) ||
+          (sAuthId && (pId === sAuthId || pAuthId === sAuthId)) ||
+          (sEmail && pEmail && pEmail === sEmail) ||
+          (sName && pName && pName === sName)
+        );
+      });
       const paidFromLedger = matching
-        .filter(p => String(p.status || 'paid').toLowerCase() === 'paid')
+        .filter(p => ['paid', 'succeeded', 'completed', 'active'].includes(String(p.status || 'paid').toLowerCase()))
         .reduce((sum, p) => sum + Number(p.amount || 0), 0);
       return Math.max(Number(studentObj?.paid || 0), paidFromLedger);
+    }
+
+    function assignmentMatchesStudent(a, s) {
+      const grade = a.grade || a.grade_level;
+      const section = a.section || a.section_name || 'N/A';
+      const strand = a.strand || 'N/A';
+      if (grade && s.grade && grade !== s.grade) return false;
+      if (section !== 'N/A' && s.section && section !== s.section) return false;
+      if (strand !== 'N/A' && s.strand) {
+        const normA = strand.replace('HUMMS', 'HUMSS');
+        const normS = (s.strand || '').replace('HUMMS', 'HUMSS');
+        if (normA !== normS && s.strand !== 'N/A') return false;
+      }
+      return true;
+    }
+
+    function assignedTeacherRows(s, accounts) {
+      return (accounts || [])
+        .filter(a => a.role === 'teacher_clearance_head' && a.active !== false)
+        .flatMap(t => (t.assignments || [])
+          .filter(a => assignmentMatchesStudent(a, s))
+          .map(a => ({
+            teacher: t,
+            assignment: a,
+            key: `${s.id}|${t.id}|${a.subject || 'Subject'}|${a.grade}|${a.section || 'N/A'}`
+          }))
+        );
     }
 
     function isStudentEligible(s, appData) {
@@ -231,24 +276,68 @@
       const officeDone = officeKeys.every(k => s.clearance?.[k] === 'approved');
 
       const teacherApprovals = appData.teacherClearanceRequests || [];
-      const studentTeacherRequests = teacherApprovals.filter(r => r.studentId === s.id || String(r.key || '').startsWith(s.id));
-      const teachersDone = studentTeacherRequests.length > 0 ? studentTeacherRequests.every(r => r.status === 'approved') : (s.clearance?.Teacher === 'approved');
+      const sIdLower = String(s.id || s.student_number || '').toLowerCase();
+      const studentTeacherRequests = teacherApprovals.filter(r =>
+        String(r.studentId || '').toLowerCase() === sIdLower ||
+        String(r.key || '').toLowerCase().startsWith(sIdLower + '|')
+      );
+      const assignedRows = assignedTeacherRows(s, appData.accounts);
+      const hasApprovedCert = (appData.certificateRequests || []).some(r =>
+        (String(r.studentId || '').toLowerCase() === sIdLower ||
+         String(r.student_id || '').toLowerCase() === sIdLower ||
+         (s.dbId && r.student_id === s.dbId)) &&
+        r.status === 'approved'
+      );
+
+      let teachersDone = false;
+      if (s.clearance?.Teacher === 'approved' || hasApprovedCert) {
+        teachersDone = true;
+      } else if (assignedRows.length === 0) {
+        teachersDone = studentTeacherRequests.length > 0
+          ? studentTeacherRequests.every(r => r.status === 'approved')
+          : officeDone;
+      } else if (studentTeacherRequests.length > 0) {
+        teachersDone = studentTeacherRequests.every(r => r.status === 'approved') && studentTeacherRequests.length >= assignedRows.length;
+      }
 
       const totalAssessed = assessedTotal(s, appData.feeStructures, appData.vouchers);
       const totalPaid = calculateStudentPaid(s.id, appData.payments, s);
       const studentBalance = Math.max(0, totalAssessed - totalPaid);
-      const balanceZero = studentBalance <= 0;
+      const balanceZero = studentBalance <= 0 || (s.clearance?.Accounting === 'approved' && s.clearance?.Registrar === 'approved');
 
-      const allClearancesApproved = officeDone && teachersDone && balanceZero;
+      const allClearancesApproved = hasApprovedCert || (officeDone && teachersDone && balanceZero);
       return { eligible: allClearancesApproved, officeDone, teachersDone, balanceZero, studentBalance };
     }
 
     function showLockedView(reasons) {
       document.getElementById('certificateSheet').classList.add('hidden');
       document.getElementById('printBtn').classList.add('hidden');
+      document.getElementById('downloadPdfBtn')?.classList.add('hidden');
       const box = document.getElementById('lockedReasonsBox');
       box.innerHTML = reasons.map(r => `<div>• ${r}</div>`).join('');
       document.getElementById('certificateLockedContainer').classList.remove('hidden');
+    }
+
+    function matchesStudentIdentifier(s, targetId, session = {}) {
+      if (!s) return false;
+      const t = String(targetId || '').toLowerCase().trim();
+      const tClean = t.replace(/^stu-/, '').trim();
+      const sId = String(s.id || s.student_number || s.studentId || '').toLowerCase().trim();
+      const sClean = sId.replace(/^stu-/, '').trim();
+      const sDbId = String(s.dbId || '').toLowerCase().trim();
+      const sAuthId = String(s.authUserId || s.auth_user_id || '').toLowerCase().trim();
+      const sEmail = String(s.email || '').toLowerCase().trim();
+
+      if (t && (sId === t || sClean === t || (tClean && sClean === tClean) || sDbId === t || sAuthId === t || sEmail === t)) {
+        return true;
+      }
+
+      const sessEmail = String(session?.email || '').toLowerCase().trim();
+      const sessId = String(session?.studentId || session?.student_number || session?.id || '').toLowerCase().trim();
+      if (!targetId && ((sessEmail && sEmail === sessEmail) || (sessId && (sId === sessId || sDbId === sessId || sAuthId === sessId)))) {
+        return true;
+      }
+      return false;
     }
 
     async function loadCertificateData() {
@@ -273,26 +362,70 @@
       }
 
       let data = {};
+      let session = {};
       try {
         data = JSON.parse(localStorage.getItem('pa_full_admin_v2') || '{}');
+        session = JSON.parse(localStorage.getItem('pa_user_session') || localStorage.getItem('pa_current_user') || '{}');
       } catch (e) {
         console.warn("Local storage lookup skipped", e);
       }
 
-      let studentObj = (data.students || []).find(x => x.id === id || String(x.id || '').toLowerCase() === String(id || '').toLowerCase());
+      const paramId = params.get('studentId') || session.studentId || session.student_number || session.email || id;
+      let studentObj = (data.students || []).find(x => matchesStudentIdentifier(x, paramId, session));
 
-      // If Supabase ready, attempt fetch
+      // If Supabase ready, attempt fetch and merge with local state (preserving local overrides & approvals)
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
           const dbState = await window.paApi.fetchDatabaseState();
           if (dbState) {
+            const localStudent = studentObj;
+            const dbStudent = (dbState.students || []).find(x =>
+              matchesStudentIdentifier(x, paramId, session) ||
+              (localStudent && (matchesStudentIdentifier(x, localStudent.id) || matchesStudentIdentifier(x, localStudent.email) || matchesStudentIdentifier(x, localStudent.dbId)))
+            );
+
             data = {
               ...data,
               ...dbState,
+              feeStructures: {
+                JHS: (dbState.feeStructures?.JHS?.length ? dbState.feeStructures.JHS : (data.feeStructures?.JHS || [])),
+                SHS: (dbState.feeStructures?.SHS?.length ? dbState.feeStructures.SHS : (data.feeStructures?.SHS || []))
+              },
+              vouchers: (dbState.vouchers?.length ? dbState.vouchers : (data.vouchers || [])),
               payments: window.paApi.mergePaymentsState ? window.paApi.mergePaymentsState(data.payments || [], dbState.payments || []) : (dbState.payments || data.payments || [])
             };
-            const dbStudent = (dbState.students || []).find(x => x.id === id || String(x.id || '').toLowerCase() === String(id || '').toLowerCase());
-            if (dbStudent) studentObj = { ...studentObj, ...dbStudent };
+
+            if (dbStudent || localStudent) {
+              const mergedClearance = {
+                Teacher: 'pending',
+                Guidance: 'pending',
+                Prefect: 'pending',
+                Library: 'pending',
+                Principal: 'pending',
+                Accounting: 'pending',
+                Registrar: 'pending',
+                ...(localStudent?.clearance || {}),
+                ...(dbStudent?.clearance || {})
+              };
+              ['Teacher', 'Guidance', 'Prefect', 'Library', 'Principal', 'Accounting', 'Registrar'].forEach(k => {
+                if (localStudent?.clearance?.[k] === 'approved' || dbStudent?.clearance?.[k] === 'approved') {
+                  mergedClearance[k] = 'approved';
+                }
+              });
+
+              studentObj = {
+                ...(localStudent || {}),
+                ...(dbStudent || {}),
+                id: localStudent?.id || dbStudent?.id,
+                dbId: dbStudent?.dbId || localStudent?.dbId || dbStudent?.id,
+                voucher: (localStudent?.voucher && localStudent.voucher !== 'None') ? localStudent.voucher : (dbStudent?.voucher || 'None'),
+                customFees: localStudent?.customFees !== undefined ? localStudent.customFees : dbStudent?.customFees,
+                feeDiscount: localStudent?.feeDiscount !== undefined ? localStudent.feeDiscount : dbStudent?.feeDiscount,
+                assessedOverride: localStudent?.assessedOverride !== undefined ? localStudent.assessedOverride : dbStudent?.assessedOverride,
+                paid: Math.max(Number(localStudent?.paid || 0), Number(dbStudent?.paid || 0)),
+                clearance: mergedClearance
+              };
+            }
           }
         } catch (err) {
           console.warn("Supabase fetch notice:", err);

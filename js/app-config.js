@@ -1717,15 +1717,32 @@
       .select("id")
       .or(buildStudentOrFilter(studentNumber))
       .maybeSingle();
-    if (!student) throw new Error("Student not found.");
+    if (!student) return null;
 
-    const { data: req } = await supabase
+    let { data: req } = await supabase
       .from("clearance_requests")
       .select("id")
       .eq("student_id", student.id)
       .order("submitted_at", { ascending: false })
       .maybeSingle();
-    if (!req) throw new Error("Clearance request not found.");
+
+    if (!req) {
+      try {
+        const { data: newReq } = await supabase
+          .from("clearance_requests")
+          .insert({
+            student_id: student.id,
+            school_year: "2026-2027",
+            status: "pending"
+          })
+          .select()
+          .single();
+        req = newReq;
+      } catch (e) {
+        console.warn("Auto-create clearance_requests in requestCertificate notice:", e);
+      }
+    }
+    if (!req) return null;
 
     const { data: existing } = await supabase
       .from("clearance_certificate_requests")
@@ -1733,7 +1750,15 @@
       .eq("clearance_request_id", req.id)
       .maybeSingle();
 
-    if (existing && existing.status === "approved") {
+    if (existing) {
+      if (existing.status === "approved") return existing;
+      const { data: updated, error: updErr } = await supabase
+        .from("clearance_certificate_requests")
+        .update({ status: "approved" })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+      if (!updErr && updated) return updated;
       return existing;
     }
 
@@ -1745,9 +1770,12 @@
         status: "pending"
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.warn("requestCertificate insert notice:", error);
+      return null;
+    }
     return data;
   }
 

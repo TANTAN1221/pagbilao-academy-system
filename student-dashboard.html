@@ -1714,7 +1714,14 @@
       const c = clearanceCounts(s);
       const studentBal = balance(s);
       const clearancesDone = c.done === c.total && c.total > 0;
-      const isEligible = clearancesDone && studentBal <= 0;
+      const adminApprovedFinal = s?.clearance?.Accounting === 'approved' && s?.clearance?.Registrar === 'approved';
+      const hasApprovedCert = (appData.certificateRequests || []).some(r =>
+        (String(r.studentId || '').toLowerCase() === String(s?.id || '').toLowerCase() ||
+         String(r.student_id || '').toLowerCase() === String(s?.id || '').toLowerCase() ||
+         (s?.dbId && r.student_id === s.dbId)) &&
+        r.status === 'approved'
+      );
+      const isEligible = hasApprovedCert || (clearancesDone && (studentBal <= 0 || adminApprovedFinal));
 
       if (certBadge) {
         if (isEligible) {
@@ -1751,12 +1758,19 @@
     
     function clearanceCounts(s) {
       const teacherRows = assignedTeacherRows(s);
-      const teacherDone = teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
-      const officeDone = officeKeys().filter(k => s.clearance?.[k] === 'approved').length;
+      const teacherDone = (s?.clearance?.Teacher === 'approved')
+        ? teacherRows.length
+        : teacherRows.filter(row => requestFor(row)?.status === 'approved').length;
+      const officeDone = officeKeys().filter(k => s?.clearance?.[k] === 'approved').length;
       return { done: teacherDone + officeDone, total: teacherRows.length + officeKeys().length }
     }
 
-    function teacherApprovalsApproved(s) { const rows = assignedTeacherRows(s); return rows.length > 0 && rows.every(row => requestFor(row)?.status === 'approved') }
+    function teacherApprovalsApproved(s) {
+      const rows = assignedTeacherRows(s);
+      if (s?.clearance?.Teacher === 'approved') return true;
+      if (rows.length === 0) return officeKeys().every(k => s?.clearance?.[k] === 'approved');
+      return rows.every(row => requestFor(row)?.status === 'approved');
+    }
 
     function toggleNotificationDropdown(forceClose = false) {
       const dd = document.getElementById('notificationDropdown');
@@ -2432,15 +2446,25 @@
       const c = clearanceCounts(s);
       const studentBal = balance(s);
       const clearancesDone = c.done === c.total && c.total > 0;
-      if (!clearancesDone) {
+      const adminApprovedFinal = s?.clearance?.Accounting === 'approved' && s?.clearance?.Registrar === 'approved';
+      const hasApprovedCert = (appData.certificateRequests || []).some(r =>
+        (String(r.studentId || '').toLowerCase() === String(s?.id || '').toLowerCase() ||
+         String(r.student_id || '').toLowerCase() === String(s?.id || '').toLowerCase() ||
+         (s?.dbId && r.student_id === s.dbId)) &&
+        r.status === 'approved'
+      );
+      if (!hasApprovedCert && !clearancesDone) {
         const pendingCount = Math.max(1, c.total - c.done);
         showToast('Certificate Locked', `Your clearance certificate is locked because ${pendingCount} clearance head approval(s) are still pending.`, 'warning');
         return;
       }
-      if (studentBal > 0) {
+      if (!hasApprovedCert && studentBal > 0 && !adminApprovedFinal) {
         showToast('Certificate Locked', `Your clearance certificate is locked because you have an outstanding balance of ${money(studentBal)}. Please settle your balance to unlock.`, 'warning');
         return;
       }
+      // Open window synchronously during user click gesture to prevent browser popup blockers
+      const certUrl = `certificate.html?studentId=${encodeURIComponent(s.id)}&from=student`;
+      const certWin = window.open(certUrl, '_blank');
       if (window.paApi && window.paApi.isSupabaseReady && window.paApi.isSupabaseReady()) {
         try {
           await window.paApi.requestCertificate(s.id);
@@ -2448,7 +2472,9 @@
           console.warn("Certificate issuance notice:", e);
         }
       }
-      window.open(`certificate.html?studentId=${encodeURIComponent(s.id)}&from=student`, '_blank');
+      if (!certWin) {
+        window.location.href = certUrl;
+      }
     }
 
     async function requestTeacherApproval(key) {
