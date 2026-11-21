@@ -166,45 +166,9 @@
               <h3 class="font-extrabold text-academy-navy">Student Accounts</h3>
               <p class="text-sm text-academy-muted">JHS and SHS balances with vouchers and partial payments.</p>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div class="grid sm:grid-cols-3 gap-2">
               <input id="studentSearch" oninput="renderStudents()"
-                placeholder="Search by ID or Surname (A–Z)..." class="px-4 py-3 rounded-xl border border-academy-border text-xs">
-              <select id="studentSurnameRangeFilter" onchange="renderStudents()"
-                class="px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold text-academy-navy">
-                <option value="all">All Surnames (A–Z)</option>
-                <option value="A-D">Surname: A to D</option>
-                <option value="E-H">Surname: E to H</option>
-                <option value="I-L">Surname: I to L</option>
-                <option value="M-P">Surname: M to P</option>
-                <option value="Q-T">Surname: Q to T</option>
-                <option value="U-Z">Surname: U to Z</option>
-                <option value="A">Letter A</option>
-                <option value="B">Letter B</option>
-                <option value="C">Letter C</option>
-                <option value="D">Letter D</option>
-                <option value="E">Letter E</option>
-                <option value="F">Letter F</option>
-                <option value="G">Letter G</option>
-                <option value="H">Letter H</option>
-                <option value="I">Letter I</option>
-                <option value="J">Letter J</option>
-                <option value="K">Letter K</option>
-                <option value="L">Letter L</option>
-                <option value="M">Letter M</option>
-                <option value="N">Letter N</option>
-                <option value="O">Letter O</option>
-                <option value="P">Letter P</option>
-                <option value="Q">Letter Q</option>
-                <option value="R">Letter R</option>
-                <option value="S">Letter S</option>
-                <option value="T">Letter T</option>
-                <option value="U">Letter U</option>
-                <option value="V">Letter V</option>
-                <option value="W">Letter W</option>
-                <option value="X">Letter X</option>
-                <option value="Y">Letter Y</option>
-                <option value="Z">Letter Z</option>
-              </select>
+                placeholder="Search student..." class="px-4 py-3 rounded-xl border border-academy-border text-xs">
               <select id="levelFilter" onchange="renderStudents()"
                 class="px-4 py-3 rounded-xl border border-academy-border bg-white text-xs font-bold text-academy-navy">
                 <option value="all">All levels</option>
@@ -554,47 +518,11 @@
           <div class="bg-white border border-academy-border rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="relative flex-1">
               <span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-              <input id="studentAccountSearchInput" type="text" placeholder="Search by student ID, surname, name, or email..."
+              <input id="studentAccountSearchInput" type="text" placeholder="Search by student ID, name, or email..."
                 oninput="renderStudentAccounts()"
                 class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-academy-border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-academy-blue/20">
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <select id="studentAccountSurnameFilter" onchange="renderStudentAccounts()"
-                class="px-3 py-2 rounded-xl border border-academy-border text-xs font-bold bg-white text-academy-navy">
-                <option value="all">All Surnames (A–Z)</option>
-                <option value="A-D">Surname: A to D</option>
-                <option value="E-H">Surname: E to H</option>
-                <option value="I-L">Surname: I to L</option>
-                <option value="M-P">Surname: M to P</option>
-                <option value="Q-T">Surname: Q to T</option>
-                <option value="U-Z">Surname: U to Z</option>
-                <option value="A">Letter A</option>
-                <option value="B">Letter B</option>
-                <option value="C">Letter C</option>
-                <option value="D">Letter D</option>
-                <option value="E">Letter E</option>
-                <option value="F">Letter F</option>
-                <option value="G">Letter G</option>
-                <option value="H">Letter H</option>
-                <option value="I">Letter I</option>
-                <option value="J">Letter J</option>
-                <option value="K">Letter K</option>
-                <option value="L">Letter L</option>
-                <option value="M">Letter M</option>
-                <option value="N">Letter N</option>
-                <option value="O">Letter O</option>
-                <option value="P">Letter P</option>
-                <option value="Q">Letter Q</option>
-                <option value="R">Letter R</option>
-                <option value="S">Letter S</option>
-                <option value="T">Letter T</option>
-                <option value="U">Letter U</option>
-                <option value="V">Letter V</option>
-                <option value="W">Letter W</option>
-                <option value="X">Letter X</option>
-                <option value="Y">Letter Y</option>
-                <option value="Z">Letter Z</option>
-              </select>
               <select id="studentAccountGradeFilter" onchange="renderStudentAccounts()"
                 class="px-3 py-2 rounded-xl border border-academy-border text-xs font-bold bg-white text-academy-navy">
                 <option value="all">All Grades</option>
@@ -762,52 +690,12 @@
               </select>
             </div>
 
-            <!-- Surname Range Filter -->
-            <div class="space-y-1">
-              <label for="analyticsSurnameFilter" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Surname (A–Z)</label>
-              <select id="analyticsSurnameFilter" onchange="applyAnalyticsFilters()" class="w-full px-3 py-2.5 rounded-xl border border-academy-border bg-white text-academy-navy font-semibold focus:outline-none focus:ring-2 focus:ring-academy-blue text-xs">
-                <option value="all">All Surnames (A–Z)</option>
-                <option value="A-D">Surname: A to D</option>
-                <option value="E-H">Surname: E to H</option>
-                <option value="I-L">Surname: I to L</option>
-                <option value="M-P">Surname: M to P</option>
-                <option value="Q-T">Surname: Q to T</option>
-                <option value="U-Z">Surname: U to Z</option>
-                <option value="A">Letter A</option>
-                <option value="B">Letter B</option>
-                <option value="C">Letter C</option>
-                <option value="D">Letter D</option>
-                <option value="E">Letter E</option>
-                <option value="F">Letter F</option>
-                <option value="G">Letter G</option>
-                <option value="H">Letter H</option>
-                <option value="I">Letter I</option>
-                <option value="J">Letter J</option>
-                <option value="K">Letter K</option>
-                <option value="L">Letter L</option>
-                <option value="M">Letter M</option>
-                <option value="N">Letter N</option>
-                <option value="O">Letter O</option>
-                <option value="P">Letter P</option>
-                <option value="Q">Letter Q</option>
-                <option value="R">Letter R</option>
-                <option value="S">Letter S</option>
-                <option value="T">Letter T</option>
-                <option value="U">Letter U</option>
-                <option value="V">Letter V</option>
-                <option value="W">Letter W</option>
-                <option value="X">Letter X</option>
-                <option value="Y">Letter Y</option>
-                <option value="Z">Letter Z</option>
-              </select>
-            </div>
-
             <!-- Keyword Search -->
             <div class="space-y-1">
-              <label for="analyticsSearchInput" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Search ID / Surname</label>
+              <label for="analyticsSearchInput" class="font-extrabold text-academy-navy text-[11px] uppercase tracking-wide">Keyword Search</label>
               <div class="relative">
                 <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">search</span>
-                <input id="analyticsSearchInput" oninput="applyAnalyticsFilters()" placeholder="Filter by ID or Surname (A–Z)..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-academy-border bg-white text-xs text-academy-navy focus:outline-none focus:ring-2 focus:ring-academy-blue">
+                <input id="analyticsSearchInput" oninput="applyAnalyticsFilters()" placeholder="Filter by student, ID, or reference..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-academy-border bg-white text-xs text-academy-navy focus:outline-none focus:ring-2 focus:ring-academy-blue">
               </div>
             </div>
           </div>
@@ -1570,63 +1458,16 @@
       voucherTotal.textContent = money(vouchers);
       renderAdminPayments();
     }
-    function getStudentSurname(s) {
-      if (window.paApi && typeof window.paApi.getStudentSurname === 'function' && window.paApi.getStudentSurname !== getStudentSurname) {
-        return window.paApi.getStudentSurname(s);
-      }
-      if (!s) return '';
-      if (s.lastName || s.last_name || s.surname) return String(s.lastName || s.last_name || s.surname).trim();
-      const raw = String(s.name || s.fullName || '').trim();
-      if (raw.includes(',')) return raw.split(',')[0].trim();
-      const parts = raw.split(/\s+/);
-      if (parts.length <= 1) return raw;
-      const compound = ['dela', 'delos', 'de', 'del', 'san', 'santa', 'sta.', 'st.', 'van', 'von', 'mc', 'mac', 'al', 'di'];
-      for (let i = parts.length - 2; i >= 1; i--) {
-        if (compound.includes(parts[i].toLowerCase())) return parts.slice(i).join(' ');
-      }
-      return parts[parts.length - 1];
-    }
-
-    function matchesSurnameLetterRange(surname, rangeVal) {
-      if (window.paApi && typeof window.paApi.matchesSurnameLetterRange === 'function' && window.paApi.matchesSurnameLetterRange !== matchesSurnameLetterRange) {
-        return window.paApi.matchesSurnameLetterRange(surname, rangeVal);
-      }
-      if (!rangeVal || rangeVal === 'all') return true;
-      const clean = String(surname || '').trim().replace(/^[^a-zA-Z]+/, '');
-      if (!clean) return false;
-      const firstLetter = clean.charAt(0).toUpperCase();
-      const m = String(rangeVal).trim().match(/^([a-zA-Z])\s*(?:-|to|_)\s*([a-zA-Z])$/i);
-      if (m) return firstLetter >= m[1].toUpperCase() && firstLetter <= m[2].toUpperCase();
-      return /^[a-zA-Z]$/.test(String(rangeVal).trim()) ? firstLetter === String(rangeVal).trim().toUpperCase() : true;
-    }
-
-    function matchesStudentIdOrSurname(s, query, letterRange) {
-      if (window.paApi && typeof window.paApi.matchesStudentIdOrSurname === 'function' && window.paApi.matchesStudentIdOrSurname !== matchesStudentIdOrSurname) {
-        return window.paApi.matchesStudentIdOrSurname(s, query, letterRange);
-      }
-      if (!s) return false;
-      if (letterRange && letterRange !== 'all') {
-        if (!matchesSurnameLetterRange(getStudentSurname(s), letterRange)) return false;
-      }
-      const rawQ = String(query || '').trim();
-      if (!rawQ) return true;
-      const q = rawQ.toLowerCase();
-      const surname = getStudentSurname(s).toLowerCase();
-      const sId = String(s.id || s.studentId || s.student_id || s.studentNumber || s.student_number || '').toLowerCase();
-      const sName = String(s.name || '').toLowerCase();
-      return sId.includes(q) || surname.includes(q) || sName.includes(q);
-    }
-
     function renderStudents() {
       const q = (studentSearch?.value || '').toLowerCase().trim();
-      const surnameRange = studentSurnameRangeFilter?.value || 'all';
       const level = levelFilter?.value || 'all';
       const bf = balanceFilter?.value || 'all';
       let rows = appData.students.filter(s => {
         if (level !== 'all' && s.level !== level) return false;
         if (bf === 'with_balance' && balance(s) <= 0) return false;
         if (bf === 'fully_paid' && balance(s) !== 0) return false;
-        return matchesStudentIdOrSurname(s, q, surnameRange);
+        if (!q) return true;
+        return [s.name, s.id, s.studentNumber, s.student_number, classLabel(s), s.email].join(' ').toLowerCase().includes(q);
       });
       studentTableBody.innerHTML = rows.map(s => {
         const paidDisplay = (typeof getStudentTotalPaidInAdmin === 'function')
@@ -1975,7 +1816,6 @@
       const strand = document.getElementById('analyticsStrandFilter')?.value || 'all';
       const channel = document.getElementById('analyticsChannelFilter')?.value || 'all';
       const dateRange = document.getElementById('analyticsDateFilter')?.value || 'all';
-      const surnameRange = document.getElementById('analyticsSurnameFilter')?.value || 'all';
       const query = (document.getElementById('analyticsSearchInput')?.value || '').toLowerCase().trim();
 
       const activeSy = appData.settings?.schoolYear || '2026-2027';
@@ -1994,7 +1834,13 @@
         }
         if (status === 'with_balance' && balance(s) <= 0) return false;
         if (status === 'fully_paid' && balance(s) > 0) return false;
-        if (!matchesStudentIdOrSurname(s, query, surnameRange)) return false;
+        if (query) {
+          const sName = String(s.name || '').toLowerCase();
+          const sId = String(s.id || s.studentNumber || s.student_number || '').toLowerCase();
+          const sEmail = String(s.email || '').toLowerCase();
+          const sSec = String(s.section || '').toLowerCase();
+          if (!sName.includes(query) && !sId.includes(query) && !sEmail.includes(query) && !sSec.includes(query)) return false;
+        }
         return true;
       });
 
@@ -2006,7 +1852,7 @@
       };
 
       const allBasePayments = (appData.payments || []).filter(p => !isStaffPayment(p));
-      const hasStudentFilter = (sy !== 'all' || level !== 'all' || grade !== 'all' || status !== 'all' || strand !== 'all' || surnameRange !== 'all' || query !== '');
+      const hasStudentFilter = (sy !== 'all' || level !== 'all' || grade !== 'all' || status !== 'all' || strand !== 'all' || query !== '');
 
       const studentIdSet = new Set(students.map(s => String(s.id || '').toLowerCase()));
       const studentNoSet = new Set(students.map(s => String(s.studentNumber || '').toLowerCase()).filter(Boolean));
@@ -2131,8 +1977,6 @@
       if (ch) ch.value = 'all';
       const dt = document.getElementById('analyticsDateFilter');
       if (dt) dt.value = 'all';
-      const sn = document.getElementById('analyticsSurnameFilter');
-      if (sn) sn.value = 'all';
       const srch = document.getElementById('analyticsSearchInput');
       if (srch) srch.value = '';
       applyAnalyticsFilters();
@@ -4394,11 +4238,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
 
     function resetStudentAccountFilters() {
       const searchInput = document.getElementById('studentAccountSearchInput');
-      const surnameFilter = document.getElementById('studentAccountSurnameFilter');
       const gradeFilter = document.getElementById('studentAccountGradeFilter');
       const statusFilter = document.getElementById('studentAccountStatusFilter');
       if (searchInput) searchInput.value = '';
-      if (surnameFilter) surnameFilter.value = 'all';
       if (gradeFilter) gradeFilter.value = 'all';
       if (statusFilter) statusFilter.value = 'all';
       renderStudentAccounts();
@@ -4459,7 +4301,6 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
       if (badgeStudent) badgeStudent.textContent = totalCount;
 
       const searchVal = (document.getElementById('studentAccountSearchInput')?.value || '').trim().toLowerCase();
-      const surnameVal = document.getElementById('studentAccountSurnameFilter')?.value || 'all';
       const gradeVal = document.getElementById('studentAccountGradeFilter')?.value || 'all';
       const statusVal = document.getElementById('studentAccountStatusFilter')?.value || 'all';
 
@@ -4468,7 +4309,8 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
         const isAct = s.status !== 'disabled' && s.status !== 'inactive';
         if (statusVal === 'active' && !isAct) return false;
         if (statusVal === 'disabled' && isAct) return false;
-        return matchesStudentIdOrSurname(s, searchVal, surnameVal);
+        if (!searchVal) return true;
+        return [s.name, s.id, s.student_number, s.email, s.section].join(' ').toLowerCase().includes(searchVal);
       });
 
       if (filtered.length === 0) {
