@@ -451,15 +451,17 @@
 
       // If eligible, render full certificate
       const fullName = studentObj.name || `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() || 'Student';
+      const displayId = studentObj.id || studentObj.student_number || id;
       const classStr = studentObj.level === 'SHS' ? `${studentObj.grade} - ${studentObj.section || 'N/A'} (${studentObj.strand || 'N/A'})` : `${studentObj.grade} - ${studentObj.section || 'N/A'}`;
       const sy = data.settings?.schoolYear || studentObj.school_year || '2026-2027';
 
       const approvedCert = (data.certificateRequests || []).find(r => 
-        (r.studentId === id || r.student_id === studentObj.id || r.student_id === studentObj.dbId) && 
+        (r.studentId === displayId || r.studentId === id || r.student_id === studentObj.id || r.student_id === studentObj.dbId) && 
         r.status === 'approved' && r.certificateNumber
       );
-      const vCode = approvedCert ? approvedCert.certificateNumber : `PAI-CERT-${id}-${sy.replace('-', '')}`;
+      const vCode = approvedCert ? approvedCert.certificateNumber : `PAI-CERT-${displayId}-${sy.replace('-', '')}`;
 
+      studentId.textContent = displayId;
       studentName.textContent = fullName;
       studentClass.textContent = classStr;
       schoolYear.textContent = sy;
