@@ -730,7 +730,7 @@ function getRowStatus(r) {
 }
 
 function getStudentSurname(s) {
-  if (typeof window.getStudentSurname === 'function') return window.getStudentSurname(s);
+  if (window.paApi && typeof window.paApi.getStudentSurname === 'function') return window.paApi.getStudentSurname(s);
   if (!s) return '';
   if (s.lastName || s.last_name || s.surname) return String(s.lastName || s.last_name || s.surname).trim();
   const raw = String(s.name || s.fullName || '').trim();
@@ -745,7 +745,7 @@ function getStudentSurname(s) {
 }
 
 function matchesSurnameLetterRange(surname, rangeVal) {
-  if (typeof window.matchesSurnameLetterRange === 'function') return window.matchesSurnameLetterRange(surname, rangeVal);
+  if (window.paApi && typeof window.paApi.matchesSurnameLetterRange === 'function') return window.paApi.matchesSurnameLetterRange(surname, rangeVal);
   if (!rangeVal || rangeVal === 'all') return true;
   const clean = String(surname || '').trim().replace(/^[^a-zA-Z]+/, '');
   if (!clean) return false;
@@ -756,8 +756,8 @@ function matchesSurnameLetterRange(surname, rangeVal) {
 }
 
 function matchesStudentIdOrSurname(s, query, letterRange) {
-  if (typeof window.matchesStudentIdOrSurname === 'function') {
-    return window.matchesStudentIdOrSurname(s, query, letterRange);
+  if (window.paApi && typeof window.paApi.matchesStudentIdOrSurname === 'function') {
+    return window.paApi.matchesStudentIdOrSurname(s, query, letterRange);
   }
   if (!s) return false;
   if (letterRange && letterRange !== 'all') {
