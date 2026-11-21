@@ -630,7 +630,7 @@
                 Password
               </label>
 
-              <a href="#" id="forgotPasswordLink" onclick="event.preventDefault(); (async()=>{ const em=(document.getElementById('loginEmail')||{}).value||prompt('Enter your account email:'); if(!em) return; try{ const c=window.paApi&&window.paApi.client&&window.paApi.client(); if(!c){alert('Password reset is unavailable until Supabase is configured.');return;} const {error}=await c.auth.resetPasswordForEmail(em.trim(),{redirectTo:location.origin+'/'}); alert(error?('Could not send reset email: '+error.message):'If that email exists, a password reset link has been sent.'); }catch(e){alert('Could not send reset email.');} })();" class="text-xs font-bold text-academy-blue hover:underline">
+              <a href="#" id="forgotPasswordLink" onclick="event.preventDefault(); openForgotPasswordModal();" class="text-xs font-bold text-academy-blue hover:underline">
                 Forgot password?
               </a>
             </div>
@@ -682,6 +682,142 @@
               Create account
             </button>
           </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal"
+    class="fixed inset-0 z-[115] hidden items-center justify-center bg-slate-950/65 backdrop-blur-sm px-4">
+    <div id="forgotPasswordModalPanel"
+      class="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-academy-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <button type="button" onclick="closeForgotPasswordModal()"
+        class="absolute top-5 right-5 w-10 h-10 rounded-xl bg-slate-100 border border-academy-border text-academy-muted hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+        aria-label="Close forgot password modal">
+        <span class="material-symbols-rounded text-[20px]">close</span>
+      </button>
+
+      <div class="p-7 sm:p-9 text-center">
+        <div class="flex flex-col items-center mb-5">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 text-academy-blue border border-blue-100 flex items-center justify-center mb-3 shadow-xs">
+            <span class="material-symbols-rounded text-[28px]">lock_reset</span>
+          </div>
+          <span class="text-xs font-extrabold text-academy-blue uppercase tracking-widest inline-block mb-1">
+            Account Recovery
+          </span>
+          <h3 class="text-2xl font-extrabold text-academy-navy">
+            Forgot your password?
+          </h3>
+          <p class="mt-1 text-xs text-academy-muted leading-relaxed">
+            Enter your registered email address and we will send you a secure link to reset your password.
+          </p>
+        </div>
+
+        <form id="forgotPasswordForm" class="space-y-4 text-left">
+          <div>
+            <label for="forgotPasswordEmail" class="block text-xs font-bold text-academy-text mb-1.5">
+              Registered Email Address
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[20px]">mail</span>
+              </span>
+              <input id="forgotPasswordEmail" type="email" required placeholder="you@email.com"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+            </div>
+          </div>
+
+          <p id="forgotPasswordStatus"
+            class="hidden text-xs font-semibold rounded-xl px-4 py-3 text-center">
+          </p>
+
+          <button type="submit" id="forgotPasswordSubmitBtn"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition">
+            <span class="material-symbols-rounded text-[20px]">send</span>
+            Send Reset Link
+          </button>
+
+          <p class="text-center text-xs text-academy-muted pt-1">
+            Remembered your password?
+            <button type="button" onclick="closeForgotPasswordModal(); openLoginModal();"
+              class="font-extrabold text-academy-blue hover:underline">
+              Back to Sign In
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal (Opened when arriving via email recovery link) -->
+  <div id="resetPasswordModal"
+    class="fixed inset-0 z-[130] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm px-4">
+    <div id="resetPasswordModalPanel"
+      class="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-academy-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <button type="button" onclick="closeResetPasswordModal()"
+        class="absolute top-5 right-5 w-10 h-10 rounded-xl bg-slate-100 border border-academy-border text-academy-muted hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+        aria-label="Close reset password modal">
+        <span class="material-symbols-rounded text-[20px]">close</span>
+      </button>
+
+      <div class="p-7 sm:p-9 text-center">
+        <div class="flex flex-col items-center mb-5">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mb-3 shadow-xs">
+            <span class="material-symbols-rounded text-[28px]">key</span>
+          </div>
+          <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-widest inline-block mb-1">
+            Password Recovery
+          </span>
+          <h3 class="text-2xl font-extrabold text-academy-navy">
+            Set a New Password
+          </h3>
+          <p class="mt-1 text-xs text-academy-muted leading-relaxed">
+            Enter and confirm your new password below to restore access to your account.
+          </p>
+        </div>
+
+        <form id="resetPasswordForm" class="space-y-4 text-left">
+          <div>
+            <label for="newResetPassword" class="block text-xs font-bold text-academy-text mb-1.5">
+              New Password
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[20px]">lock</span>
+              </span>
+              <input id="newResetPassword" type="password" required minlength="6" placeholder="At least 6 characters"
+                class="w-full pl-11 pr-12 py-3 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+              <button type="button" id="toggleNewResetPassword"
+                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-academy-muted hover:text-academy-navy flex items-center"
+                aria-label="Show password">
+                <span class="material-symbols-rounded text-[21px]">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="confirmResetPassword" class="block text-xs font-bold text-academy-text mb-1.5">
+              Confirm New Password
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-academy-muted flex items-center">
+                <span class="material-symbols-rounded text-[20px]">lock_reset</span>
+              </span>
+              <input id="confirmResetPassword" type="password" required minlength="6" placeholder="Re-enter new password"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-academy-border bg-white text-sm outline-none focus:border-academy-blue focus:ring-4 focus:ring-blue-100 transition" />
+            </div>
+          </div>
+
+          <p id="resetPasswordStatus"
+            class="hidden text-xs font-semibold rounded-xl px-4 py-3 text-center">
+          </p>
+
+          <button type="submit" id="resetPasswordSubmitBtn"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-academy-navy text-white font-extrabold shadow-md hover:bg-blue-900 transition">
+            <span class="material-symbols-rounded text-[20px]">check_circle</span>
+            Update Password
+          </button>
         </form>
       </div>
     </div>
@@ -1622,13 +1758,299 @@
     });
 
     // Initial check for Data Privacy acceptance
-    if (!isPrivacyAccepted()) {
+    const hasAuthRecoveryInUrl = (
+      window.location.hash.includes("type=recovery") ||
+      window.location.search.includes("type=recovery") ||
+      window.location.search.includes("reset=1") ||
+      window.location.hash.includes("error_description=")
+    );
+
+    if (hasAuthRecoveryInUrl) {
+      localStorage.setItem("pa_privacy_accepted", "true");
+      updatePrivacyStateUI();
+    } else if (!isPrivacyAccepted()) {
       setTimeout(() => {
         showPrivacyNoticePrompt();
       }, 350);
     } else {
       updatePrivacyStateUI();
     }
+
+    // Forgot Password & Password Recovery Modal Handlers
+    const forgotPasswordModal = document.getElementById("forgotPasswordModal");
+    const forgotPasswordModalPanel = document.getElementById("forgotPasswordModalPanel");
+    const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+    const forgotPasswordEmail = document.getElementById("forgotPasswordEmail");
+    const forgotPasswordStatus = document.getElementById("forgotPasswordStatus");
+    const forgotPasswordSubmitBtn = document.getElementById("forgotPasswordSubmitBtn");
+
+    const resetPasswordModal = document.getElementById("resetPasswordModal");
+    const resetPasswordModalPanel = document.getElementById("resetPasswordModalPanel");
+    const resetPasswordForm = document.getElementById("resetPasswordForm");
+    const newResetPassword = document.getElementById("newResetPassword");
+    const confirmResetPassword = document.getElementById("confirmResetPassword");
+    const toggleNewResetPassword = document.getElementById("toggleNewResetPassword");
+    const resetPasswordStatus = document.getElementById("resetPasswordStatus");
+    const resetPasswordSubmitBtn = document.getElementById("resetPasswordSubmitBtn");
+
+    function openForgotPasswordModal() {
+      const currentLoginEmail = (document.getElementById("loginEmail")?.value || "").trim();
+      closeLoginModal(false);
+      closeRegisterModal(false);
+      closePrivacyModal(false);
+      dismissPrivacyBanner(false);
+
+      if (forgotPasswordEmail && currentLoginEmail) {
+        forgotPasswordEmail.value = currentLoginEmail;
+      }
+      if (forgotPasswordStatus) {
+        forgotPasswordStatus.classList.add("hidden");
+      }
+      if (forgotPasswordModal) {
+        forgotPasswordModal.classList.remove("hidden");
+        forgotPasswordModal.classList.add("flex");
+        document.body.classList.add("overflow-hidden");
+        setTimeout(() => forgotPasswordEmail?.focus(), 120);
+      }
+    }
+
+    function closeForgotPasswordModal(allowBodyUnlock = true) {
+      if (!forgotPasswordModal) return;
+      forgotPasswordModal.classList.add("hidden");
+      forgotPasswordModal.classList.remove("flex");
+      if (forgotPasswordStatus) forgotPasswordStatus.classList.add("hidden");
+      if (allowBodyUnlock) {
+        document.body.classList.remove("overflow-hidden");
+      }
+    }
+
+    function openResetPasswordModal(initialError = "") {
+      closeLoginModal(false);
+      closeRegisterModal(false);
+      closeForgotPasswordModal(false);
+      closePrivacyModal(false);
+      dismissPrivacyBanner(false);
+
+      if (resetPasswordForm) resetPasswordForm.reset();
+      if (resetPasswordStatus) {
+        if (initialError) {
+          resetPasswordStatus.textContent = initialError;
+          resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+        } else {
+          resetPasswordStatus.classList.add("hidden");
+        }
+      }
+      if (resetPasswordModal) {
+        resetPasswordModal.classList.remove("hidden");
+        resetPasswordModal.classList.add("flex");
+        document.body.classList.add("overflow-hidden");
+        setTimeout(() => newResetPassword?.focus(), 120);
+      }
+    }
+
+    function closeResetPasswordModal(allowBodyUnlock = true) {
+      if (!resetPasswordModal) return;
+      resetPasswordModal.classList.add("hidden");
+      resetPasswordModal.classList.remove("flex");
+      if (resetPasswordStatus) resetPasswordStatus.classList.add("hidden");
+      if (allowBodyUnlock) {
+        document.body.classList.remove("overflow-hidden");
+      }
+    }
+
+    if (forgotPasswordModal) {
+      forgotPasswordModal.addEventListener("click", (event) => {
+        if (forgotPasswordModalPanel && !forgotPasswordModalPanel.contains(event.target)) {
+          closeForgotPasswordModal();
+        }
+      });
+    }
+
+    if (toggleNewResetPassword && newResetPassword && confirmResetPassword) {
+      toggleNewResetPassword.addEventListener("click", () => {
+        const isPassword = newResetPassword.type === "password";
+        newResetPassword.type = isPassword ? "text" : "password";
+        confirmResetPassword.type = isPassword ? "text" : "password";
+        toggleNewResetPassword.innerHTML = `<span class="material-symbols-rounded text-[21px]">${isPassword ? "visibility_off" : "visibility"}</span>`;
+      });
+    }
+
+    if (forgotPasswordForm) {
+      forgotPasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const emailVal = (forgotPasswordEmail?.value || "").trim();
+        if (!emailVal) return;
+
+        const c = window.paApi && window.paApi.client && window.paApi.client();
+        if (!c) {
+          forgotPasswordStatus.textContent = "Password reset is unavailable until Supabase is configured.";
+          forgotPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+          return;
+        }
+
+        const origHtml = forgotPasswordSubmitBtn ? forgotPasswordSubmitBtn.innerHTML : "";
+        if (forgotPasswordSubmitBtn) {
+          forgotPasswordSubmitBtn.disabled = true;
+          forgotPasswordSubmitBtn.innerHTML = `Sending link... <span class="material-symbols-rounded text-[20px]">hourglass_top</span>`;
+        }
+        forgotPasswordStatus.classList.add("hidden");
+
+        try {
+          const basePath = window.location.origin + (window.location.pathname || "/");
+          const redirectUrl = `${basePath}${basePath.includes("?") ? "&" : "?"}reset=1`;
+          const { error } = await c.auth.resetPasswordForEmail(emailVal, { redirectTo: redirectUrl });
+          if (error) {
+            forgotPasswordStatus.textContent = "Could not send reset email: " + error.message;
+            forgotPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+          } else {
+            forgotPasswordStatus.textContent = "Password reset link sent! Please check your email inbox (and spam folder) and click the recovery link.";
+            forgotPasswordStatus.className = "text-xs font-semibold text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-center";
+          }
+        } catch (err) {
+          forgotPasswordStatus.textContent = err.message || "Could not send reset email.";
+          forgotPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+        } finally {
+          if (forgotPasswordSubmitBtn) {
+            forgotPasswordSubmitBtn.disabled = false;
+            forgotPasswordSubmitBtn.innerHTML = origHtml;
+          }
+        }
+      });
+    }
+
+    if (resetPasswordForm) {
+      resetPasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const newPass = (newResetPassword?.value || "").trim();
+        const confirmPass = (confirmResetPassword?.value || "").trim();
+
+        if (newPass.length < 6) {
+          resetPasswordStatus.textContent = "New password must be at least 6 characters.";
+          resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+          return;
+        }
+        if (newPass !== confirmPass) {
+          resetPasswordStatus.textContent = "Passwords do not match.";
+          resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+          return;
+        }
+
+        const c = window.paApi && window.paApi.client && window.paApi.client();
+        if (!c) {
+          resetPasswordStatus.textContent = "Unable to connect to authentication server.";
+          resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+          return;
+        }
+
+        const origHtml = resetPasswordSubmitBtn ? resetPasswordSubmitBtn.innerHTML : "";
+        if (resetPasswordSubmitBtn) {
+          resetPasswordSubmitBtn.disabled = true;
+          resetPasswordSubmitBtn.innerHTML = `Updating password... <span class="material-symbols-rounded text-[20px]">hourglass_top</span>`;
+        }
+        resetPasswordStatus.classList.add("hidden");
+
+        try {
+          const { data, error } = await c.auth.updateUser({ password: newPass });
+          if (error) {
+            resetPasswordStatus.textContent = error.message || "Failed to update password. Your reset link may have expired.";
+            resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+            return;
+          }
+
+          // Clean recovery tokens from URL bar
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+
+          resetPasswordStatus.textContent = "Password updated successfully! Redirecting to Sign In...";
+          resetPasswordStatus.className = "text-xs font-semibold text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-center";
+
+          const userEmail = data?.user?.email || "";
+          setTimeout(() => {
+            closeResetPasswordModal(false);
+            openLoginModal();
+            if (userEmail && document.getElementById("loginEmail")) {
+              document.getElementById("loginEmail").value = userEmail;
+            }
+            loginError.textContent = "Your password has been updated. Please sign in with your new password.";
+            loginError.classList.remove("hidden", "text-red-600", "bg-red-50", "border-red-100");
+            loginError.classList.add("text-green-700", "bg-green-50", "border-green-100");
+          }, 1200);
+        } catch (err) {
+          resetPasswordStatus.textContent = err.message || "An error occurred while updating your password.";
+          resetPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+        } finally {
+          if (resetPasswordSubmitBtn) {
+            resetPasswordSubmitBtn.disabled = false;
+            resetPasswordSubmitBtn.innerHTML = origHtml;
+          }
+        }
+      });
+    }
+
+    // Listen for Supabase PASSWORD_RECOVERY event and recovery URL parameters
+    (async function initPasswordRecoveryListener() {
+      const hashStr = window.location.hash ? window.location.hash.substring(1) : "";
+      const hashParams = new URLSearchParams(hashStr);
+      const queryParams = new URLSearchParams(window.location.search);
+
+      const errorDesc = hashParams.get("error_description") || queryParams.get("error_description");
+      const isRecoveryLink = (
+        hashParams.get("type") === "recovery" ||
+        queryParams.get("type") === "recovery" ||
+        queryParams.get("reset") === "1"
+      );
+
+      if (errorDesc && (isRecoveryLink || hashParams.get("error_code") === "otp_expired")) {
+        openForgotPasswordModal();
+        if (forgotPasswordStatus) {
+          forgotPasswordStatus.textContent = decodeURIComponent(errorDesc.replace(/\+/g, " ")) + ". Please request a new password reset link.";
+          forgotPasswordStatus.className = "text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-center";
+        }
+        return;
+      }
+
+      const c = window.paApi && window.paApi.client && window.paApi.client();
+      if (c && c.auth) {
+        c.auth.onAuthStateChange((event) => {
+          if (event === "PASSWORD_RECOVERY") {
+            openResetPasswordModal();
+          }
+        });
+
+        const tokenHash = queryParams.get("token_hash");
+        if (tokenHash && (queryParams.get("type") === "recovery" || isRecoveryLink)) {
+          try {
+            const { error } = await c.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+            if (error) {
+              openResetPasswordModal("Recovery link expired or invalid: " + error.message);
+            } else {
+              openResetPasswordModal();
+            }
+            return;
+          } catch (_) {}
+        }
+
+        const code = queryParams.get("code");
+        if (code && isRecoveryLink && typeof c.auth.exchangeCodeForSession === "function") {
+          try {
+            await c.auth.exchangeCodeForSession(code);
+          } catch (_) {}
+        }
+
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (accessToken && refreshToken && isRecoveryLink && typeof c.auth.setSession === "function") {
+          try {
+            await c.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          } catch (_) {}
+        }
+      }
+
+      if (isRecoveryLink) {
+        openResetPasswordModal();
+      }
+    })();
 
     // Intersection Observer for Reveal Animation
     const revealElements = document.querySelectorAll(".reveal");
