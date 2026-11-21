@@ -3306,10 +3306,17 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
           }
 
             if (k !== 'Teacher' && s.clearance[k] !== 'approved') {
-              await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
-              await window.paApi.updateOfficeClearance(s.id, k, 'approved', 'Approved by Admin');
-              const state = await window.paApi.fetchDatabaseState();
-              if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+              s.clearance[k] = 'approved';
+              saveData();
+              try {
+                await window.paApi.requestClearance(s.id, appData.settings.schoolYear);
+                await window.paApi.updateOfficeClearance(s.id, k, 'approved', 'Approved by Admin');
+                const state = await window.paApi.fetchDatabaseState();
+                if (state) appData = { ...appData, ...state, students: mergeStudentsState(appData.students || [], state.students || []) };
+                saveData(false);
+              } catch (dbErr) {
+                console.warn(`Approve ${k} clearance DB sync notice:`, dbErr);
+              }
               renderAll();
               showToast('Clearance updated', `${k} approved for ${s.name}.`);
               return;
@@ -5178,15 +5185,10 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
     }
 
     function mergeStudentsState(localStudents = [], dbStudents = []) {
-      if (!dbStudents || dbStudents.length === 0) return localStudents;
-      if (!localStudents || localStudents.length === 0) return dbStudents;
-
-      const merged = (localStudents || []).map(s => ({ ...s }));
-
-      dbStudents.forEach(dbS => {
-        const existingIdx = merged.findIndex(localS => isSameStudent(localS, dbS));
-        if (existingIdx >= 0) {
-          const local = merged[existingIdx];
+      if (! dbStudents || dbStudents.length === 0) return localStudents;
+      return dbStudents.map(dbS => {
+        const local = (localStudents || []).find(localS => isSameStudent(localS, dbS));
+        if (local) {
           const calcLocal = getStudentTotalPaidInAdmin(local);
           const calcDb = getStudentTotalPaidInAdmin(dbS);
           const calcTotal = Math.max(calcLocal, calcDb);
@@ -5212,7 +5214,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
             }
           });
 
-          merged[existingIdx] = {
+          return {
             ...local,
             ...dbS,
             id: local.id || dbS.id,
@@ -5227,12 +5229,9 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
             clearance: mergedClearance,
             clearanceRemarks: { ...(local.clearanceRemarks || {}), ...(dbS.clearanceRemarks || {}) }
           };
-        } else {
-          merged.push({ ...dbS });
         }
+        return { ...dbS };
       });
-
-      return merged;
     }
 
     let _isSyncingInstallments = false;
@@ -5527,7 +5526,7 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
           const state = await window.paApi.fetchDatabaseState();
           if (state) {
             if (Array.isArray(state.students)) {
-              appData.students = state.students;
+              appData.students = mergeStudentsState(appData.students || [], state.students);
             }
             if (state.accounts) {
               appData.accounts = mergeAccountsState(appData.accounts || [], state.accounts);
@@ -5535,10 +5534,14 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
             
             // Primary source of truth is Supabase database state
             if (Array.isArray(state.payments)) {
-              appData.payments = state.payments;
+              appData.payments = mergePaymentsState(appData.payments || [], state.payments);
             }
-            if (Array.isArray(state.certificateRequests)) appData.certificateRequests = state.certificateRequests;
-            if (Array.isArray(state.teacherClearanceRequests)) appData.teacherClearanceRequests = state.teacherClearanceRequests;
+            if (Array.isArray(state.certificateRequests) && state.certificateRequests.length > 0) {
+              appData.certificateRequests = state.certificateRequests;
+            }
+            if (Array.isArray(state.teacherClearanceRequests) && state.teacherClearanceRequests.length > 0) {
+              appData.teacherClearanceRequests = state.teacherClearanceRequests;
+            }
             if (state.vouchers && state.vouchers.length > 0) appData.vouchers = state.vouchers;
             if (state.installmentTemplate && state.installmentTemplate.length > 0) {
               const cleanInst = state.installmentTemplate.filter(p => !['ins-downpayment-2026', 'ins-q2-2026', 'ins-q3-2027', 'ins-q4-2027'].includes(p.id));
@@ -5623,15 +5626,15 @@ Please provide your analysis formatted cleanly in raw HTML (no markdown code blo
           const state = await window.paApi.fetchDatabaseState();
           if (state) {
             if (Array.isArray(state.students)) {
-              appData.students = state.students;
+              appData.students = mergeStudentsState(appData.students || [], state.students);
             }
             if (Array.isArray(state.payments)) {
-              appData.payments = state.payments;
+              appData.payments = mergePaymentsState(appData.payments || [], state.payments);
             }
-            if (Array.isArray(state.teacherClearanceRequests)) {
+            if (Array.isArray(state.teacherClearanceRequests) && state.teacherClearanceRequests.length > 0) {
               appData.teacherClearanceRequests = state.teacherClearanceRequests;
             }
-            if (Array.isArray(state.certificateRequests)) {
+            if (Array.isArray(state.certificateRequests) && state.certificateRequests.length > 0) {
               appData.certificateRequests = state.certificateRequests;
             }
             saveData(false);

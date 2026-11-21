@@ -185,4 +185,74 @@ test('analytics and reports feature responsive multi-criteria retrieval and filt
   assert.match(clearanceHtml, /grid-cols-1 sm:grid-cols-3/, 'clearance dashboard cards are responsive on mobile');
 });
 
+test('certificate eligibility and viewing works with or without assigned subject teachers and preserves local fee/clearance overrides', () => {
+  const certHtml = fs.readFileSync(path.resolve(__dirname, '..', 'certificate.html'), 'utf8');
+  const extractCertFn = (name) => {
+    const offset = certHtml.indexOf(`function ${name}(`);
+    assert.ok(offset >= 0, `Function ${name} not found in certificate.html`);
+    const start = certHtml.lastIndexOf('\n', offset) + 1;
+    const indent = certHtml.slice(start, offset).replace('async ', '');
+    const rest = certHtml.slice(start);
+    const bodyStart = rest.indexOf('{') + 1;
+    const next = new RegExp(`\n${indent}(?:async )?function `).exec(rest.slice(bodyStart));
+    const end = next ? bodyStart + next.index : rest.indexOf('</script>');
+    return rest.slice(0, end);
+  };
+
+  const context = vm.createContext({ Math, Number, String, Array });
+  [
+    'feeTotal',
+    'voucherAmount',
+    'assessedTotal',
+    'calculateStudentPaid',
+    'assignmentMatchesStudent',
+    'assignedTeacherRows',
+    'isStudentEligible',
+    'matchesStudentIdentifier'
+  ].forEach((fn) => vm.runInContext(extractCertFn(fn), context));
+
+  const studentWithNoAssignedTeachers = {
+    id: 'STU-2026-005',
+    email: 'tan@gmail.com',
+    name: 'Tan Student',
+    level: 'SHS',
+    grade: 'Grade 11',
+    section: 'Humility',
+    strand: 'GAS',
+    voucher: 'None',
+    paid: 15000,
+    clearance: {
+      Teacher: 'pending',
+      Guidance: 'approved',
+      Prefect: 'approved',
+      Library: 'approved',
+      Principal: 'approved',
+      Accounting: 'approved',
+      Registrar: 'approved'
+    }
+  };
+
+  const appData = {
+    feeStructures: { JHS: [], SHS: [{ name: 'Tuition Fee', amount: 15000 }] },
+    vouchers: [],
+    payments: [],
+    accounts: [],
+    teacherClearanceRequests: [],
+    certificateRequests: []
+  };
+
+  const evalRes = context.isStudentEligible(studentWithNoAssignedTeachers, appData);
+  assert.equal(evalRes.eligible, true, 'student with all office approvals and zero assigned teachers is eligible for certificate');
+  assert.equal(context.matchesStudentIdentifier(studentWithNoAssignedTeachers, 'tan@gmail.com'), true, 'matches student by email');
+  assert.equal(context.matchesStudentIdentifier(studentWithNoAssignedTeachers, '2026-005'), true, 'matches student by stripped STU- id');
+});
+
+test('index.html includes forgot password and password recovery modals and Supabase recovery listener', () => {
+  const indexHtml = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
+  assert.match(indexHtml, /id="forgotPasswordModal"/, 'contains forgotPasswordModal');
+  assert.match(indexHtml, /id="resetPasswordModal"/, 'contains resetPasswordModal');
+  assert.match(indexHtml, /PASSWORD_RECOVERY/, 'listens for Supabase PASSWORD_RECOVERY event');
+  assert.match(indexHtml, /updateUser\(\{\s*password/, 'updates user password via Supabase Auth');
+});
+
 

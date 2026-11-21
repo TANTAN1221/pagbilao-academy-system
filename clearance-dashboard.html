@@ -305,7 +305,7 @@ function isClearancePeriodOpen() {
   return true;
 }
 function statusBadge(status){const cls={approved:'bg-emerald-50 text-emerald-700 border border-emerald-200/60',requested:'bg-blue-50 text-blue-700 border border-blue-200/60',pending:'bg-amber-50 text-amber-700 border border-amber-200/60',on_hold:'bg-amber-50 text-amber-700 border border-amber-200/60',not_requested:'bg-slate-100 text-slate-600 border border-slate-200/60'}[status]||'bg-slate-100 text-slate-600 border border-slate-200/60';return `<span class="px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap inline-flex items-center gap-1 capitalize ${cls}">${String(status || 'not_requested').replace('_',' ')}</span>`}
-function allTeacherRowsApproved(student){const rows=(appData.accounts||[]).filter(a=>a.role==='teacher_clearance_head'&&a.active).flatMap(t=>(t.assignments||[]).filter(a=>assignmentMatchesStudent(a,student)).map(a=>rowKey(student,t,a)));return rows.length>0&&rows.every(k=>requestFor(k)?.status==='approved')}
+function allTeacherRowsApproved(student){const rows=(appData.accounts||[]).filter(a=>a.role==='teacher_clearance_head'&&a.active).flatMap(t=>(t.assignments||[]).filter(a=>assignmentMatchesStudent(a,student)).map(a=>rowKey(student,t,a)));return rows.length===0||rows.every(k=>requestFor(k)?.status==='approved')}
 function feeTotal(level) { return (appData.feeStructures?.[level] || []).reduce((s, f) => s + Number(f.amount || 0), 0) }
 function voucherAmount(s) { const v = (appData.vouchers || []).find(x => x.name === s.voucher && x.active !== false); return v ? Number(v.amount || 0) : 0 }
 function assessedTotal(s) {
@@ -896,8 +896,8 @@ function renderAll(){
   }
 
   const rows = teacherRows();
-  const pending = rows.filter(r => ['requested', 'on_hold', 'pending'].includes(requestFor(r.key)?.status)).length;
-  const approved = rows.filter(r => requestFor(r.key)?.status === 'approved').length;
+  const pending = rows.filter(r => ['requested', 'on_hold', 'pending'].includes(getRowStatus(r))).length;
+  const approved = rows.filter(r => getRowStatus(r) === 'approved').length;
   pendingCount.textContent = pending;
   approvedCount.textContent = approved;
 

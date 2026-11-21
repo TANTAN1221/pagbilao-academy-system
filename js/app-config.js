@@ -1143,15 +1143,20 @@
       // 6. Teacher Clearance Requests
       if (clApprovals && clRequests && studentsList && profilesList) {
         state.teacherClearanceRequests = (clApprovals || [])
-          .filter(ca => ca.teacher_assignment_id !== null)
+          .filter(ca => ca.teacher_assignment_id !== null || deptMap[ca.department_id] === "Teacher")
           .map(ca => {
             const req = (clRequests || []).find(r => r.id === ca.clearance_request_id);
             const student = (studentsList || []).find(s => s.id === req?.student_id);
             const teacher = (profilesList || []).find(p => p.id === ca.approver_profile_id);
-            const ta = (assignmentsList || []).find(a => a.id === ca.teacher_assignment_id);
+            const ta = (assignmentsList || []).find(a => a.id === ca.teacher_assignment_id) ||
+              (assignmentsList || []).find(a =>
+                a.teacher_profile_id === ca.approver_profile_id &&
+                a.grade_level === student?.grade_level &&
+                (a.section_name === student?.section_name || a.section_name === "N/A")
+              );
 
             return {
-              key: `${student?.student_number}|${teacher?.id}|${ta?.subject_name || "Subject"}|${ta?.grade_level}|${ta?.section_name}`,
+              key: `${student?.student_number}|${teacher?.id}|${ta?.subject_name || "Subject"}|${ta?.grade_level || student?.grade_level}|${ta?.section_name || student?.section_name || "N/A"}`,
               studentId: student?.student_number,
               teacherId: teacher?.id,
               teacherName: cleanText(teacher?.full_name),
@@ -1559,9 +1564,26 @@
         .eq("name", "Teacher")
         .maybeSingle();
 
+      let matchedAssignmentId = null;
+      if (teacherProfileId && isUuid(teacherProfileId)) {
+        try {
+          const { data: taRows } = await supabase
+            .from("teacher_assignments")
+            .select("id, subject_name")
+            .eq("teacher_profile_id", teacherProfileId);
+          if (Array.isArray(taRows) && taRows.length > 0) {
+            const foundTa = subjectName
+              ? taRows.find(t => t.subject_name === subjectName) || taRows[0]
+              : taRows[0];
+            if (foundTa?.id) matchedAssignmentId = foundTa.id;
+          }
+        } catch (_) {}
+      }
+
       const insertPayload = {
         clearance_request_id: req.id,
         department_id: dept?.id || null,
+        teacher_assignment_id: matchedAssignmentId,
         approval_order: 1,
         status: status,
         remarks: remarks || null,
