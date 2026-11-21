@@ -255,4 +255,107 @@ test('index.html includes forgot password and password recovery modals and Supab
   assert.match(indexHtml, /updateUser\(\{\s*password/, 'updates user password via Supabase Auth');
 });
 
+test('approved clearances with remarks (e.g. Approved by Admin) do not trigger Clearance On Hold alerts or notifications', () => {
+  const studentHtml = fs.readFileSync(path.resolve(__dirname, '..', 'student-dashboard.html'), 'utf8');
+  const extractStudentFn = (name) => {
+    const offset = studentHtml.indexOf(`function ${name}(`);
+    assert.ok(offset >= 0, `Function ${name} not found in student-dashboard.html`);
+    const start = studentHtml.lastIndexOf('\n', offset) + 1;
+    const indent = studentHtml.slice(start, offset).replace('async ', '');
+    const rest = studentHtml.slice(start);
+    const bodyStart = rest.indexOf('{') + 1;
+    const next = new RegExp(`\n${indent}(?:async )?function `).exec(rest.slice(bodyStart));
+    const end = next ? bodyStart + next.index : rest.indexOf('</script>');
+    return rest.slice(0, end);
+  };
+
+  const s = {
+    id: 'STU-2026-001',
+    name: 'Test Student',
+    level: 'JHS',
+    grade: 'Grade 7',
+    section: 'Cattleya',
+    strand: 'N/A',
+    paid: 15000,
+    clearance: {
+      Teacher: 'approved',
+      Guidance: 'approved',
+      Prefect: 'approved',
+      Library: 'approved',
+      Principal: 'approved',
+      Accounting: 'approved',
+      Registrar: 'approved'
+    },
+    clearanceRemarks: {
+      Filipino: 'Assignment not done',
+      Guidance: 'Approved by Admin',
+      Prefect: 'Approved by Admin',
+      Library: 'Approved by Admin',
+      Principal: 'Approved by Admin',
+      Accounting: 'Approved by Admin (Accounting)',
+      Registrar: 'Approved by Admin (Registrar)'
+    }
+  };
+
+  const context = vm.createContext({
+    appData: {
+      settings: { schoolYear: '2026-2027', clearanceOpen: true },
+      feeStructures: { JHS: [{ name: 'Tuition Fee', amount: 15000 }], SHS: [] },
+      vouchers: [],
+      installmentTemplate: [],
+      payments: [],
+      accounts: [
+        {
+          id: 't-1',
+          name: 'Paul Perez',
+          role: 'teacher_clearance_head',
+          active: true,
+          assignments: [{ grade: 'Grade 7', section: 'Cattleya', strand: 'N/A', subject: 'Filipino' }]
+        }
+      ],
+      teacherClearanceRequests: [
+        {
+          key: 'STU-2026-001|t-1|Filipino|Grade 7|Cattleya',
+          studentId: 'STU-2026-001',
+          teacherId: 't-1',
+          subject: 'Filipino',
+          status: 'approved',
+          remarks: 'Approved'
+        }
+      ]
+    },
+    currentStudent: () => s,
+    money: (n) => `₱${Number(n || 0).toLocaleString()}`,
+    isClearancePeriodOpen: () => true,
+    Math,
+    Number,
+    String,
+    Array,
+    Date,
+    Set,
+    Object
+  });
+
+  [
+    'feeTotal',
+    'voucherAmount',
+    'assessedTotal',
+    'getStudentPayments',
+    'getStudentTotalPaid',
+    'balance',
+    'studentInstallments',
+    'assignmentMatchesStudent',
+    'assignedTeacherRows',
+    'requestFor',
+    'officeKeys',
+    'clearanceCounts',
+    'generateStudentNotifications'
+  ].forEach((fn) => vm.runInContext(extractStudentFn(fn), context));
+
+  const notifs = context.generateStudentNotifications(s);
+  const holdNotifs = notifs.filter(n => n.category === 'Clearance On Hold');
+  assert.equal(holdNotifs.length, 0, 'no Clearance On Hold notifications when all clearances are approved');
+  assert.ok(notifs.some(n => n.id === 'clearance_complete'), 'includes Official Clearance Completed notification');
+});
+
 

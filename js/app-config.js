@@ -1109,13 +1109,13 @@
               const deptName = deptMap[ca.department_id];
               if (deptName && deptName !== "Teacher") {
                 studentClearance[deptName] = ca.status;
-                if (ca.remarks) {
-                  studentClearanceRemarks[deptName] = ca.remarks;
+                if (ca.remarks && ca.status !== "approved") {
+                  studentClearanceRemarks[deptName] = cleanText(ca.remarks);
                 }
               } else if (deptName === "Teacher" || ca.teacher_assignment_id) {
                 const ta = (assignmentsList || []).find(a => a.id === ca.teacher_assignment_id);
-                if (ta?.subject_name && ca.remarks) {
-                  studentClearanceRemarks[ta.subject_name] = ca.remarks;
+                if (ta?.subject_name && ca.remarks && ca.status !== "approved") {
+                  studentClearanceRemarks[ta.subject_name] = cleanText(ca.remarks);
                 }
               }
             });
